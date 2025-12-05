@@ -1,14 +1,20 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, ConfirmationModal } from '../../components/Components';
+import { Card, Button, ConfirmationModal, BackButton } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
 
 export const UserList: React.FC = () => {
   const { users, deleteUser, user: currentUser, passwordResetRequests, resolvePasswordResetRequest } = useApp();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showPasswords, setShowPasswords] = useState(false);
+  
+  // Per-row password visibility
+  const [visiblePasswords, setVisiblePasswords] = useState<{ [key: string]: boolean }>({});
+  
   const navigate = useNavigate();
+
+  const isSuperUser = currentUser?.id === 'admin-01' || currentUser?.username === 'thirumalreddy@sprtechforge.com';
+  const isAdmin = currentUser?.role === 'admin';
 
   const handleDeleteClick = (id: string) => {
     if (id === currentUser?.id) {
@@ -25,60 +31,49 @@ export const UserList: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = (userId: string) => {
+      setVisiblePasswords(prev => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
   const handleResolveRequest = (reqId: string, userId: string) => {
-     // Resolve request
      resolvePasswordResetRequest(reqId);
-     // Navigate to edit user
      if (userId) {
        navigate(`/admin/users/edit/${userId}`);
      } else {
-       alert("User not found. The request was dismissed.");
+       alert("User not found.");
      }
   };
-
-  const isAdmin = currentUser?.role === 'admin';
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-        <Link to="/admin/users/new">
-          <Button>+ Add User</Button>
-        </Link>
+        <div className="flex items-center gap-4">
+            <BackButton />
+            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+        </div>
+        {isAdmin && (
+            <Link to="/admin/users/new">
+                <Button>+ Add User</Button>
+            </Link>
+        )}
       </div>
 
-      {/* Password Reset Requests Section */}
-      {isAdmin && passwordResetRequests && passwordResetRequests.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 animate-fade-in">
-           <h3 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">
-             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-             Pending Password Reset Requests ({passwordResetRequests.length})
-           </h3>
+      {/* Pending Requests */}
+      {isAdmin && passwordResetRequests.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+           <h3 className="text-lg font-bold text-amber-800 mb-3">Pending Password Reset Requests</h3>
            <div className="grid grid-cols-1 gap-4">
              {passwordResetRequests.map(req => {
-               const requestingUser = users.find(u => u.username === req.username);
+               const u = users.find(x => x.username === req.username);
                return (
-                 <div key={req.id} className="flex items-center justify-between bg-white p-4 rounded-lg border border-amber-200 shadow-sm">
+                 <div key={req.id} className="flex justify-between bg-white p-4 rounded border border-amber-200 shadow-sm">
                     <div>
-                       <p className="font-bold text-gray-900">{req.username}</p>
-                       <p className="text-xs text-gray-500">Requested: {new Date(req.requestDate).toLocaleString()}</p>
-                       {!requestingUser && <span className="text-xs text-red-500 font-bold">User not found in system</span>}
+                        <p className="font-bold">{req.username}</p>
+                        <p className="text-xs text-gray-500">{new Date(req.requestDate).toLocaleString()}</p>
                     </div>
                     <div className="flex gap-2">
-                       <Button 
-                         variant="secondary" 
-                         onClick={() => resolvePasswordResetRequest(req.id)}
-                         className="text-xs px-3 py-1"
-                       >
-                         Dismiss
-                       </Button>
-                       <Button 
-                         onClick={() => handleResolveRequest(req.id, requestingUser?.id || '')}
-                         className="text-xs px-3 py-1"
-                         disabled={!requestingUser}
-                       >
-                         Reset Password
-                       </Button>
+                       <Button variant="secondary" onClick={() => resolvePasswordResetRequest(req.id)} className="text-xs">Dismiss</Button>
+                       <Button onClick={() => handleResolveRequest(req.id, u?.id || '')} className="text-xs" disabled={!u}>Reset</Button>
                     </div>
                  </div>
                );
@@ -90,60 +85,38 @@ export const UserList: React.FC = () => {
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-gray-600">
-            <thead>
-              <tr className="border-b border-spr-700 text-xs uppercase text-gray-500 bg-gray-50">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
                 <th className="py-3 px-4">Full Name</th>
                 <th className="py-3 px-4">Login ID</th>
-                {isAdmin && (
-                  <th className="py-3 px-4 flex items-center gap-2">
-                    Password 
-                    <button onClick={() => setShowPasswords(!showPasswords)} className="text-indigo-600 hover:text-indigo-800">
-                       {showPasswords ? (
-                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-                       ) : (
-                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                       )}
-                    </button>
-                  </th>
-                )}
+                {isAdmin && <th className="py-3 px-4">Password</th>}
                 <th className="py-3 px-4">Role</th>
-                <th className="py-3 px-4">Access Modules</th>
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-spr-700">
+            <tbody className="divide-y divide-gray-100">
               {users.map(u => (
                 <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium text-gray-900">
-                    {u.name || u.username}
-                    {u.id === currentUser?.id && <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-1 rounded border border-indigo-200">You</span>}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500 font-mono">
-                    {u.username}
-                  </td>
+                  <td className="py-3 px-4 font-medium text-gray-900">{u.name}</td>
+                  <td className="py-3 px-4 font-mono text-sm">{u.username}</td>
                   {isAdmin && (
-                    <td className="py-3 px-4 text-sm font-mono text-amber-600">
-                      {showPasswords ? u.password : '********'}
-                      {u.isPasswordChanged === false && <span className="ml-2 text-[10px] text-red-500 font-bold uppercase">(Default)</span>}
+                    <td className="py-3 px-4 text-sm font-mono flex items-center gap-2">
+                        {visiblePasswords[u.id] ? u.password : '••••••••'}
+                        <button onClick={() => togglePasswordVisibility(u.id)} className="text-gray-400 hover:text-indigo-600 focus:outline-none">
+                            {visiblePasswords[u.id] ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            )}
+                        </button>
                     </td>
                   )}
                   <td className="py-3 px-4 capitalize">{u.role}</td>
-                  <td className="py-3 px-4">
-                     <div className="flex gap-1 flex-wrap">
-                       {u.role === 'admin' ? (
-                         <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded border border-emerald-200 font-medium">All Access</span>
-                       ) : u.modules.length > 0 ? (
-                         u.modules.map(m => (
-                           <span key={m} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200 capitalize">{m}</span>
-                         ))
-                       ) : <span className="text-xs text-gray-400">No Access</span>}
-                     </div>
-                  </td>
                   <td className="py-3 px-4 text-center">
                      <div className="flex justify-center gap-2">
-                       <Link to={`/admin/users/edit/${u.id}`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</Link>
-                       {u.id !== currentUser?.id && (
-                          <button onClick={() => handleDeleteClick(u.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Del</button>
+                       <Link to={`/admin/users/edit/${u.id}`} className="text-blue-600 hover:underline text-sm">Edit</Link>
+                       {isSuperUser && u.id !== currentUser?.id && (
+                          <button onClick={() => handleDeleteClick(u.id)} className="text-red-500 hover:underline text-sm">Delete</button>
                        )}
                      </div>
                   </td>
@@ -159,7 +132,7 @@ export const UserList: React.FC = () => {
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
         title="Delete User"
-        message="Are you sure you want to delete this user? This action cannot be undone."
+        message="Are you sure? This cannot be undone."
       />
     </div>
   );

@@ -53,11 +53,18 @@ interface AppContextType {
   lockTransaction: (id: string) => void;
 
   activityLogs: ActivityLog[];
+  clearActivityLogs: () => void;
 
   trainingModules: TrainingModule[];
   addTrainingModule: (m: TrainingModule) => void;
+  updateTrainingModule: (m: TrainingModule) => void;
+  deleteTrainingModule: (id: string) => void;
+
   trainingTopics: TrainingTopic[];
   addTrainingTopic: (t: TrainingTopic) => void;
+  updateTrainingTopic: (t: TrainingTopic) => void;
+  deleteTrainingTopic: (id: string) => void;
+
   trainingLogs: TrainingLog[];
   addTrainingLog: (l: TrainingLog) => void;
   batchUpdateTrainingLogs: (logs: TrainingLog[]) => void;
@@ -94,7 +101,7 @@ export const useApp = () => {
 };
 
 // NEW VERSION KEY TO RESET DATA
-const STORAGE_KEY = 'SPR_TECHFORGE_FRESH_V8';
+const STORAGE_KEY = 'SPR_TECHFORGE_FRESH_V9';
 const SESSION_KEY = 'SPR_TECHFORGE_SESSION_V4';
 const SESSION_TIMEOUT_MS = 60 * 60 * 1000; 
 
@@ -177,7 +184,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
          setCloudError(err.message);
          setDataLoaded(true);
       };
-      // ... Subscriptions simplified for brevity, assume similar structure to before but with new collections
       const unsubUsers = cloudService.subscribe('users', d => { if(d.length > 0) setUsers(d); else setUsers([DEFAULT_ADMIN]); setDataLoaded(true); }, handleSubError);
       const unsubCand = cloudService.subscribe('candidates', setCandidates);
       const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
@@ -240,10 +246,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (!isCloudEnabled && dataLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
-        users, candidates, candidateProfiles, interviews, accounts, transactions, 
-        trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs
-      }));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+          users, candidates, candidateProfiles, interviews, accounts, transactions, 
+          trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs
+        }));
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+           showToast('Browser Storage Full. Some data may not be saved locally.', 'error');
+        }
+      }
     }
   }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, isCloudEnabled, dataLoaded]);
 
@@ -295,8 +307,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if(t) updateTransaction({ ...t, isLocked: true }); 
   };
 
+  const clearActivityLogs = () => {
+      setActivityLogs([]);
+      // In cloud mode, this would typically involve batch delete, simplified here to local clear for view
+      // Ideally calls cloudService.deleteAll('activityLogs')
+  };
+
   const addTrainingModule = (m: TrainingModule) => { setTrainingModules(p => [...p, m]); saveData('trainingModules', m); };
+  const updateTrainingModule = (m: TrainingModule) => { setTrainingModules(p => p.map(x => x.id === m.id ? m : x)); updateData('trainingModules', m.id, m); };
+  const deleteTrainingModule = (id: string) => { setTrainingModules(p => p.filter(x => x.id !== id)); removeData('trainingModules', id); };
+
   const addTrainingTopic = (t: TrainingTopic) => { setTrainingTopics(p => [...p, t]); saveData('trainingTopics', t); };
+  const updateTrainingTopic = (t: TrainingTopic) => { setTrainingTopics(p => p.map(x => x.id === t.id ? t : x)); updateData('trainingTopics', t.id, t); };
+  const deleteTrainingTopic = (id: string) => { setTrainingTopics(p => p.filter(x => x.id !== id)); removeData('trainingTopics', id); };
+
   const addTrainingLog = (l: TrainingLog) => { setTrainingLogs(p => [...p, l]); saveData('trainingLogs', l); };
   const batchUpdateTrainingLogs = (logs: TrainingLog[]) => {
       setTrainingLogs(prev => {
@@ -322,8 +346,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const markAgreementSent = (id: string) => updateCandidate({ ...candidates.find(c => c.id === id)!, agreementSentDate: new Date().toISOString() });
   const markAgreementAccepted = (id: string) => updateCandidate({ ...candidates.find(c => c.id === id)!, agreementAcceptedDate: new Date().toISOString() });
 
-  const addPasswordResetRequest = (u: string) => { /* simplified */ };
-  const resolvePasswordResetRequest = (id: string) => { /* simplified */ };
+  const addPasswordResetRequest = (u: string) => { 
+      const req: PasswordResetRequest = { id: utils.generateId(), username: u, requestDate: new Date().toISOString(), status: 'pending' };
+      setPasswordResetRequests(p => [...p, req]);
+      saveData('passwordResetRequests', req);
+  };
+  const resolvePasswordResetRequest = (id: string) => {
+      setPasswordResetRequests(p => p.filter(x => x.id !== id));
+      removeData('passwordResetRequests', id);
+  };
 
   const getEntityName = (id: string, type: any) => {
       if(type === 'Account') return accounts.find(a => a.id === id)?.name || 'Unknown';
@@ -345,10 +376,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       interviews, addInterview, updateInterview, deleteInterview,
       accounts, addAccount, updateAccount, deleteAccount,
       transactions, addTransaction, updateTransaction, deleteTransaction, lockTransaction,
-      trainingModules, addTrainingModule, trainingTopics, addTrainingTopic, trainingLogs, addTrainingLog, batchUpdateTrainingLogs,
+      trainingModules, addTrainingModule, updateTrainingModule, deleteTrainingModule,
+      trainingTopics, addTrainingTopic, updateTrainingTopic, deleteTrainingTopic, 
+      trainingLogs, addTrainingLog, batchUpdateTrainingLogs,
       interviewModules, addInterviewModule, updateInterviewModule, deleteInterviewModule,
       interviewQuestions, addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
-      candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest, activityLogs,
+      candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest, 
+      activityLogs, clearActivityLogs,
       markAgreementSent, markAgreementAccepted, getEntityName, getEntityBalance,
       exportData, importDatabase, isCloudEnabled, syncLocalToCloud, cloudError
     }}>
