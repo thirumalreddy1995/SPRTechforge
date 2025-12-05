@@ -61,7 +61,7 @@ export const AddUser: React.FC = () => {
       name: form.name,
       username: form.username.trim() || '',
       password: form.password || form.name || 'password', // Fallback
-      role: form.role as 'admin' | 'staff',
+      role: form.role as 'admin' | 'staff' | 'candidate',
       modules: form.role === 'admin' ? ['candidates', 'finance', 'users'] : form.modules || [],
       authProvider: 'local',
       isPasswordChanged: id ? form.isPasswordChanged : false // New users must change password
@@ -143,6 +143,7 @@ export const AddUser: React.FC = () => {
             >
               <option value="staff">Staff</option>
               <option value="admin">Admin</option>
+              <option value="candidate">Candidate</option>
             </Select>
           </div>
 
