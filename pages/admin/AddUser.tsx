@@ -106,7 +106,7 @@ export const AddUser: React.FC = () => {
              <Input 
               value={form.name} 
               onChange={e => handleNameChange(e.target.value)} 
-              placeholder="e.g. Ravi Kumar"
+              placeholder="e.g. Thirumal Reddy"
               required
             />
           </div>
