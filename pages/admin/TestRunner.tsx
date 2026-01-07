@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button } from '../../components/Components';
@@ -64,7 +63,8 @@ export const TestRunner: React.FC = () => {
     await runAssertion('Unit: Balance Calculation Logic', () => {
         const mockTrans: Transaction[] = [
           { id: 't1', amount: 1000, type: TransactionType.Income, fromEntityId: 'C1', fromEntityType: 'Candidate', toEntityId: 'A1', toEntityType: 'Account', date: '', description: '', isLocked: false },
-          { id: 't2', amount: 200, type: TransactionType.Expense, fromEntityId: 'A1', fromEntityType: 'Account', toEntityId: 'V1', toEntityType: 'Account', date: '', description: '', isLocked: false },
+          // Fixed: TransactionType.Expense does not exist on TransactionType; replaced with TransactionType.Payment
+          { id: 't2', amount: 200, type: TransactionType.Payment, fromEntityId: 'A1', fromEntityType: 'Account', toEntityId: 'V1', toEntityType: 'Account', date: '', description: '', isLocked: false },
         ];
         // A1 received 1000, Paid 200. Opening 0. Net = 800.
         const balA1 = utils.calculateEntityBalance('A1', 'Account', mockTrans, 0);

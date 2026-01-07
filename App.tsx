@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate, HashRouter } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
@@ -53,7 +52,8 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
   if (!isInitialized) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.id !== 'admin-01') return <Navigate to="/dashboard" replace />;
+  // Secure master check based on the specific master username
+  if (user.username !== 'thirumalreddy@sprtechforge.com') return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -75,17 +75,17 @@ const AppRoutes = () => {
       
       <Route path="/address-book" element={<ProtectedRoute><Layout><AddressBook /></Layout></ProtectedRoute>} />
 
-      {/* Finance Section */}
-      <Route path="/finance/transactions" element={<ProtectedRoute><Layout><TransactionList /></Layout></ProtectedRoute>} />
-      <Route path="/finance/transactions/new" element={<ProtectedRoute><Layout><AddTransaction /></Layout></ProtectedRoute>} />
-      <Route path="/finance/transactions/edit/:id" element={<ProtectedRoute><Layout><AddTransaction /></Layout></ProtectedRoute>} />
-      <Route path="/finance/accounts" element={<ProtectedRoute><Layout><AccountList /></Layout></ProtectedRoute>} />
-      <Route path="/finance/accounts/new" element={<ProtectedRoute><Layout><AddAccount /></Layout></ProtectedRoute>} />
-      <Route path="/finance/accounts/edit/:id" element={<ProtectedRoute><Layout><AddAccount /></Layout></ProtectedRoute>} />
-      <Route path="/finance/statement/:type/:id" element={<ProtectedRoute><Layout><AccountStatement /></Layout></ProtectedRoute>} />
-      <Route path="/finance/financial-statements" element={<ProtectedRoute><Layout><FinancialStatements /></Layout></ProtectedRoute>} />
-      <Route path="/finance/payroll" element={<ProtectedRoute><Layout><Payroll /></Layout></ProtectedRoute>} />
-      <Route path="/finance/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
+      {/* Finance Section - Strictly Protected via MasterRoute */}
+      <Route path="/finance/transactions" element={<MasterRoute><Layout><TransactionList /></Layout></MasterRoute>} />
+      <Route path="/finance/transactions/new" element={<MasterRoute><Layout><AddTransaction /></Layout></MasterRoute>} />
+      <Route path="/finance/transactions/edit/:id" element={<MasterRoute><Layout><AddTransaction /></Layout></MasterRoute>} />
+      <Route path="/finance/accounts" element={<MasterRoute><Layout><AccountList /></Layout></MasterRoute>} />
+      <Route path="/finance/accounts/new" element={<MasterRoute><Layout><AddAccount /></Layout></MasterRoute>} />
+      <Route path="/finance/accounts/edit/:id" element={<MasterRoute><Layout><AddAccount /></Layout></MasterRoute>} />
+      <Route path="/finance/statement/:type/:id" element={<MasterRoute><Layout><AccountStatement /></Layout></MasterRoute>} />
+      <Route path="/finance/financial-statements" element={<MasterRoute><Layout><FinancialStatements /></Layout></MasterRoute>} />
+      <Route path="/finance/payroll" element={<MasterRoute><Layout><Payroll /></Layout></MasterRoute>} />
+      <Route path="/finance/reports" element={<MasterRoute><Layout><Reports /></Layout></MasterRoute>} />
 
       {/* Admin Section */}
       <Route path="/admin/users" element={<AdminRoute><Layout><UserList /></Layout></AdminRoute>} />

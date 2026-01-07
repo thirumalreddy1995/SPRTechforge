@@ -1,20 +1,26 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { Button, Card, Logo } from '../../components/Components';
+import { Button, Card, Logo, Modal, Input } from '../../components/Components';
 
 export const PortalAgreement: React.FC = () => {
-  const { candidates, markAgreementAccepted, isCloudEnabled } = useApp();
+  const { candidates, markAgreementAccepted, markAgreementRejected, isCloudEnabled } = useApp();
   const { id } = useParams<{ id: string }>();
   const [isAccepted, setIsAccepted] = useState(false);
+  const [isRejected, setIsRejected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const candidate = candidates.find(c => c.id === id);
 
   useEffect(() => {
     if (candidate?.agreementAcceptedDate) {
       setIsAccepted(true);
+    }
+    if (candidate?.agreementRejectedDate) {
+      setIsRejected(true);
     }
   }, [candidate]);
 
@@ -27,8 +33,23 @@ export const PortalAgreement: React.FC = () => {
       try {
         markAgreementAccepted(id);
         setIsAccepted(true);
+        setIsRejected(false);
       } catch (e) {
         setError("Failed to record acceptance. Please try again.");
+      }
+    }
+  };
+
+  const handleRejectSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (id && candidate && rejectionReason.trim()) {
+      try {
+        markAgreementRejected(id, rejectionReason);
+        setIsRejected(true);
+        setIsAccepted(false);
+        setShowRejectModal(false);
+      } catch (e) {
+        setError("Failed to record rejection.");
       }
     }
   };
@@ -80,7 +101,7 @@ export const PortalAgreement: React.FC = () => {
 
             <div className="flex flex-col items-center gap-4 mt-8">
                 {isAccepted ? (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center w-full">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center w-full animate-fade-in">
                         <svg className="w-16 h-16 text-emerald-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -88,31 +109,53 @@ export const PortalAgreement: React.FC = () => {
                         <p className="text-emerald-600 text-sm mt-1">
                             Recorded on {new Date(candidate.agreementAcceptedDate!).toLocaleString()}
                         </p>
-                        <p className="text-gray-500 text-xs mt-4">You may close this window.</p>
+                        <p className="text-gray-500 text-xs mt-4">You may close this window. We have recorded your acceptance as digital proof.</p>
+                    </div>
+                ) : isRejected ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center w-full animate-fade-in">
+                        <svg className="w-16 h-16 text-red-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <h2 className="text-xl font-bold text-red-800">Agreement Rejected</h2>
+                        <p className="text-red-600 text-sm mt-1">
+                            Recorded on {new Date(candidate.agreementRejectedDate!).toLocaleString()}
+                        </p>
+                        <p className="text-gray-700 text-sm mt-2 italic">"{candidate.agreementRejectionReason}"</p>
+                        <p className="text-gray-500 text-xs mt-4">Our team will contact you to discuss your concerns. You can still accept later if terms are clarified.</p>
+                        <Button variant="secondary" className="mt-4" onClick={() => setIsRejected(false)}>View Agreement Again</Button>
                     </div>
                 ) : (
-                    <>
-                        <div className="flex items-start gap-3 bg-amber-50 p-4 rounded text-sm text-amber-800">
-                            <input type="checkbox" className="mt-1 w-5 h-5 accent-amber-600" id="consent" />
-                            <label htmlFor="consent">
+                    <div className="w-full space-y-6">
+                        <div className="flex items-start gap-3 bg-amber-50 p-4 rounded text-sm text-amber-800 border border-amber-100">
+                            <input type="checkbox" className="mt-1 w-5 h-5 accent-amber-600 cursor-pointer" id="consent" />
+                            <label htmlFor="consent" className="cursor-pointer">
                                 I, <strong>{candidate.name}</strong>, have read and understood the terms and conditions mentioned above. 
-                                By clicking "Accept", I agree to abide by the rules and regulations of SPR Techforge Pvt Ltd.
+                                By clicking "Accept & Sign", I agree to abide by the rules and regulations of SPR Techforge Pvt Ltd.
                             </label>
                         </div>
-                        <Button 
-                            className="w-full md:w-auto px-12 py-3 text-lg" 
-                            onClick={() => {
-                                const cb = document.getElementById('consent') as HTMLInputElement;
-                                if (cb && cb.checked) {
-                                    handleAccept();
-                                } else {
-                                    alert("Please check the box to confirm you have read the agreement.");
-                                }
-                            }}
-                        >
-                            I Accept & Sign
-                        </Button>
-                    </>
+                        <div className="flex flex-col md:flex-row gap-4 justify-center">
+                            <Button 
+                                variant="secondary"
+                                className="w-full md:w-auto px-8"
+                                onClick={() => setShowRejectModal(true)}
+                            >
+                                I Disagree / Reject
+                            </Button>
+                            <Button 
+                                className="w-full md:w-auto px-12 py-3 text-lg font-bold" 
+                                onClick={() => {
+                                    const cb = document.getElementById('consent') as HTMLInputElement;
+                                    if (cb && cb.checked) {
+                                        handleAccept();
+                                    } else {
+                                        alert("Please check the box to confirm you have read the agreement.");
+                                    }
+                                }}
+                            >
+                                Accept & Sign
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </div>
         </Card>
@@ -121,6 +164,28 @@ export const PortalAgreement: React.FC = () => {
             &copy; 2025 SPR Techforge Pvt Ltd. All rights reserved.
         </div>
       </div>
+
+      {/* Reject Modal */}
+      <Modal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)} title="Reject Agreement">
+         <form onSubmit={handleRejectSubmit} className="space-y-4">
+            <p className="text-sm text-gray-600">Please provide a reason for rejecting the agreement. This will help us understand your concerns.</p>
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Reason for Rejection</label>
+                <textarea 
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-1 focus:ring-spr-accent outline-none text-gray-900"
+                    rows={4}
+                    value={rejectionReason}
+                    onChange={e => setRejectionReason(e.target.value)}
+                    placeholder="e.g. Disagree with payment terms, Correction needed in details..."
+                    required
+                ></textarea>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" type="button" onClick={() => setShowRejectModal(false)}>Cancel</Button>
+                <Button variant="danger" type="submit">Confirm Rejection</Button>
+            </div>
+         </form>
+      </Modal>
     </div>
   );
 };

@@ -140,7 +140,7 @@ export const Login: React.FC = () => {
                   label="Username / Login ID" 
                   value={username} 
                   onChange={e => setUsername(e.target.value)} 
-                  placeholder="e.g. name@sprtechforge.com"
+                  placeholder="name@sprtechforge.com"
                 />
                 <Input 
                   label="Password" 
@@ -215,7 +215,7 @@ export const Login: React.FC = () => {
                label="Your Username / Login ID"
                value={forgotUsername}
                onChange={e => setForgotUsername(e.target.value)}
-               placeholder="e.g. john@sprtechforge.com"
+               placeholder="spr@sprtechforge.com"
                required
              />
              <div className="flex justify-end gap-2 mt-4">
