@@ -1,5 +1,3 @@
-
-
 export enum CandidateStatus {
   Training = 'Training',
   ReadyForInterview = 'Ready for Interview',
@@ -20,7 +18,7 @@ export enum AccountType {
 
 export enum TransactionType {
   Income = 'Income',
-  Expense = 'Expense',
+  Payment = 'Payment',
   Transfer = 'Transfer',
   Refund = 'Refund'
 }
@@ -87,6 +85,8 @@ export interface Candidate {
   
   agreementSentDate?: string;
   agreementAcceptedDate?: string;
+  agreementRejectedDate?: string;
+  agreementRejectionReason?: string;
 
   agreedAmount: number;
   paidAmount?: number;
@@ -133,6 +133,7 @@ export interface Account {
   recurringAmount?: number;
   recurringStartDate?: string;
   recurringEndDate?: string;
+  recurringDueDay?: number; // Day of the month (1-31)
 }
 
 export interface Transaction {

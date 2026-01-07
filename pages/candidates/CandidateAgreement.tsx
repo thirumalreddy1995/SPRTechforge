@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
@@ -12,7 +11,7 @@ export const CandidateAgreement: React.FC = () => {
   const candidate = candidates.find(c => c.id === id);
 
   if (!candidate) {
-    return <div className="p-8 text-white">Candidate not found</div>;
+    return <div className="p-8 text-center text-gray-500">Candidate not found</div>;
   }
 
   const handleEmail = () => {
@@ -91,7 +90,7 @@ SPR Techforge Pvt Ltd`;
         </div>
 
         {/* Status Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              <div className={`p-3 rounded border ${candidate.agreementSentDate ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
                  <span className="font-bold text-xs uppercase block">Status: Sent</span>
                  {candidate.agreementSentDate ? new Date(candidate.agreementSentDate).toLocaleString() : 'Not Sent yet'}
@@ -99,6 +98,15 @@ SPR Techforge Pvt Ltd`;
              <div className={`p-3 rounded border ${candidate.agreementAcceptedDate ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
                  <span className="font-bold text-xs uppercase block">Status: Accepted</span>
                  {candidate.agreementAcceptedDate ? new Date(candidate.agreementAcceptedDate).toLocaleString() : 'Pending'}
+             </div>
+             <div className={`p-3 rounded border ${candidate.agreementRejectedDate ? 'bg-red-50 border-red-200 text-red-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
+                 <span className="font-bold text-xs uppercase block">Status: Rejected</span>
+                 {candidate.agreementRejectedDate ? (
+                     <div>
+                         <p className="text-xs">{new Date(candidate.agreementRejectedDate).toLocaleString()}</p>
+                         <p className="text-[10px] italic mt-1">Reason: {candidate.agreementRejectionReason}</p>
+                     </div>
+                 ) : 'No Rejections'}
              </div>
         </div>
 
@@ -113,7 +121,6 @@ SPR Techforge Pvt Ltd`;
       <div className="max-w-3xl mx-auto print:w-full">
         <div className="flex items-center justify-between mb-8 border-b-2 border-indigo-600 pb-4">
            <div className="flex items-center gap-3">
-               {/* Reusing Logo SVG but styling for print/white bg */}
                <div className="w-12 h-12 flex items-center justify-center bg-indigo-600 rounded-lg">
                    <svg className="text-white w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -154,7 +161,6 @@ SPR Techforge Pvt Ltd`;
            </div>
 
            <div className="prose max-w-none">
-              {/* Preserving whitespace for agreement text */}
               <div className="whitespace-pre-wrap font-serif text-justify leading-relaxed text-gray-800">
                  {candidate.agreementText || "No agreement text provided."}
               </div>
@@ -176,11 +182,18 @@ SPR Techforge Pvt Ltd`;
                      <div className="text-[8px] text-center">{new Date(candidate.agreementAcceptedDate).toLocaleDateString()}</div>
                  </div>
              )}
+             
+             {candidate.agreementRejectedDate && (
+                 <div className="absolute top-[-40px] left-1/2 transform -translate-x-1/2 border-2 border-red-600 text-red-600 px-4 py-1 font-bold rounded opacity-80 rotate-[-10deg]">
+                     REJECTED
+                     <div className="text-[8px] text-center">{new Date(candidate.agreementRejectedDate).toLocaleDateString()}</div>
+                 </div>
+             )}
            </div>
         </div>
 
         <div className="mt-12 text-center text-xs text-gray-400 print:fixed print:bottom-4 print:w-full">
-           <p>SPR Techforge Pvt Ltd | Registered Office Address Here | Contact: contact@sprtechforge.com</p>
+           <p>SPR Techforge Pvt Ltd | Sri Godha Nilayam, 9th Phase Rd, KPHB phase 6, Kukatpally, Hyderabad | contact@sprtechforge.com</p>
         </div>
       </div>
     </div>

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, Input, Select } from '../../components/Components';
@@ -39,38 +37,44 @@ Signature: _________________`;
     packageDetails: '',
     isActive: true,
     notes: '',
-    agreementText: defaultAgreement,
-    workSupportStatus: 'None',
-    workSupportMonthlyAmount: 0,
-    workSupportStartDate: ''
+    agreementText: defaultAgreement
   });
+
+  // Calculate actual paid from ledger for comparison
+  const [ledgerPaid, setLedgerPaid] = useState(0);
 
   useEffect(() => {
     if (id) {
       const existing = candidates.find(c => c.id === id);
       if (existing) {
-        // Fallback: If paidAmount is not set manually, calculate it from transactions for initial display
-        let currentPaid = existing.paidAmount;
-        if (currentPaid === undefined) {
-           const txPaid = transactions
-             .filter(t => t.fromEntityId === id && t.type === TransactionType.Income)
-             .reduce((sum, t) => sum + t.amount, 0);
-           const txRefund = transactions
-             .filter(t => t.toEntityId === id && t.type === TransactionType.Refund)
-             .reduce((sum, t) => sum + t.amount, 0);
-           currentPaid = Math.abs(txPaid) - txRefund;
-        }
-
-        setForm({
-          ...existing,
-          paidAmount: currentPaid,
-          agreementText: existing.agreementText || defaultAgreement.replace('[CANDIDATE NAME]', existing.name).replace('[AMOUNT]', existing.agreedAmount.toString())
-        });
+         const txPaid = transactions
+           .filter(t => t.fromEntityId === id && t.type === TransactionType.Income)
+           .reduce((sum, t) => sum + t.amount, 0) -
+           transactions
+           .filter(t => t.toEntityId === id && t.type === TransactionType.Refund)
+           .reduce((sum, t) => sum + t.amount, 0);
+         
+         setLedgerPaid(txPaid);
+         setForm({
+           ...existing,
+           paidAmount: txPaid, // Sync form display with ledger
+           agreementText: existing.agreementText || defaultAgreement.replace('[CANDIDATE NAME]', existing.name).replace('[AMOUNT]', existing.agreedAmount.toString())
+         });
       }
     }
   }, [id, candidates, transactions]);
 
-  const dueAmount = (form.agreedAmount || 0) - (form.paidAmount || 0);
+  const dueAmount = (form.agreedAmount || 0) - ledgerPaid;
+
+  const getFeeStatusMessage = () => {
+    if (!form.agreedAmount || form.agreedAmount <= 0) {
+      return <span className="text-gray-400">Awaiting agreement amount</span>;
+    }
+    if (dueAmount > 0) {
+      return <span className="text-amber-600">Current Due: {utils.formatCurrency(dueAmount)}</span>;
+    }
+    return <span className="text-emerald-600">Fees Fully Cleared ✓</span>;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,15 +87,9 @@ Signature: _________________`;
     if (!form.phone || !form.phone.trim()) { setError('Phone Number is required'); return; }
     if (form.agreedAmount === undefined || form.agreedAmount < 0) { setError('Agreed Amount is required'); return; }
 
-    // Work Support Validation
-    if (form.workSupportStatus === 'Active') {
-        if (!form.workSupportStartDate) { setError('Start Date is required for Active Work Support'); return; }
-        if (!form.workSupportMonthlyAmount || form.workSupportMonthlyAmount <= 0) { setError('Monthly Amount is required for Active Work Support'); return; }
-    }
-
     // Duplicate Candidate Check
     const isDuplicate = candidates.some(c => 
-      c.id !== (id || '') && // Ignore self if editing
+      c.id !== (id || '') && 
       (
         (c.email && c.email.trim().toLowerCase() === form.email?.trim().toLowerCase()) ||
         (c.phone && c.phone.trim() === form.phone?.trim())
@@ -107,6 +105,7 @@ Signature: _________________`;
       ...form as Candidate,
       id: id || utils.generateId(),
       joinedDate: form.joinedDate || new Date().toISOString(),
+      paidAmount: ledgerPaid // Ensure we store the ledger-synced value
     };
 
     if (id) {
@@ -225,49 +224,10 @@ Signature: _________________`;
                   </div>
               </div>
             </Card>
-
-            <Card title="Work Support Services">
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 mb-2">Track monthly recurring payments from the candidate for support services.</p>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Support Status</label>
-                        <select 
-                            className="w-full bg-white border border-spr-700 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none"
-                            value={form.workSupportStatus || 'None'}
-                            onChange={e => setForm({...form, workSupportStatus: e.target.value as any})}
-                        >
-                            <option value="None">No Support</option>
-                            <option value="Active">Active Support (Monthly Billing)</option>
-                            <option value="Ended">Support Ended</option>
-                        </select>
-                    </div>
-
-                    {form.workSupportStatus === 'Active' && (
-                        <div className="grid grid-cols-2 gap-4 animate-fade-in p-4 bg-purple-50 rounded border border-purple-100">
-                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1 required-label">Start Date</label>
-                                <Input 
-                                    type="date"
-                                    value={form.workSupportStartDate || ''}
-                                    onChange={e => setForm({...form, workSupportStartDate: e.target.value})}
-                                />
-                             </div>
-                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1 required-label">Monthly Amount (₹)</label>
-                                <Input 
-                                    type="number"
-                                    value={form.workSupportMonthlyAmount || 0}
-                                    onChange={e => setForm({...form, workSupportMonthlyAmount: parseFloat(e.target.value) || 0})}
-                                />
-                             </div>
-                        </div>
-                    )}
-                </div>
-            </Card>
           </div>
 
           <div className="space-y-6">
-            <Card title="Training & Placement Info">
+            <Card title="Financial Overview">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1 required-label">Agreed Total Amount (₹)</label>
@@ -279,15 +239,12 @@ Signature: _________________`;
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Paid (₹)</label>
-                    <Input 
-                      type="number"
-                      value={form.paidAmount} 
-                      onChange={e => setForm({...form, paidAmount: parseFloat(e.target.value) || 0})}
-                      className="bg-white font-bold"
-                    />
-                    <div className={`text-xs mt-1 font-bold ${dueAmount > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                       {dueAmount > 0 ? `Due: ${utils.formatCurrency(dueAmount)}` : 'Fully Paid'}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Paid as per Ledger (₹)</label>
+                    <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg font-bold text-emerald-700 tabular-nums">
+                        {utils.formatCurrency(ledgerPaid)}
+                    </div>
+                    <div className="text-xs mt-1 font-bold">
+                       {getFeeStatusMessage()}
                     </div>
                   </div>
                 </div>
@@ -337,9 +294,6 @@ Signature: _________________`;
             </Card>
 
             <Card title="Candidature Agreement">
-               <div className="mb-2 text-xs text-gray-500">
-                 Edit the terms below for this candidate. This text will be used when generating the agreement.
-               </div>
                <textarea 
                  className="w-full bg-white border border-spr-700 rounded-lg px-4 py-2 text-gray-800 font-mono text-sm focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none"
                  rows={8}

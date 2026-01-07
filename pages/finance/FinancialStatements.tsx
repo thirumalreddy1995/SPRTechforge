@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button } from '../../components/Components';
@@ -10,17 +9,32 @@ export const FinancialStatements: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'BS' | 'PL'>('BS');
   
   // --- PROFIT & LOSS CALCULATION ---
-  const incomeTransactions = transactions.filter(t => t.type === TransactionType.Income);
-  const expenseTransactions = transactions.filter(t => t.type === TransactionType.Expense);
+  // IMPORTANT: Only count Income if it comes from a Candidate or an 'Income' type account.
+  // Receipts from 'Creditors' are loans (liabilities) and should not show as profit.
+  const incomeTransactions = transactions.filter(t => {
+    if (t.type !== TransactionType.Income) return false;
+    
+    // If it's from a candidate, it's definitely revenue
+    if (t.fromEntityType === 'Candidate') return true;
+    
+    // If it's from an account, check if that account is an 'Income' type ledger
+    if (t.fromEntityType === 'Account') {
+      const fromAcc = accounts.find(a => a.id === t.fromEntityId);
+      return fromAcc?.type === AccountType.Income;
+    }
+    
+    return false;
+  });
+
+  const paymentTransactions = transactions.filter(t => t.type === TransactionType.Payment);
 
   const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const netProfit = totalIncome - totalExpense;
+  const totalPayment = paymentTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const netProfit = totalIncome - totalPayment;
 
-  // Group Expenses by Category (Destination Account Name)
-  const expenseBreakdown = expenseTransactions.reduce((acc, t) => {
-    // Get account name or category
-    let category = "General Expense";
+  // Group Payments by Category (Destination Account Name)
+  const paymentBreakdown = paymentTransactions.reduce((acc, t) => {
+    let category = "General Payment";
     if (t.toEntityType === 'Account') {
         const accObj = accounts.find(a => a.id === t.toEntityId);
         if (accObj) category = accObj.subType || accObj.name;
@@ -30,8 +44,6 @@ export const FinancialStatements: React.FC = () => {
   }, {} as Record<string, number>);
 
   // --- BALANCE SHEET CALCULATION ---
-  
-  // Assets
   const cashAccounts = accounts.filter(a => a.type === AccountType.Cash);
   const bankAccounts = accounts.filter(a => a.type === AccountType.Bank);
   const debtors = accounts.filter(a => a.type === AccountType.Debtor);
@@ -40,9 +52,8 @@ export const FinancialStatements: React.FC = () => {
   const totalBank = bankAccounts.reduce((sum, a) => sum + getEntityBalance(a.id, 'Account'), 0);
   const totalDebtors = debtors.reduce((sum, a) => sum + getEntityBalance(a.id, 'Account'), 0);
 
-  // Candidate Receivables
   const totalCandidateReceivables = candidates.reduce((sum, c) => {
-      if (!c.isActive && c.status === 'Discontinued') return sum; // Don't count discontinued as asset unless specifically tracked
+      if (!c.isActive && c.status === 'Discontinued') return sum;
       const paid = transactions
         .filter(t => t.fromEntityId === c.id && t.type === TransactionType.Income)
         .reduce((s, t) => s + t.amount, 0);
@@ -56,16 +67,12 @@ export const FinancialStatements: React.FC = () => {
 
   const totalAssets = totalCash + totalBank + totalDebtors + totalCandidateReceivables;
 
-  // Liabilities
   const creditors = accounts.filter(a => a.type === AccountType.Creditor);
   const totalCreditors = creditors.reduce((sum, a) => {
       const bal = getEntityBalance(a.id, 'Account');
-      return sum + (bal < 0 ? Math.abs(bal) : 0); // Creditor balance is usually negative if we owe them
+      return sum + (bal < 0 ? Math.abs(bal) : 0);
   }, 0);
 
-  // Equity (Simplified: Assets - Liabilities)
-  // In a real double entry, Equity = Capital + Retained Earnings (Net Profit)
-  // Here check if it matches
   const impliedEquity = totalAssets - totalCreditors;
 
   return (
@@ -90,10 +97,8 @@ export const FinancialStatements: React.FC = () => {
         </button>
       </div>
 
-      {/* PRINTABLE AREA */}
       <div className="bg-white p-8 min-h-screen shadow-sm border border-gray-200 print:shadow-none print:border-none print:p-0">
          
-         {/* HEADER */}
          <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
             <h2 className="text-3xl font-bold text-gray-900 uppercase tracking-widest">SPR Techforge Pvt Ltd</h2>
             <p className="text-gray-600 mt-1">Consultancy & Training Services</p>
@@ -105,7 +110,6 @@ export const FinancialStatements: React.FC = () => {
               <h3 className="text-xl font-bold text-center underline mb-6">BALANCE SHEET</h3>
               
               <div className="grid grid-cols-2 gap-8">
-                 {/* ASSETS */}
                  <div>
                     <div className="flex justify-between border-b border-gray-400 pb-1 mb-2">
                        <span className="font-bold text-emerald-800">ASSETS</span>
@@ -118,11 +122,11 @@ export const FinancialStatements: React.FC = () => {
                        </div>
                        <div className="flex justify-between pl-4 text-gray-600">
                           <span>Cash on Hand</span>
-                          <span>{utils.formatCurrency(totalCash)}</span>
+                          <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalCash)}</span>
                        </div>
                        <div className="flex justify-between pl-4 text-gray-600">
                           <span>Bank Accounts</span>
-                          <span>{utils.formatCurrency(totalBank)}</span>
+                          <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalBank)}</span>
                        </div>
                        
                        <div className="flex justify-between font-semibold text-gray-700 mt-4">
@@ -130,21 +134,20 @@ export const FinancialStatements: React.FC = () => {
                        </div>
                        <div className="flex justify-between pl-4 text-gray-600">
                           <span>Candidate Fees Pending</span>
-                          <span>{utils.formatCurrency(totalCandidateReceivables)}</span>
+                          <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalCandidateReceivables)}</span>
                        </div>
                        <div className="flex justify-between pl-4 text-gray-600">
                           <span>Sundry Debtors</span>
-                          <span>{utils.formatCurrency(totalDebtors)}</span>
+                          <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalDebtors)}</span>
                        </div>
                     </div>
 
                     <div className="flex justify-between border-t border-gray-800 pt-2 mt-8 font-bold text-gray-900 text-lg">
                        <span>TOTAL ASSETS</span>
-                       <span>{utils.formatCurrency(totalAssets)}</span>
+                       <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalAssets)}</span>
                     </div>
                  </div>
 
-                 {/* LIABILITIES & EQUITY */}
                  <div>
                     <div className="flex justify-between border-b border-gray-400 pb-1 mb-2">
                        <span className="font-bold text-red-800">LIABILITIES</span>
@@ -156,14 +159,14 @@ export const FinancialStatements: React.FC = () => {
                           <span>Current Liabilities</span>
                        </div>
                        <div className="flex justify-between pl-4 text-gray-600">
-                          <span>Sundry Creditors</span>
-                          <span>{utils.formatCurrency(totalCreditors)}</span>
+                          <span>Sundry Creditors (Loans/Payables)</span>
+                          <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalCreditors)}</span>
                        </div>
                     </div>
 
                     <div className="flex justify-between border-t border-gray-300 pt-2 mt-8 font-bold text-gray-700">
                        <span>Total Liabilities</span>
-                       <span>{utils.formatCurrency(totalCreditors)}</span>
+                       <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalCreditors)}</span>
                     </div>
 
                     <div className="mt-8">
@@ -174,14 +177,14 @@ export const FinancialStatements: React.FC = () => {
                         <div className="space-y-2 text-sm">
                            <div className="flex justify-between pl-4 text-gray-600">
                               <span>Owners Capital / Net Value</span>
-                              <span>{utils.formatCurrency(impliedEquity)}</span>
+                              <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(impliedEquity)}</span>
                            </div>
                         </div>
                     </div>
 
                     <div className="flex justify-between border-t border-gray-800 pt-2 mt-8 font-bold text-gray-900 text-lg">
                        <span>TOTAL LIABILITIES & EQUITY</span>
-                       <span>{utils.formatCurrency(totalCreditors + impliedEquity)}</span>
+                       <span className="whitespace-nowrap tabular-nums">{utils.formatCurrency(totalCreditors + impliedEquity)}</span>
                     </div>
                  </div>
               </div>
@@ -190,7 +193,7 @@ export const FinancialStatements: React.FC = () => {
 
          {(activeTab === 'PL' || typeof window !== 'undefined') && (
            <div className={`${activeTab === 'PL' ? 'block' : 'hidden print:block'} print:mt-8`}>
-              <h3 className="text-xl font-bold text-center underline mb-6">PROFIT & LOSS ACCOUNT</h3>
+              <h3 className="text-xl font-bold text-center underline mb-6">PROFIT & LOSS ACCOUNT (Operating)</h3>
               
               <div className="border border-gray-300 rounded-lg overflow-hidden">
                  <table className="w-full text-left text-sm">
@@ -201,48 +204,46 @@ export const FinancialStatements: React.FC = () => {
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                       {/* INCOME */}
                        <tr className="bg-emerald-50/50 font-bold text-emerald-800">
-                          <td className="p-3 border-r border-gray-200">INCOME (Revenue)</td>
+                          <td className="p-3 border-r border-gray-200">OPERATING INCOME</td>
                           <td className="p-3 text-right"></td>
                        </tr>
                        <tr>
-                          <td className="p-3 pl-8 border-r border-gray-200 text-gray-700">Consultancy Fees Received</td>
-                          <td className="p-3 text-right text-gray-900">{utils.formatCurrency(totalIncome)}</td>
+                          <td className="p-3 pl-8 border-r border-gray-200 text-gray-700">Fees & Consultancy Revenue</td>
+                          <td className="p-3 text-right text-gray-900 whitespace-nowrap tabular-nums">{utils.formatCurrency(totalIncome)}</td>
                        </tr>
                        <tr className="font-bold bg-gray-50">
-                          <td className="p-3 border-r border-gray-200 text-right">Total Income (A)</td>
-                          <td className="p-3 text-right text-emerald-700">{utils.formatCurrency(totalIncome)}</td>
+                          <td className="p-3 border-r border-gray-200 text-right">Total Operating Revenue (A)</td>
+                          <td className="p-3 text-right text-emerald-700 whitespace-nowrap tabular-nums">{utils.formatCurrency(totalIncome)}</td>
                        </tr>
 
-                       {/* EXPENSES */}
                        <tr className="bg-red-50/50 font-bold text-red-800">
-                          <td className="p-3 border-r border-gray-200">EXPENSES</td>
+                          <td className="p-3 border-r border-gray-200">OPERATING EXPENSES</td>
                           <td className="p-3 text-right"></td>
                        </tr>
-                       {Object.entries(expenseBreakdown).map(([cat, amt]: [string, number]) => (
+                       {Object.entries(paymentBreakdown).map(([cat, amt]: [string, number]) => (
                           <tr key={cat}>
                              <td className="p-3 pl-8 border-r border-gray-200 text-gray-700">{cat}</td>
-                             <td className="p-3 text-right text-gray-900">{utils.formatCurrency(amt)}</td>
+                             <td className="p-3 text-right text-gray-900 whitespace-nowrap tabular-nums">{utils.formatCurrency(amt)}</td>
                           </tr>
                        ))}
                        <tr className="font-bold bg-gray-50">
-                          <td className="p-3 border-r border-gray-200 text-right">Total Expenses (B)</td>
-                          <td className="p-3 text-right text-red-700">{utils.formatCurrency(totalExpense)}</td>
+                          <td className="p-3 border-r border-gray-200 text-right">Total Operating Expenses (B)</td>
+                          <td className="p-3 text-right text-red-700 whitespace-nowrap tabular-nums">{utils.formatCurrency(totalPayment)}</td>
                        </tr>
 
-                       {/* NET RESULT */}
                        <tr className={`text-lg font-bold ${netProfit >= 0 ? 'bg-emerald-100 text-emerald-900' : 'bg-red-100 text-red-900'}`}>
                           <td className="p-4 border-r border-gray-300 text-right uppercase">
-                             {netProfit >= 0 ? 'Net Profit (A - B)' : 'Net Loss (A - B)'}
+                             {netProfit >= 0 ? 'Net Operating Profit (A - B)' : 'Net Operating Loss (A - B)'}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right whitespace-nowrap tabular-nums">
                              {utils.formatCurrency(netProfit)}
                           </td>
                        </tr>
                     </tbody>
                  </table>
               </div>
+              <p className="mt-4 text-[10px] text-gray-400 italic">* Loans and liability receipts are excluded from Operating Profit.</p>
            </div>
          )}
 

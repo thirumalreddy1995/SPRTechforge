@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, Input, Select } from '../../components/Components';
@@ -18,7 +17,8 @@ export const AddAccount: React.FC = () => {
     openingBalance: 0,
     description: '',
     recurringAmount: 0,
-    recurringStartDate: ''
+    recurringStartDate: '',
+    recurringDueDay: 1
   });
 
   useEffect(() => {
@@ -105,12 +105,28 @@ export const AddAccount: React.FC = () => {
                           />
                       </div>
                       <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Month/Date</label>
                           <Input 
                               type="date"
                               value={form.recurringStartDate || ''}
                               onChange={e => setForm({...form, recurringStartDate: e.target.value})}
                           />
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Due Day of Month</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="number"
+                            min="1"
+                            max="31"
+                            className="w-24 bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm"
+                            value={form.recurringDueDay || 1}
+                            onChange={e => setForm({...form, recurringDueDay: parseInt(e.target.value) || 1})}
+                          />
+                          <p className="text-xs text-gray-500 italic">
+                             The payment will show as "Pending" after this day passes each month. Use 31 for end of month.
+                          </p>
+                        </div>
                       </div>
                   </div>
               </div>

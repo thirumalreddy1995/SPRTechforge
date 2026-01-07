@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button } from '../../components/Components';
@@ -13,9 +12,9 @@ export const AccountStatement: React.FC = () => {
   if (!type || !id) return <div>Invalid Parameters</div>;
 
   // Find Entity Info
-  const entityName = type === 'Candidate' 
-    ? candidates.find(c => c.id === id)?.name 
-    : accounts.find(a => a.id === id)?.name;
+  const accountObj = type === 'Account' ? accounts.find(a => a.id === id) : null;
+  const candidateObj = type === 'Candidate' ? candidates.find(c => c.id === id) : null;
+  const entityName = candidateObj?.name || accountObj?.name;
 
   if (!entityName) return <div className="text-gray-900 p-4">Entity not found.</div>;
 
@@ -29,9 +28,8 @@ export const AccountStatement: React.FC = () => {
   const ascHistory = [...history].reverse();
   let runningBal = 0;
   
-  if (type === 'Account') {
-     const acc = accounts.find(a => a.id === id);
-     if (acc) runningBal = acc.openingBalance;
+  if (type === 'Account' && accountObj) {
+     runningBal = accountObj.openingBalance;
   }
 
   const rowsWithBalance = ascHistory.map(t => {
@@ -52,7 +50,9 @@ export const AccountStatement: React.FC = () => {
         <div>
            <Button variant="secondary" onClick={() => navigate(-1)} className="mb-2 text-xs">Back</Button>
            <h1 className="text-2xl font-bold text-gray-900">Statement: {entityName}</h1>
-           <p className="text-gray-500 text-sm font-medium">{type}</p>
+           <p className="text-gray-500 text-sm font-medium">
+             {type} {accountObj?.subType ? `• Group: ${accountObj.subType}` : ''}
+           </p>
         </div>
         <Button onClick={() => utils.downloadCSV(rowsWithBalance, `${entityName}_Statement.csv`)}>
            Download CSV
@@ -80,13 +80,13 @@ export const AccountStatement: React.FC = () => {
                      {t.impact > 0 ? `From: ${getEntityName(t.fromEntityId, t.fromEntityType)}` : `To: ${getEntityName(t.toEntityId, t.toEntityType)}`}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-right text-emerald-600 font-medium">
+                <td className="py-3 px-4 text-right text-emerald-600 font-medium whitespace-nowrap tabular-nums">
                   {t.impact > 0 ? utils.formatCurrency(t.amount) : '-'}
                 </td>
-                <td className="py-3 px-4 text-right text-red-600 font-medium">
+                <td className="py-3 px-4 text-right text-red-600 font-medium whitespace-nowrap tabular-nums">
                   {t.impact < 0 ? utils.formatCurrency(t.amount) : '-'}
                 </td>
-                <td className="py-3 px-4 text-right font-mono font-bold text-gray-900">
+                <td className="py-3 px-4 text-right font-mono font-bold text-gray-900 whitespace-nowrap tabular-nums">
                   {utils.formatCurrency(t.runningBalance)}
                 </td>
               </tr>

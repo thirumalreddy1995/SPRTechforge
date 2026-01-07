@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, Pagination, Modal, ConfirmationModal } from '../../components/Components';
@@ -229,7 +228,7 @@ export const TransactionList: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-sm">{getEntityName(t.fromEntityId, t.fromEntityType)}</td>
                     <td className="py-3 px-4 text-sm">{getEntityName(t.toEntityId, t.toEntityType)}</td>
-                    <td className={`py-3 px-4 text-right font-mono font-bold ${t.type === 'Income' ? 'text-emerald-600' : t.type === 'Expense' ? 'text-red-600' : 'text-gray-700'}`}>
+                    <td className={`py-3 px-4 text-right font-mono font-bold whitespace-nowrap tabular-nums ${t.type === TransactionType.Income ? 'text-emerald-600' : t.type === TransactionType.Payment ? 'text-red-600' : 'text-gray-700'}`}>
                       {utils.formatCurrency(t.amount)}
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -279,7 +278,7 @@ export const TransactionList: React.FC = () => {
           <div className="space-y-6">
             <div className="text-center pb-4 border-b border-spr-700">
                <p className="text-gray-500 text-sm uppercase tracking-wider font-bold">Amount</p>
-               <p className={`text-4xl font-bold mt-2 ${viewTransaction.type === 'Income' ? 'text-emerald-600' : viewTransaction.type === 'Expense' ? 'text-red-600' : 'text-gray-900'}`}>
+               <p className={`text-4xl font-bold mt-2 whitespace-nowrap tabular-nums ${viewTransaction.type === TransactionType.Income ? 'text-emerald-600' : viewTransaction.type === TransactionType.Payment ? 'text-red-600' : 'text-gray-900'}`}>
                  {utils.formatCurrency(viewTransaction.amount)}
                </p>
                <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700">
