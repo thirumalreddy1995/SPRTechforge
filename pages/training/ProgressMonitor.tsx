@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, BackButton } from '../../components/Components';
+import { Card, BackButton, SearchInput } from '../../components/Components';
 
 export const ProgressMonitor: React.FC = () => {
   const { candidates, trainingLogs, trainingTopics } = useApp();
@@ -22,7 +21,13 @@ export const ProgressMonitor: React.FC = () => {
 
       <Card>
          <div className="mb-4">
-            <input placeholder="Search candidate..." className="border rounded px-4 py-2 w-full md:w-1/3" value={filter} onChange={e => setFilter(e.target.value)} />
+            <SearchInput 
+              placeholder="Search candidate..." 
+              value={filter} 
+              onChange={e => setFilter(e.target.value)}
+              onClear={() => setFilter('')}
+              containerClassName="max-w-md"
+            />
          </div>
          <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-gray-600">

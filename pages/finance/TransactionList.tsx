@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, Pagination, Modal, ConfirmationModal } from '../../components/Components';
+import { Card, Button, Pagination, Modal, ConfirmationModal, SearchInput } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
 import * as utils from '../../utils';
 import { TransactionType, Transaction } from '../../types';
@@ -109,11 +109,11 @@ export const TransactionList: React.FC = () => {
         <div className="mb-6 space-y-4">
           {/* Row 1: Search & Basic Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <input 
+            <SearchInput 
               placeholder="Search description..." 
-              className="bg-white border border-spr-700 rounded-lg px-4 py-2 text-gray-900 w-full focus:ring-1 focus:ring-spr-accent outline-none placeholder-gray-400"
               value={filterText}
               onChange={e => setFilterText(e.target.value)}
+              onClear={() => setFilterText('')}
             />
             <select 
                className="bg-white border border-spr-700 rounded-lg px-4 py-2 text-gray-900 w-full focus:ring-1 focus:ring-spr-accent outline-none"
