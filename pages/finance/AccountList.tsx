@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, ConfirmationModal } from '../../components/Components';
+import { Card, Button, ConfirmationModal, SearchInput } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
 import * as utils from '../../utils';
 import { Account } from '../../types';
@@ -64,11 +64,12 @@ export const AccountList: React.FC = () => {
           <svg className="w-5 h-5 text-gray-500 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input 
+          <SearchInput 
             placeholder="Search accounts or sub-ledgers..." 
-            className="w-full bg-white border-none rounded-lg px-2 py-4 text-gray-900 focus:ring-0 outline-none placeholder-gray-400"
+            className="w-full border-none rounded-lg py-4 shadow-none focus:ring-0"
             value={filterText}
             onChange={e => setFilterText(e.target.value)}
+            onClear={() => setFilterText('')}
           />
         </div>
       </Card>
@@ -140,9 +141,9 @@ export const AccountList: React.FC = () => {
 
       <ConfirmationModal 
         isOpen={!!deleteId} 
-        onClose={() => setDeleteId(null)}
-        onConfirm={confirmDelete}
-        title="Delete Account"
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete} 
+        title="Delete Account" 
         message="Are you sure you want to delete this account? History will be preserved but the account name will be lost in filters."
       />
     </div>

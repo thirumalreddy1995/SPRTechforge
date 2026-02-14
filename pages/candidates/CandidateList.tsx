@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, Pagination, ConfirmationModal, Modal, BackButton } from '../../components/Components';
+import { Card, Button, Pagination, ConfirmationModal, Modal, BackButton, SearchInput } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
 import * as utils from '../../utils';
 import { CandidateStatus, Candidate, TransactionType } from '../../types';
@@ -29,6 +29,40 @@ export const CandidateList: React.FC = () => {
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  // Helper to calculate financial status for a candidate
+  const getCandidateFinancials = (cId: string, agreed: number) => {
+    const paid = transactions
+      .filter(t => t.fromEntityId === cId && t.type === TransactionType.Income)
+      .reduce((sum, t) => sum + t.amount, 0) -
+      transactions
+      .filter(t => t.toEntityId === cId && t.type === TransactionType.Refund)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const due = agreed - paid;
+    return { paid, due };
+  };
+
+  const handleExportCSV = () => {
+    const exportData = candidates.map(c => {
+      const { paid, due } = getCandidateFinancials(c.id, c.agreedAmount);
+      return {
+        'Full Name': c.name,
+        'Batch ID': c.batchId,
+        'Email': c.email,
+        'Phone': c.phone,
+        'Status': c.status,
+        'Agreed Amount': c.agreedAmount,
+        'Total Paid': paid,
+        'Balance Due': due,
+        'Referred By': c.referredBy || 'N/A',
+        'Joined Date': new Date(c.joinedDate).toLocaleDateString(),
+        'Is Active': c.isActive ? 'Yes' : 'No'
+      };
+    });
+    utils.downloadCSV(exportData, `SPR_Candidates_All_${new Date().toISOString().split('T')[0]}.csv`);
+    showToast('Candidate list exported successfully');
+  };
+
   const handleDeleteClick = (id: string) => {
     const hasEntries = transactions.some(t => t.fromEntityId === id || t.toEntityId === id);
     if (hasEntries) {
@@ -52,19 +86,6 @@ export const CandidateList: React.FC = () => {
       showToast('User account created', 'success');
   };
 
-  // Helper to calculate financial status for a candidate
-  const getCandidateFinancials = (cId: string, agreed: number) => {
-    const paid = transactions
-      .filter(t => t.fromEntityId === cId && t.type === TransactionType.Income)
-      .reduce((sum, t) => sum + t.amount, 0) -
-      transactions
-      .filter(t => t.toEntityId === cId && t.type === TransactionType.Refund)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const due = agreed - paid;
-    return { paid, due };
-  };
-
   const getStatusColor = (s: string) => {
     switch(s) {
       case CandidateStatus.Placed: return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -82,12 +103,20 @@ export const CandidateList: React.FC = () => {
            <BackButton />
            <h1 className="text-3xl font-bold text-gray-900">Candidates</h1>
         </div>
-        <Link to="/candidates/new"><Button>+ Add Candidate</Button></Link>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExportCSV}>Export CSV</Button>
+          <Link to="/candidates/new"><Button>+ Add Candidate</Button></Link>
+        </div>
       </div>
 
       <Card>
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <input placeholder="Search name, batch, or reference..." className="border border-gray-300 rounded-lg px-4 py-2 flex-1 focus:ring-1 focus:ring-spr-accent outline-none" value={filterText} onChange={e => setFilterText(e.target.value)} />
+          <SearchInput 
+            placeholder="Search name, batch, or reference..." 
+            value={filterText} 
+            onChange={e => setFilterText(e.target.value)}
+            onClear={() => setFilterText('')}
+          />
           <select className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-spr-accent outline-none" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="All">All Statuses</option>
             {candidateStatuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -139,7 +168,7 @@ export const CandidateList: React.FC = () => {
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                        </Link>
                        <button onClick={() => handleCreateAccount(c)} className="text-amber-500 hover:text-amber-700 p-1 rounded hover:bg-amber-50" title="Create Login"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg></button>
-                       <button onClick={() => handleDeleteClick(c.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50" title="Delete"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                       <button onClick={() => handleDeleteClick(c.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100" title="Delete"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                     </td>
                   </tr>
                 );

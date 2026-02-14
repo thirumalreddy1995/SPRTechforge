@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
@@ -14,7 +14,7 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; tit
   </div>
 );
 
-export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'success' }> = ({ 
+export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' }> = ({ 
   children, variant = 'primary', className = '', ...props 
 }) => {
   const base = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white shadow-sm";
@@ -23,6 +23,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
     secondary: "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 focus:ring-gray-200",
     danger: "bg-spr-danger hover:bg-red-700 text-white focus:ring-red-500",
     success: "bg-spr-success hover:bg-emerald-700 text-white focus:ring-emerald-500",
+    outline: "bg-transparent border border-white text-white hover:bg-white/10",
   };
   return (
     <button className={`${base} ${variants[variant]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} {...props}>
@@ -88,6 +89,39 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
           props.onBlur && props.onBlur(e);
         }}
       />
+    </div>
+  );
+};
+
+export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { onClear: () => void; containerClassName?: string }> = ({ onClear, value, className = '', containerClassName = '', ...props }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClear();
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div className={`relative ${containerClassName}`}>
+      <input 
+        {...props}
+        ref={inputRef}
+        value={value}
+        className={`w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-2 text-gray-900 placeholder-gray-400 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`} 
+      />
+      {value && (
+        <button 
+          type="button"
+          onClick={handleClear}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-all"
+          title="Clear search"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
@@ -216,17 +250,87 @@ export const ToastOverlay: React.FC = () => {
   );
 };
 
-// Logo Component: Blue Hexagon/Node Theme for "Techforge"
-export const Logo: React.FC<{ size?: 'sm' | 'lg' }> = ({ size = 'sm' }) => (
-  <div className={`flex items-center gap-3 ${size === 'lg' ? 'flex-col' : ''}`}>
-    <div className={`relative flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-900 rounded-lg shadow-lg shadow-blue-200 transform rotate-3 transition-transform ${size === 'lg' ? 'w-20 h-20' : 'w-10 h-10'}`}>
-      {/* Abstract Hex Node Icon */}
-      <svg className="text-white w-3/5 h-3/5 transform -rotate-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+// Precisely Recreated SPR Logo SVG based on provided actual logo image
+export const Logo: React.FC<{ size?: 'sm' | 'lg'; inverse?: boolean }> = ({ size = 'sm', inverse = false }) => {
+  const width = size === 'lg' ? 240 : 160;
+  const height = size === 'lg' ? 100 : 70;
+  
+  return (
+    <div className={`flex items-center gap-2 ${size === 'lg' ? 'flex-col' : ''}`}>
+      <svg width={width} height={height} viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoTextGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={inverse ? "#FFFFFF" : "#4fa8ff"} />
+            <stop offset="100%" stopColor={inverse ? "#e0e7ff" : "#1e40af"} />
+          </linearGradient>
+          <linearGradient id="logoOrbitGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#ea580c" />
+          </linearGradient>
+          <linearGradient id="logoBaseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={inverse ? "#93c5fd" : "#1e40af"} />
+            <stop offset="100%" stopColor={inverse ? "#3b82f6" : "#0f172a"} />
+          </linearGradient>
+          <filter id="logoShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
+            <feOffset dx="1" dy="1" result="offsetblur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.4" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* 1. Bottom Dark Blue Base Swoosh - Solid and Bold */}
+        <path 
+          d="M30 55 C 50 72, 130 75, 175 50 C 150 70, 70 85, 30 55" 
+          fill="url(#logoBaseGradient)" 
+          opacity="1"
+        />
+
+        {/* 2. Main Gold/Orange Orbit Ring (Passes behind first letter) */}
+        <ellipse 
+          cx="102" cy="42" rx="88" ry="24" 
+          stroke="url(#logoOrbitGradient)" 
+          strokeWidth="7" 
+          fill="none" 
+          transform="rotate(-5, 102, 42)"
+          strokeLinecap="round"
+        />
+
+        {/* 3. The SPR Text - Precise Bold Italic Styling */}
+        <text 
+          x="100" y="55" 
+          textAnchor="middle" 
+          fontSize="52" 
+          fontWeight="900" 
+          fontStyle="italic" 
+          fill="url(#logoTextGradient)" 
+          fontFamily="'Arial Black', sans-serif"
+          style={{ letterSpacing: '-3px', filter: 'url(#logoShadow)' }}
+        >
+          SPR
+        </text>
+
+        {/* 4. Top Overlay Part of Orbit (to create the wrapping effect over the S and P) */}
+        <path 
+          d="M14 42 C 14 30, 60 25, 100 25" 
+          stroke="url(#logoOrbitGradient)" 
+          strokeWidth="7" 
+          fill="none" 
+          transform="rotate(-5, 102, 42)"
+          strokeLinecap="round"
+        />
       </svg>
+      {size === 'lg' && (
+        <div className={`font-black tracking-[0.25em] text-2xl uppercase -mt-4 drop-shadow-sm ${inverse ? 'text-white' : 'text-spr-900'}`}>
+          Techforge
+        </div>
+      )}
     </div>
-    <div className={`font-bold tracking-tight text-gray-900 ${size === 'lg' ? 'text-3xl' : 'text-xl'}`}>
-      SPR <span className="text-spr-accent">Techforge</span>
-    </div>
-  </div>
-);
+  );
+};

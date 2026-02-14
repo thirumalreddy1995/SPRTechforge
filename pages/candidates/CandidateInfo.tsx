@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, Input, BackButton } from '../../components/Components';
+import { Card, Button, Input, BackButton, SearchInput } from '../../components/Components';
 import { CandidateProfile } from '../../types';
 
 export const CandidateInfo: React.FC = () => {
@@ -52,11 +52,11 @@ export const CandidateInfo: React.FC = () => {
 
         <Card title="Select a Candidate to View Self-Filled Info">
            <div className="mb-6">
-              <input 
+              <SearchInput 
                 placeholder="Search candidates by name or batch..." 
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-spr-accent outline-none"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
+                onClear={() => setSearchTerm('')}
               />
            </div>
 
