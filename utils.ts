@@ -125,22 +125,36 @@ export const calculateEntityBalance = (
   // Asset/Liability logic for opening balance
   if (type === 'Account') {
     if (accountType === AccountType.Creditor || accountType === AccountType.Salary) {
-      // Liabilities start negative in our books
+      // Liabilities start negative in our books (money we owe)
       balance -= openingBalance;
     } else {
-      // Assets (Bank, Cash, Debtors) start positive
+      // Assets and Income start positive
       balance += openingBalance;
     }
   } 
 
   transactions.forEach(t => {
-    // If entity is the DESTINATION (Received money)
-    if (t.toEntityId === id && t.toEntityType === type) {
-      balance += t.amount; 
+    const isTo = t.toEntityId === id && t.toEntityType === type;
+    const isFrom = t.fromEntityId === id && t.fromEntityType === type;
+
+    if (isTo) {
+      // For Income/Equity, money flowing TO the ledger is usually a refund/reduction, so it decreases balance
+      if (accountType === AccountType.Income || accountType === AccountType.Equity) {
+        balance -= t.amount;
+      } else {
+        // For Assets/Liabilities, money flowing TO the entity increases its ledger position
+        balance += t.amount;
+      }
     }
-    // If entity is the SOURCE (Paid money)
-    if (t.fromEntityId === id && t.fromEntityType === type) {
-      balance -= t.amount;
+
+    if (isFrom) {
+      // For Income/Equity, money flowing FROM the ledger to Bank/Cash is revenue generation, so it increases balance
+      if (accountType === AccountType.Income || accountType === AccountType.Equity) {
+        balance += t.amount;
+      } else {
+        // For Assets/Liabilities, money flowing FROM the entity decreases its ledger position
+        balance -= t.amount;
+      }
     }
   });
 

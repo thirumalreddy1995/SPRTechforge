@@ -84,7 +84,7 @@ export const Payroll: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-gray-600">
             <thead>
-              <tr className="border-b border-spr-700 text-xs uppercase text-gray-500 bg-gray-50">
+              <tr className="border-b border-gray-100 text-xs uppercase text-gray-500 bg-gray-50">
                 <th className="py-3 px-4">Ledger / Employee</th>
                 <th className="py-3 px-4">Cycle</th>
                 <th className="py-3 px-4 text-center">Months Due</th>
@@ -95,7 +95,7 @@ export const Payroll: React.FC = () => {
                 <th className="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-spr-700">
+            <tbody className="divide-y divide-gray-100">
               {fixedExpenseAccounts.length > 0 ? fixedExpenseAccounts.map(acc => {
                 const months = calculateMonthsDue(acc.recurringStartDate!, acc.recurringDueDay, acc.recurringEndDate);
                 const totalPayable = months * (acc.recurringAmount || 0);

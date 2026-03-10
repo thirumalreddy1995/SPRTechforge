@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, Input, Select } from '../../components/Components';
+import { Card, Button, Input, Select, SearchableSelect, SearchableSelectOption } from '../../components/Components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Transaction, TransactionType, AccountType } from '../../types';
 import * as utils from '../../utils';
@@ -31,28 +31,24 @@ export const AddTransaction: React.FC = () => {
      }
   }, [id, transactions]);
 
-  // Group accounts for better selection
-  const bankAndCash = accounts.filter(a => a.type === AccountType.Bank || a.type === AccountType.Cash);
-  const creditors = accounts.filter(a => a.type === AccountType.Creditor || a.type === AccountType.Salary);
-  const otherAccounts = accounts.filter(a => ![AccountType.Bank, AccountType.Cash, AccountType.Creditor, AccountType.Salary].includes(a.type));
-
-  const renderEntityOptions = (label: string) => (
-    <>
-      <option value="">-- Select {label} --</option>
-      <optgroup label="Bank & Cash">
-        {bankAndCash.map(a => <option key={a.id} value={a.id}>{a.subType ? `${a.subType} > ` : ''}{a.name}</option>)}
-      </optgroup>
-      <optgroup label="Candidates">
-        {candidates.map(c => <option key={c.id} value={c.id}>{c.name} ({c.batchId})</option>)}
-      </optgroup>
-      <optgroup label="Creditors / Staff">
-        {creditors.map(a => <option key={a.id} value={a.id}>{a.subType ? `${a.subType} > ` : ''}{a.name}</option>)}
-      </optgroup>
-      <optgroup label="Other Ledgers">
-        {otherAccounts.map(a => <option key={a.id} value={a.id}>{a.subType ? `${a.subType} > ` : ''}{a.name}</option>)}
-      </optgroup>
-    </>
-  );
+  // Build searchable entity options grouped by category
+  const entityOptions: SearchableSelectOption[] = [
+    ...accounts
+      .filter(a => a.type === AccountType.Bank || a.type === AccountType.Cash)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(a => ({ value: a.id, label: a.name, group: 'Bank & Cash', meta: a.subType })),
+    ...candidates
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(c => ({ value: c.id, label: c.name, group: 'Candidates', meta: c.batchId })),
+    ...accounts
+      .filter(a => a.type === AccountType.Creditor || a.type === AccountType.Salary)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(a => ({ value: a.id, label: a.name, group: 'Creditors / Staff', meta: a.subType })),
+    ...accounts
+      .filter(a => ![AccountType.Bank, AccountType.Cash, AccountType.Creditor, AccountType.Salary].includes(a.type))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(a => ({ value: a.id, label: a.name, group: a.type, meta: a.subType })),
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
      e.preventDefault();
@@ -119,31 +115,26 @@ export const AddTransaction: React.FC = () => {
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                   <label className="block text-sm font-bold text-gray-700 mb-1">From (Source of Funds)</label>
-                   <select 
-                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-1 focus:ring-spr-accent outline-none"
-                      value={fromId} 
-                      onChange={e => setFromId(e.target.value)} 
-                      required
-                   >
-                     {renderEntityOptions('Payer')}
-                   </select>
-                   <p className="text-[10px] text-gray-400 mt-1 uppercase font-medium">Select who is paying or where money is coming from</p>
-                </div>
-
-                <div>
-                   <label className="block text-sm font-bold text-gray-700 mb-1">To (Destination Ledger)</label>
-                   <select 
-                      className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-1 focus:ring-spr-accent outline-none"
-                      value={toId} 
-                      onChange={e => setToId(e.target.value)} 
-                      required
-                   >
-                     {renderEntityOptions('Receiver')}
-                   </select>
-                   <p className="text-[10px] text-gray-400 mt-1 uppercase font-medium">Select where the money is being deposited</p>
-                </div>
+                <SearchableSelect
+                  label="From (Source of Funds)"
+                  value={fromId}
+                  onChange={setFromId}
+                  options={entityOptions}
+                  placeholder="-- Select Payer --"
+                  required
+                  hint="Who is paying or where money is coming from"
+                  containerClassName=""
+                />
+                <SearchableSelect
+                  label="To (Destination Ledger)"
+                  value={toId}
+                  onChange={setToId}
+                  options={entityOptions}
+                  placeholder="-- Select Receiver --"
+                  required
+                  hint="Where the money is being deposited or sent"
+                  containerClassName=""
+                />
              </div>
 
              <div>

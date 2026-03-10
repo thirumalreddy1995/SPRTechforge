@@ -128,8 +128,17 @@ Signature: _________________`;
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">{id ? 'Edit Candidate' : 'Add New Candidate'}</h1>
-      
+      <div className="flex items-center gap-4 mb-6">
+        <button onClick={() => navigate('/candidates')} className="flex items-center text-gray-500 hover:text-gray-800 transition-colors shrink-0">
+          <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          <span className="text-sm font-medium">Back</span>
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{id ? 'Edit Candidate' : 'Add New Candidate'}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{id ? 'Update candidate details below.' : 'Fill the form to register a new candidate.'}</p>
+        </div>
+      </div>
+
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded shadow-sm animate-fade-in">
           <div className="flex">
@@ -206,12 +215,22 @@ Signature: _________________`;
                       required
                     />
                   </div>
-                  <Input 
-                    label="Referred By" 
-                    value={form.referredBy || ''} 
-                    onChange={e => setForm({...form, referredBy: e.target.value})} 
-                    placeholder="Name of referrer (Optional)"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Referred By"
+                      value={form.referredBy || ''}
+                      onChange={e => setForm({...form, referredBy: e.target.value})}
+                      placeholder="Referrer name (optional)"
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Joining Date</label>
+                      <Input
+                        type="date"
+                        value={form.joinedDate ? form.joinedDate.split('T')[0] : new Date().toISOString().split('T')[0]}
+                        onChange={e => setForm({...form, joinedDate: e.target.value})}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Complete Address</label>
                     <textarea 

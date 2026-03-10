@@ -13,7 +13,12 @@ export enum AccountType {
   Expense = 'Expense',
   Salary = 'Salary',
   Income = 'Income',
-  Equity = 'Equity'
+  Equity = 'Equity',
+  FixedAsset = 'Fixed Asset',
+  CurrentAsset = 'Current Asset',
+  Loan = 'Loan',
+  Tax = 'Tax',
+  Capital = 'Capital'
 }
 
 export enum TransactionType {
