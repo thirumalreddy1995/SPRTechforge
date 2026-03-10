@@ -103,7 +103,7 @@ export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> &
   };
 
   return (
-    <div className={`relative ${containerClassName}`}>
+    <div className={`relative w-full ${containerClassName}`}>
       <input 
         {...props}
         ref={inputRef}
@@ -114,12 +114,14 @@ export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> &
         <button 
           type="button"
           onClick={handleClear}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-all"
+          className="absolute right-2 top-0 bottom-0 flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md transition-all h-full"
           title="Clear search"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <div className="hover:bg-gray-100 p-1 rounded-md">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
         </button>
       )}
     </div>
@@ -129,14 +131,185 @@ export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> &
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string }> = ({ label, children, className = '', ...props }) => (
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-    <select 
-      className={`w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`} 
-      {...props} 
+    <select
+      className={`w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`}
+      {...props}
     >
       {children}
     </select>
   </div>
 );
+
+export interface SearchableSelectOption {
+  value: string;
+  label: string;
+  group?: string;
+  meta?: string; // small helper text shown below label
+}
+
+export const SearchableSelect: React.FC<{
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SearchableSelectOption[];
+  placeholder?: string;
+  required?: boolean;
+  hint?: string;
+  containerClassName?: string;
+}> = ({ label, value, onChange, options, placeholder = 'Select...', required, hint, containerClassName = 'mb-4' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) setTimeout(() => searchRef.current?.focus(), 50);
+  }, [isOpen]);
+
+  const selectedOption = options.find(o => o.value === value);
+
+  const filtered = search.trim()
+    ? options.filter(o =>
+        o.label.toLowerCase().includes(search.toLowerCase()) ||
+        (o.group && o.group.toLowerCase().includes(search.toLowerCase())) ||
+        (o.meta && o.meta.toLowerCase().includes(search.toLowerCase()))
+      )
+    : options;
+
+  // Build grouped structure preserving order
+  const groupOrder: string[] = [];
+  const groups: Record<string, SearchableSelectOption[]> = {};
+  const ungrouped: SearchableSelectOption[] = [];
+  filtered.forEach(o => {
+    if (o.group) {
+      if (!groups[o.group]) { groups[o.group] = []; groupOrder.push(o.group); }
+      groups[o.group].push(o);
+    } else {
+      ungrouped.push(o);
+    }
+  });
+  const uniqueGroupOrder = [...new Set(groupOrder)];
+
+  const handleSelect = (val: string) => {
+    onChange(val);
+    setIsOpen(false);
+    setSearch('');
+  };
+
+  return (
+    <div className={`relative ${containerClassName}`} ref={containerRef}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+        </label>
+      )}
+
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(v => !v)}
+        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-left text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm flex items-center justify-between gap-2 min-h-[42px]"
+      >
+        <span className={`truncate text-sm ${selectedOption ? 'text-gray-900' : 'text-gray-400'}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {value && (
+            <span
+              role="button"
+              onClick={e => { e.stopPropagation(); handleSelect(''); }}
+              className="text-gray-300 hover:text-gray-500 p-0.5 rounded"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          )}
+          <svg className={`w-4 h-4 text-gray-400 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-[60] w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden">
+          {/* Search */}
+          <div className="p-2 border-b border-gray-100 bg-gray-50">
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Type to search..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Escape' && setIsOpen(false)}
+                className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-1 focus:ring-spr-accent outline-none bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Options list */}
+          <div className="max-h-60 overflow-y-auto overscroll-contain">
+            {/* Empty / clear option */}
+            <button
+              type="button"
+              onClick={() => handleSelect('')}
+              className={`w-full text-left px-4 py-2.5 text-sm border-b border-gray-50 transition-colors ${!value ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-400 hover:bg-gray-50'}`}
+            >
+              {placeholder}
+            </button>
+
+            {ungrouped.map(o => (
+              <button key={o.value} type="button" onClick={() => handleSelect(o.value)}
+                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${value === o.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-800 hover:bg-indigo-50 hover:text-indigo-700'}`}>
+                {o.label}
+                {o.meta && <span className="ml-1 text-[10px] text-gray-400">{o.meta}</span>}
+              </button>
+            ))}
+
+            {uniqueGroupOrder.map(group => (
+              <div key={group}>
+                <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-50 border-t border-gray-100 sticky top-0">
+                  {group}
+                </div>
+                {groups[group].map(o => (
+                  <button key={o.value} type="button" onClick={() => handleSelect(o.value)}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${value === o.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-800 hover:bg-indigo-50 hover:text-indigo-700'}`}>
+                    {o.label}
+                    {o.meta && <div className="text-[10px] text-gray-400">{o.meta}</div>}
+                  </button>
+                ))}
+              </div>
+            ))}
+
+            {filtered.length === 0 && (
+              <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                No results for "<span className="font-medium">{search}</span>"
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {hint && <p className="text-[10px] text-gray-400 mt-1 uppercase font-medium">{hint}</p>}
+    </div>
+  );
+};
 
 export const Pagination: React.FC<{ 
   currentPage: number; 
@@ -216,7 +389,7 @@ export const ConfirmationModal: React.FC<{
   onConfirm: () => void; 
   title: string; 
   message: string; 
-}> = ({ isOpen, onClose, onConfirm, title, message }) => (
+ }> = ({ isOpen, onClose, onConfirm, title, message }) => (
   <Modal isOpen={isOpen} onClose={onClose} title={title}>
     <div className="space-y-4">
       <p className="text-gray-600">{message}</p>

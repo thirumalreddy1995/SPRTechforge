@@ -50,9 +50,34 @@ export const AddAccount: React.FC = () => {
   // Show recurring fields for Salary, Expense, and specific sub-types if needed
   const showRecurringFields = form.type === AccountType.Salary || form.type === AccountType.Expense;
 
+  const accountTypeDescriptions: Record<string, string> = {
+    [AccountType.Cash]: 'Physical cash kept in office or on hand.',
+    [AccountType.Bank]: 'Bank account (savings, current, etc.).',
+    [AccountType.Debtor]: 'Someone who owes you money (receivable).',
+    [AccountType.Creditor]: 'Someone you owe money to (payable / loan).',
+    [AccountType.Expense]: 'Regular operational expenses (rent, utilities, etc.).',
+    [AccountType.Salary]: 'Employee salary or contractor payment ledger.',
+    [AccountType.Income]: 'Revenue source or income category ledger.',
+    [AccountType.Equity]: 'Owner equity or capital account.',
+    [AccountType.FixedAsset]: 'Long-term assets: computers, furniture, vehicles, property.',
+    [AccountType.CurrentAsset]: 'Short-term assets: prepaid expenses, deposits, stock.',
+    [AccountType.Loan]: 'Loan taken or given — tracks principal outstanding.',
+    [AccountType.Tax]: 'Tax payable or receivable accounts (GST, TDS, etc.).',
+    [AccountType.Capital]: 'Capital introduced by promoters or investors.',
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">{id ? 'Edit Account' : 'Add New Account'}</h1>
+      <div className="flex items-center gap-4 mb-6">
+        <button onClick={() => navigate('/finance/accounts')} className="flex items-center text-gray-500 hover:text-gray-800 transition-colors shrink-0">
+          <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          <span className="text-sm font-medium">Back</span>
+        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{id ? 'Edit Account' : 'Add New Ledger Account'}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{id ? 'Update ledger account details.' : 'Create a new ledger for your chart of accounts.'}</p>
+        </div>
+      </div>
       <Card>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -66,13 +91,18 @@ export const AddAccount: React.FC = () => {
                 />
             </div>
             
-            <Select 
-              label="Account Type"
-              value={form.type}
-              onChange={e => setForm({...form, type: e.target.value as AccountType})}
-            >
-              {Object.values(AccountType).map(t => <option key={t} value={t}>{t}</option>)}
-            </Select>
+            <div>
+              <Select
+                label="Account Type"
+                value={form.type}
+                onChange={e => setForm({...form, type: e.target.value as AccountType})}
+              >
+                {Object.values(AccountType).map(t => <option key={t} value={t}>{t}</option>)}
+              </Select>
+              {form.type && (
+                <p className="text-xs text-gray-400 italic -mt-3 mb-4 px-1">{accountTypeDescriptions[form.type as string]}</p>
+              )}
+            </div>
             
             <Input 
               label="Sub Ledger / Grouping" 
