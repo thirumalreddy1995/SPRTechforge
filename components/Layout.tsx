@@ -112,7 +112,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({ id, title, icon, ch
 };
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout } = useApp();
+  const { user, logout, interviews, candidates, webLeads } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
@@ -124,6 +124,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const handleLogout = () => { logout(); navigate('/'); };
 
   const isMaster = user.username === 'thirumalreddy@sprtechforge.com';
+  const todayStr = new Date().toISOString().split('T')[0];
+  const activeInterviewCount = interviews.filter(i => i.status === 'Scheduled').length;
+  const todayInterviewCount = interviews.filter(i => i.date === todayStr && i.status === 'Scheduled').length;
+  const unreadWebLeadsCount = webLeads.filter(l => !l.isRead).length;
 
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row text-slate-900 overflow-hidden">
@@ -185,17 +189,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <NavItem to="/address-book" label="Address Book" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
-              <CollapsibleGroup 
+              <CollapsibleGroup
                 id="candidates"
-                isSidebarCollapsed={isSidebarCollapsed} 
+                isSidebarCollapsed={isSidebarCollapsed}
                 setIsSidebarCollapsed={setIsSidebarCollapsed}
                 openGroupId={openGroupId}
                 setOpenGroupId={setOpenGroupId}
-                title="Candidates" 
+                title="Candidates"
                 icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
               >
                 <NavItem to="/candidates" label="Candidate List" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 <NavItem to="/candidates/info" label="Candidate Info (Profile)" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/candidates/enquiry" label="Enquiries" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
               <CollapsibleGroup 
@@ -207,7 +212,28 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 title="Training" 
                 icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
               >
-                <NavItem to="/training/interviews" label="Interviews & Resumes" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                {/* Active Interviews quick link with badge */}
+                {!isSidebarCollapsed ? (
+                  <Link
+                    to="/training/interviews"
+                    onClick={closeMobile}
+                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-1 font-medium text-sm overflow-hidden whitespace-nowrap ${
+                      false ? 'bg-spr-accent text-white shadow-md' : 'text-gray-600 hover:bg-spr-50 hover:text-spr-900'
+                    }`}
+                  >
+                    <span>Interviews & Resumes</span>
+                    {activeInterviewCount > 0 && (
+                      <span className="flex items-center gap-1 shrink-0">
+                        {todayInterviewCount > 0 && (
+                          <span className="bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase">Today: {todayInterviewCount}</span>
+                        )}
+                        <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{activeInterviewCount}</span>
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <NavItem to="/training/interviews" label="Interviews & Resumes" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                )}
                 <NavItem to="/training/monitor" label="Progress Monitor" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 <NavItem to="/training/attendance" label="Class Attendance" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 <NavItem to="/training/curriculum" label="Curriculum" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
@@ -224,10 +250,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   title="Finance" 
                   icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                 >
-                  <NavItem to="/finance/transactions" label="Transactions" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                  <NavItem to="/finance/accounts" label="Ledger Accounts" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/finance/dashboard" label="Overview" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/finance/transactions" label="Transaction Register" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/finance/accounts" label="Chart of Accounts" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                   <NavItem to="/finance/payroll" label="Payroll" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                  <NavItem to="/finance/financial-statements" label="Reports" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/finance/financial-statements" label="Financial Reports" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 </CollapsibleGroup>
               )}
 
@@ -241,6 +268,23 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
               >
                 <NavItem to="/admin/users" label="Users" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                {/* Web Enquiries with unread badge */}
+                {!isSidebarCollapsed ? (
+                  <Link
+                    to="/web-leads"
+                    onClick={closeMobile}
+                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-1 font-medium text-sm overflow-hidden whitespace-nowrap text-gray-600 hover:bg-spr-50 hover:text-spr-900`}
+                  >
+                    <span>Web Enquiries</span>
+                    {unreadWebLeadsCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shrink-0">
+                        {unreadWebLeadsCount}
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <NavItem to="/web-leads" label="Web Enquiries" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                )}
                 {isMaster && <NavItem to="/admin/logs" label="System Logs" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
                 {isMaster && <NavItem to="/admin/cloud" label="Cloud Setup" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
               </CollapsibleGroup>

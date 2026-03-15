@@ -17,6 +17,7 @@ import { AddAccount } from './pages/finance/AddAccount';
 import { AccountStatement } from './pages/finance/AccountStatement';
 import { FinancialStatements } from './pages/finance/FinancialStatements';
 import { Payroll } from './pages/finance/Payroll';
+import { FinanceDashboard } from './pages/finance/FinanceDashboard';
 import { Reports } from './pages/Reports';
 import { AddressBook } from './pages/AddressBook';
 import { UserList } from './pages/admin/UserList';
@@ -31,6 +32,8 @@ import { ProgressMonitor } from './pages/training/ProgressMonitor';
 import { AttendanceSheet } from './pages/training/AttendanceSheet';
 import { InterviewQuestions } from './pages/training/InterviewQuestions';
 import { Interviews } from './pages/training/Interviews';
+import { EnquiryPage } from './pages/candidates/Enquiry';
+import { WebLeadsPage } from './pages/WebLeads';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -72,10 +75,12 @@ const AppRoutes = () => {
       <Route path="/candidates/new" element={<ProtectedRoute><Layout><AddCandidate /></Layout></ProtectedRoute>} />
       <Route path="/candidates/edit/:id" element={<ProtectedRoute><Layout><AddCandidate /></Layout></ProtectedRoute>} />
       <Route path="/candidates/agreement/:id" element={<ProtectedRoute><CandidateAgreement /></ProtectedRoute>} />
+      <Route path="/candidates/enquiry" element={<ProtectedRoute><Layout><EnquiryPage /></Layout></ProtectedRoute>} />
       
       <Route path="/address-book" element={<ProtectedRoute><Layout><AddressBook /></Layout></ProtectedRoute>} />
 
       {/* Finance Section - Strictly Protected via MasterRoute */}
+      <Route path="/finance/dashboard" element={<MasterRoute><Layout><FinanceDashboard /></Layout></MasterRoute>} />
       <Route path="/finance/transactions" element={<MasterRoute><Layout><TransactionList /></Layout></MasterRoute>} />
       <Route path="/finance/transactions/new" element={<MasterRoute><Layout><AddTransaction /></Layout></MasterRoute>} />
       <Route path="/finance/transactions/edit/:id" element={<MasterRoute><Layout><AddTransaction /></Layout></MasterRoute>} />
@@ -99,6 +104,8 @@ const AppRoutes = () => {
       <Route path="/training/attendance" element={<ProtectedRoute><Layout><AttendanceSheet /></Layout></ProtectedRoute>} />
       <Route path="/training/interview-questions" element={<ProtectedRoute><Layout><InterviewQuestions /></Layout></ProtectedRoute>} />
       <Route path="/training/interviews" element={<ProtectedRoute><Layout><Interviews /></Layout></ProtectedRoute>} />
+
+      <Route path="/web-leads" element={<AdminRoute><Layout><WebLeadsPage /></Layout></AdminRoute>} />
 
       {/* Master Section */}
       <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />
