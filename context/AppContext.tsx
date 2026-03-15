@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 
@@ -79,6 +79,19 @@ interface AppContextType {
   updateInterviewQuestion: (q: InterviewQuestion) => void;
   deleteInterviewQuestion: (id: string) => void;
 
+  enquiries: Enquiry[];
+  addEnquiry: (e: Enquiry) => void;
+  updateEnquiry: (e: Enquiry) => void;
+  deleteEnquiry: (id: string) => void;
+  addEnquiryNote: (enquiryId: string, note: string) => void;
+  mergeEnquiryToCandidate: (enquiryId: string) => Candidate | null;
+
+  webLeads: WebLead[];
+  addWebLead: (lead: Omit<WebLead, 'id' | 'submittedAt' | 'isRead' | 'status'>) => void;
+  updateWebLead: (lead: WebLead) => void;
+  deleteWebLead: (id: string) => void;
+  markWebLeadRead: (id: string) => void;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -147,6 +160,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [interviewModules, setInterviewModules] = useState<InterviewModule[]>([]);
   const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [webLeads, setWebLeads] = useState<WebLead[]>([]);
 
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
@@ -203,10 +218,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
       const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
       const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
+      const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
+      const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
 
       return () => {
         unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
-        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct();
+        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads();
       };
     } else {
       try {
@@ -226,6 +243,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setInterviewQuestions(data.interviewQuestions || []);
           setActivityLogs(data.activityLogs || []);
           setCandidateStatuses(data.candidateStatuses || DEFAULT_STATUSES);
+          setEnquiries(data.enquiries || []);
+          setWebLeads(data.webLeads || []);
         }
       } catch (e) { }
       setDataLoaded(true);
@@ -253,10 +272,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         users, candidates, candidateProfiles, interviews, accounts, transactions,
         trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions,
-        activityLogs, candidateStatuses
+        activityLogs, candidateStatuses, enquiries, webLeads
       }));
     }
-  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, isCloudEnabled, dataLoaded]);
+  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, isCloudEnabled, dataLoaded]);
 
   const login = async (u?: string, p?: string) => {
     if (!u || !p) return { success: false, message: "Missing credentials" };
@@ -290,6 +309,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addInterview = (i: InterviewSchedule) => { setInterviews(p => [...p, i]); if (isCloudEnabled) cloudService.saveItem('interviews', i); };
   const updateInterview = (i: InterviewSchedule) => { setInterviews(p => p.map(x => x.id === i.id ? i : x)); if (isCloudEnabled) cloudService.updateItem('interviews', i.id, i); };
   const deleteInterview = (id: string) => { setInterviews(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviews', id); };
+
+  const addEnquiry = (e: Enquiry) => { setEnquiries(p => [...p, e]); if (isCloudEnabled) cloudService.saveItem('enquiries', e); logActivity('CREATE', `Enquiry added: ${e.name}`, 'Enquiry', e.id); };
+  const updateEnquiry = (e: Enquiry) => { setEnquiries(p => p.map(x => x.id === e.id ? e : x)); if (isCloudEnabled) cloudService.updateItem('enquiries', e.id, e); };
+  const deleteEnquiry = (id: string) => { setEnquiries(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('enquiries', id); logActivity('DELETE', `Enquiry deleted`, 'Enquiry', id); };
+
+  const addWebLead = (data: Omit<WebLead, 'id' | 'submittedAt' | 'isRead' | 'status'>) => {
+    const lead: WebLead = { ...data, id: utils.generateId(), submittedAt: new Date().toISOString(), isRead: false, status: 'New' };
+    setWebLeads(p => [lead, ...p]);
+    if (isCloudEnabled) cloudService.saveItem('webLeads', lead);
+  };
+  const updateWebLead = (lead: WebLead) => { setWebLeads(p => p.map(x => x.id === lead.id ? lead : x)); if (isCloudEnabled) cloudService.updateItem('webLeads', lead.id, lead); };
+  const deleteWebLead = (id: string) => { setWebLeads(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('webLeads', id); };
+  const markWebLeadRead = (id: string) => { const l = webLeads.find(x => x.id === id); if (l && !l.isRead) updateWebLead({ ...l, isRead: true }); };
+
+  const addEnquiryNote = (enquiryId: string, note: string) => {
+    const enq = enquiries.find(e => e.id === enquiryId);
+    if (!enq || !user) return;
+    const newNote: EnquiryNote = { id: utils.generateId(), date: new Date().toISOString(), note, addedBy: user.name };
+    updateEnquiry({ ...enq, notes: [...(enq.notes || []), newNote] });
+  };
+
+  const mergeEnquiryToCandidate = (enquiryId: string): Candidate | null => {
+    const enq = enquiries.find(e => e.id === enquiryId);
+    if (!enq) return null;
+    const newCandidate: Candidate = {
+      id: utils.generateId(),
+      name: enq.name,
+      batchId: enq.batch || 'TBD',
+      email: enq.email || '',
+      phone: enq.phone,
+      alternatePhone: enq.alternatePhone,
+      address: enq.address,
+      agreedAmount: enq.committedAmount || 0,
+      paidAmount: 0,
+      status: CandidateStatus.Training,
+      isActive: true,
+      joinedDate: enq.expectedJoiningDate || new Date().toISOString(),
+      notes: enq.notes.map(n => `[${new Date(n.date).toLocaleDateString()}] ${n.addedBy}: ${n.note}`).join('\n'),
+    };
+    addCandidate(newCandidate);
+    updateEnquiry({ ...enq, isMerged: true, mergedCandidateId: newCandidate.id, mergedDate: new Date().toISOString(), status: 'Joined' });
+    logActivity('CREATE', `Enquiry merged to Candidate: ${enq.name}`, 'Enquiry', enquiryId);
+    return newCandidate;
+  };
 
   const addAccount = (a: Account) => { setAccounts(p => [...p, a]); if (isCloudEnabled) cloudService.saveItem('accounts', a); };
   const updateAccount = (a: Account) => { setAccounts(p => p.map(x => x.id === a.id ? a : x)); if (isCloudEnabled) cloudService.updateItem('accounts', a.id, a); };
@@ -374,7 +437,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       interviewModules,
       interviewQuestions,
       activityLogs,
-      candidateStatuses
+      candidateStatuses,
+      enquiries
     }, `SPR_Backup_${new Date().toISOString().split('T')[0]}.json`);
   };
 
@@ -496,6 +560,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (json.interviewQuestions) setInterviewQuestions(json.interviewQuestions);
       if (json.activityLogs) setActivityLogs(json.activityLogs);
       if (json.candidateStatuses) setCandidateStatuses(json.candidateStatuses);
+      if (json.enquiries) setEnquiries(json.enquiries);
 
       if (isCloudEnabled) {
         showToast("Restoring to Cloud... please wait", "info");
@@ -554,6 +619,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       candidates, addCandidate, updateCandidate, deleteCandidate,
       candidateProfiles, updateCandidateProfile,
       interviews, addInterview, updateInterview, deleteInterview,
+      enquiries, addEnquiry, updateEnquiry, deleteEnquiry, addEnquiryNote, mergeEnquiryToCandidate,
+      webLeads, addWebLead, updateWebLead, deleteWebLead, markWebLeadRead,
       accounts, addAccount, updateAccount, deleteAccount,
       transactions, addTransaction, updateTransaction, deleteTransaction, lockTransaction,
       trainingModules, addTrainingModule, updateTrainingModule, deleteTrainingModule,

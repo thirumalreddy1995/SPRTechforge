@@ -423,87 +423,86 @@ export const ToastOverlay: React.FC = () => {
   );
 };
 
-// Precisely Recreated SPR Logo SVG based on provided actual logo image
 export const Logo: React.FC<{ size?: 'sm' | 'lg'; inverse?: boolean }> = ({ size = 'sm', inverse = false }) => {
-  const width = size === 'lg' ? 240 : 160;
-  const height = size === 'lg' ? 100 : 70;
-  
+  const isLg = size === 'lg';
+  const uid = isLg ? 'lg' : 'sm'; // unique gradient IDs per size to avoid SVG ID collision
+
   return (
-    <div className={`flex items-center gap-2 ${size === 'lg' ? 'flex-col' : ''}`}>
-      <svg width={width} height={height} viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+    <div className={`flex items-center ${isLg ? 'gap-4' : 'gap-2.5'} select-none`}>
+      {/* Icon mark */}
+      <svg
+        width={isLg ? 72 : 44}
+        height={isLg ? 72 : 44}
+        viewBox="0 0 72 72"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
         <defs>
-          <linearGradient id="logoTextGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={inverse ? "#FFFFFF" : "#4fa8ff"} />
-            <stop offset="100%" stopColor={inverse ? "#e0e7ff" : "#1e40af"} />
+          <linearGradient id={`bgGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={inverse ? '#3b82f6' : '#1e3a8a'} />
+            <stop offset="100%" stopColor={inverse ? '#1d4ed8' : '#0f172a'} />
           </linearGradient>
-          <linearGradient id="logoOrbitGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={`arcGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#fbbf24" />
-            <stop offset="50%" stopColor="#f59e0b" />
-            <stop offset="100%" stopColor="#ea580c" />
+            <stop offset="100%" stopColor="#f97316" />
           </linearGradient>
-          <linearGradient id="logoBaseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={inverse ? "#93c5fd" : "#1e40af"} />
-            <stop offset="100%" stopColor={inverse ? "#3b82f6" : "#0f172a"} />
+          <linearGradient id={`textGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor={inverse ? '#bfdbfe' : '#93c5fd'} />
           </linearGradient>
-          <filter id="logoShadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
-            <feOffset dx="1" dy="1" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.4" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
-        {/* 1. Bottom Dark Blue Base Swoosh - Solid and Bold */}
-        <path 
-          d="M30 55 C 50 72, 130 75, 175 50 C 150 70, 70 85, 30 55" 
-          fill="url(#logoBaseGradient)" 
-          opacity="1"
-        />
+        {/* Background circle */}
+        <circle cx="36" cy="36" r="34" fill={`url(#bgGrad-${uid})`} />
 
-        {/* 2. Main Gold/Orange Orbit Ring (Passes behind first letter) */}
-        <ellipse 
-          cx="102" cy="42" rx="88" ry="24" 
-          stroke="url(#logoOrbitGradient)" 
-          strokeWidth="7" 
-          fill="none" 
-          transform="rotate(-5, 102, 42)"
+        {/* Orbit arc — top half, wraps over text */}
+        <path
+          d="M10 34 A26 26 0 0 1 62 34"
+          stroke={`url(#arcGrad-${uid})`}
+          strokeWidth="4.5"
+          fill="none"
           strokeLinecap="round"
         />
 
-        {/* 3. The SPR Text - Precise Bold Italic Styling */}
-        <text 
-          x="100" y="55" 
-          textAnchor="middle" 
-          fontSize="52" 
-          fontWeight="900" 
-          fontStyle="italic" 
-          fill="url(#logoTextGradient)" 
-          fontFamily="'Arial Black', sans-serif"
-          style={{ letterSpacing: '-3px', filter: 'url(#logoShadow)' }}
+        {/* SPR text */}
+        <text
+          x="36"
+          y="47"
+          textAnchor="middle"
+          fontSize="22"
+          fontWeight="900"
+          fontStyle="italic"
+          fill={`url(#textGrad-${uid})`}
+          fontFamily="'Arial Black', Arial, sans-serif"
         >
           SPR
         </text>
 
-        {/* 4. Top Overlay Part of Orbit (to create the wrapping effect over the S and P) */}
-        <path 
-          d="M14 42 C 14 30, 60 25, 100 25" 
-          stroke="url(#logoOrbitGradient)" 
-          strokeWidth="7" 
-          fill="none" 
-          transform="rotate(-5, 102, 42)"
+        {/* Bottom accent swoosh */}
+        <path
+          d="M12 50 Q36 62 60 50"
+          stroke={`url(#arcGrad-${uid})`}
+          strokeWidth="3"
+          fill="none"
           strokeLinecap="round"
+          opacity="0.7"
         />
       </svg>
-      {size === 'lg' && (
-        <div className={`font-black tracking-[0.25em] text-2xl uppercase -mt-4 drop-shadow-sm ${inverse ? 'text-white' : 'text-spr-900'}`}>
+
+      {/* Wordmark */}
+      <div className={`flex flex-col leading-none ${isLg ? 'gap-1' : 'gap-0.5'}`}>
+        <span
+          className={`font-black tracking-tight ${isLg ? 'text-3xl' : 'text-xl'} ${inverse ? 'text-white' : 'text-spr-900'}`}
+          style={{ letterSpacing: '-0.02em' }}
+        >
+          SPR
+        </span>
+        <span
+          className={`font-bold tracking-[0.18em] uppercase ${isLg ? 'text-base' : 'text-[10px]'} ${inverse ? 'text-blue-200' : 'text-spr-600'}`}
+        >
           Techforge
-        </div>
-      )}
+        </span>
+      </div>
     </div>
   );
 };

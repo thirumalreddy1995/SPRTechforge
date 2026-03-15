@@ -206,6 +206,49 @@ export interface InterviewQuestion {
   order: number;
 }
 
+export type EnquiryStatus = 'Enquiry' | 'Follow-Up' | 'Joined' | 'Not Interested';
+
+export interface EnquiryNote {
+  id: string;
+  date: string;
+  note: string;
+  addedBy: string;
+}
+
+export interface Enquiry {
+  id: string;
+  name: string;
+  phone: string;
+  alternatePhone?: string;
+  email?: string;
+  address?: string;
+  committedAmount?: number;
+  expectedJoiningDate?: string;
+  batch?: string;
+  status: EnquiryStatus;
+  enquiryDate: string;
+  notes: EnquiryNote[];
+  isMerged?: boolean;
+  mergedCandidateId?: string;
+  mergedDate?: string;
+}
+
+export type WebLeadStatus = 'New' | 'In Progress' | 'Responded' | 'Closed';
+
+export interface WebLead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  company?: string;
+  service?: string;    // service they're enquiring about
+  message?: string;
+  submittedAt: string; // ISO string
+  isRead: boolean;
+  status: WebLeadStatus;
+  internalNote?: string;
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];
@@ -222,4 +265,6 @@ export interface AppState {
   interviewModules: InterviewModule[];
   interviewQuestions: InterviewQuestion[];
   interviews: InterviewSchedule[];
+  enquiries: Enquiry[];
+  webLeads: WebLead[];
 }

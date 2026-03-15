@@ -6,7 +6,8 @@ import { Candidate, CandidateStatus, TransactionType } from '../../types';
 import * as utils from '../../utils';
 
 export const AddCandidate: React.FC = () => {
-  const { addCandidate, updateCandidate, candidates, candidateStatuses, addCandidateStatus, showToast, transactions } = useApp();
+  const { addCandidate, updateCandidate, candidates, candidateStatuses, addCandidateStatus, showToast, transactions, user } = useApp();
+  const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +86,10 @@ Signature: _________________`;
     if (!form.batchId || !form.batchId.trim()) { setError('Batch ID is required'); return; }
     if (!form.email || !form.email.trim()) { setError('Email Address is required'); return; }
     if (!form.phone || !form.phone.trim()) { setError('Phone Number is required'); return; }
+    if (!/^\d{10}$/.test(form.phone)) { setError('Phone Number must be exactly 10 digits'); return; }
+    if (form.alternatePhone && form.alternatePhone.trim() && !/^\d{10}$/.test(form.alternatePhone)) {
+      setError('Alternate Phone must be exactly 10 digits'); return;
+    }
     if (form.agreedAmount === undefined || form.agreedAmount < 0) { setError('Agreed Amount is required'); return; }
 
     // Duplicate Candidate Check
@@ -119,6 +124,7 @@ Signature: _________________`;
   };
 
   const handleAddStatus = () => {
+    if (!isMaster) { alert('Only the Director can add custom statuses.'); return; }
     const newStatus = window.prompt("Enter new status name:");
     if (newStatus && newStatus.trim()) {
       addCandidateStatus(newStatus.trim());
@@ -188,23 +194,31 @@ Signature: _________________`;
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1 required-label">Phone Number</label>
-                      <Input 
-                        value={form.phone} 
-                        onChange={e => setForm({...form, phone: e.target.value})} 
+                      <Input
+                        value={form.phone}
+                        onChange={e => setForm({...form, phone: e.target.value.replace(/\D/g,'').slice(0,10)})}
                         required
                         numericOnly
-                        maxLength={15}
-                        placeholder="Digits only"
+                        maxLength={10}
+                        placeholder="10-digit number"
                       />
+                      {form.phone && form.phone.length > 0 && form.phone.length < 10 && (
+                        <p className="text-xs text-amber-600 mt-1">{10 - form.phone.length} more digit{10 - form.phone.length !== 1 ? 's' : ''} needed</p>
+                      )}
                     </div>
-                    <Input 
-                      label="Alternate Phone" 
-                      value={form.alternatePhone || ''} 
-                      onChange={e => setForm({...form, alternatePhone: e.target.value})} 
-                      numericOnly
-                      maxLength={15}
-                      placeholder="Digits only"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Phone</label>
+                      <Input
+                        value={form.alternatePhone || ''}
+                        onChange={e => setForm({...form, alternatePhone: e.target.value.replace(/\D/g,'').slice(0,10)})}
+                        numericOnly
+                        maxLength={10}
+                        placeholder="10-digit number"
+                      />
+                      {form.alternatePhone && form.alternatePhone.length > 0 && form.alternatePhone.length < 10 && (
+                        <p className="text-xs text-amber-600 mt-1">{10 - form.alternatePhone.length} more digit{10 - form.alternatePhone.length !== 1 ? 's' : ''} needed</p>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1 required-label">Email Address</label>
@@ -271,7 +285,9 @@ Signature: _________________`;
                 <div className="mb-4">
                    <div className="flex justify-between items-center mb-1">
                       <label className="block text-sm font-medium text-gray-700 required-label">Current Status</label>
-                      <button type="button" onClick={handleAddStatus} className="text-xs text-spr-accent hover:underline font-medium">+ Add Status</button>
+                      {isMaster && (
+                        <button type="button" onClick={handleAddStatus} className="text-xs text-spr-accent hover:underline font-medium">+ Add Status</button>
+                      )}
                    </div>
                    <select 
                      className="w-full bg-white border border-spr-700 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors"
