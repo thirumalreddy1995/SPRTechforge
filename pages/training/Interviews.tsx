@@ -172,7 +172,7 @@ export const Interviews: React.FC = () => {
         <div className="flex items-center gap-4">
           <BackButton />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Interviews & Placements</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Interviews & Placements</h1>
             <p className="text-sm text-gray-500 mt-0.5">{activeInterviews.length} active · {historyInterviews.length} completed</p>
           </div>
         </div>

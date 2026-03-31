@@ -3,19 +3,22 @@ import { useApp } from '../context/AppContext';
 import { Logo, Button } from './Components';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-const NavItem: React.FC<{ 
-  to: string; 
-  icon?: React.ReactNode; 
-  label: string; 
-  onClick?: () => void; 
+const NavItem: React.FC<{
+  to: string;
+  icon?: React.ReactNode;
+  label: string;
+  onClick?: () => void;
   isSidebarCollapsed?: boolean;
   setIsSidebarCollapsed?: (val: boolean) => void;
 }> = ({ to, icon, label, onClick, isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const location = useLocation();
   let isActive = location.pathname === to;
-  
+
   if (!isActive && location.pathname.startsWith(to) && to !== '/') {
-      if (to === '/candidates' && location.pathname.startsWith('/candidates/info')) {
+      if (to === '/candidates' && (
+          location.pathname.startsWith('/candidates/info') ||
+          location.pathname.startsWith('/candidates/enquiry')
+      )) {
           isActive = false;
       } else {
           isActive = true;
@@ -30,15 +33,16 @@ const NavItem: React.FC<{
   };
 
   return (
-    <Link 
-      to={to} 
+    <Link
+      to={to}
       onClick={handleClick}
       title={isSidebarCollapsed ? label : ""}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 mb-1 font-medium text-sm overflow-hidden whitespace-nowrap ${isActive ? 'bg-spr-accent text-white shadow-md' : 'text-gray-600 hover:bg-spr-50 hover:text-spr-900'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+      className={`relative flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 mb-0.5 font-medium text-sm overflow-hidden whitespace-nowrap ${isActive ? 'bg-blue-600/20 text-blue-300 shadow-none' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
     >
+      {isActive && !isSidebarCollapsed && <span className="nav-active-indicator" />}
       {icon && (
-        <span className={`shrink-0 flex items-center justify-center transition-transform duration-200 ${isSidebarCollapsed ? 'w-10 h-10 bg-gray-50/50 rounded-lg group-hover:scale-110' : 'w-5'}`}>
-          <div className={isActive && isSidebarCollapsed ? 'text-white' : ''}>{icon}</div>
+        <span className={`shrink-0 flex items-center justify-center transition-transform duration-200 ${isSidebarCollapsed ? `w-10 h-10 rounded-lg ${isActive ? 'bg-blue-600/30' : 'bg-slate-800/70'}` : 'w-5'}`}>
+          <div className={isActive ? 'text-blue-400' : ''}>{icon}</div>
         </span>
       )}
       {!isSidebarCollapsed && <span className="transition-opacity duration-200">{label}</span>}
@@ -63,7 +67,15 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({ id, title, icon, ch
   const childrenArray = React.Children.toArray(children);
   const hasActiveChild = childrenArray.some((child: any) => {
     if (child.props?.to) {
-        return location.pathname === child.props.to || (child.props.to !== '/' && location.pathname.startsWith(child.props.to));
+      const to = child.props.to;
+      if (location.pathname === to) return true;
+      if (to === '/' || !location.pathname.startsWith(to)) return false;
+      // Exclude sub-paths that belong to sibling nav items
+      if (to === '/candidates' && (
+        location.pathname.startsWith('/candidates/info') ||
+        location.pathname.startsWith('/candidates/enquiry')
+      )) return false;
+      return true;
     }
     return false;
   });
@@ -86,26 +98,26 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({ id, title, icon, ch
   };
 
   return (
-    <div className="mb-1">
-      <button 
-        onClick={handleToggle} 
+    <div className="mb-0.5">
+      <button
+        onClick={handleToggle}
         title={isSidebarCollapsed ? title : ""}
-        className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-spr-50 rounded-lg transition-all duration-200 group ${isOpen && !isSidebarCollapsed ? 'bg-spr-50' : ''} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+        className={`w-full flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800 rounded-lg transition-all duration-200 group ${isOpen && !isSidebarCollapsed ? 'bg-slate-800/60' : ''} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
       >
         <div className={`flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'w-full justify-center' : ''}`}>
-          <div className={`flex items-center justify-center transition-colors ${isOpen && !isSidebarCollapsed ? 'text-spr-600' : 'text-gray-500'} group-hover:text-spr-600 ${isSidebarCollapsed ? 'w-10 h-10 bg-gray-50 rounded-lg scale-110 shadow-sm border border-gray-100' : 'w-5'}`}>
+          <div className={`flex items-center justify-center transition-colors ${isOpen && !isSidebarCollapsed ? 'text-blue-400' : 'text-slate-500'} group-hover:text-slate-200 ${isSidebarCollapsed ? 'w-10 h-10 bg-slate-800 rounded-lg scale-105 border border-slate-700' : 'w-5'}`}>
             {icon}
           </div>
-          {!isSidebarCollapsed && <span className={`text-sm whitespace-nowrap ${isOpen ? 'font-bold text-gray-900' : 'font-medium'}`}>{title}</span>}
+          {!isSidebarCollapsed && <span className={`text-sm whitespace-nowrap ${isOpen ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{title}</span>}
         </div>
         {!isSidebarCollapsed && (
-          <svg className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={`w-4 h-4 text-slate-600 transition-transform duration-300 ${isOpen ? 'rotate-180 text-slate-400' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         )}
       </button>
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen && !isSidebarCollapsed ? 'max-h-[500px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
-        {!isSidebarCollapsed && <div className="pl-4 border-l-2 border-spr-100 ml-6 space-y-1">{children}</div>}
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen && !isSidebarCollapsed ? 'max-h-[500px] opacity-100 mt-0.5' : 'max-h-0 opacity-0'}`}>
+        {!isSidebarCollapsed && <div className="pl-4 border-l border-slate-700/60 ml-6 space-y-0.5 py-0.5">{children}</div>}
       </div>
     </div>
   );
@@ -130,11 +142,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const unreadWebLeadsCount = webLeads.filter(l => !l.isRead).length;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row text-slate-900 overflow-hidden">
+    <div className="min-h-screen bg-[#edf0f7] flex flex-col md:flex-row text-slate-900 overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-40">
-         <Logo size="sm" />
-         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-gray-600">
+      <div className="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-40">
+         <Logo size="sm" inverse={true} />
+         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-300 hover:text-white transition-colors">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
             </svg>
@@ -145,26 +157,26 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={closeMobile}></div>
       )}
 
-      <aside className={`bg-white border-r border-gray-200 flex-shrink-0 fixed md:static inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-24' : 'w-64'} ${mobileMenuOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="p-5 border-b border-gray-100 hidden md:flex items-center justify-between overflow-hidden relative">
+      <aside className={`bg-slate-900 border-r border-slate-800/80 flex-shrink-0 fixed md:static inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-24' : 'w-64'} ${mobileMenuOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-5 border-b border-slate-800 hidden md:flex items-center justify-between overflow-hidden relative">
           <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
-            <Logo size="sm" />
+            <Logo size="sm" inverse={true} />
           </div>
           {isSidebarCollapsed && (
-             <div className="mx-auto bg-spr-900 w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-100">SPR</div>
+             <div className="mx-auto bg-gradient-to-br from-blue-600 to-blue-800 w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-900/50">SPR</div>
           )}
-          <button 
+          <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className={`p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:text-spr-600 hover:bg-spr-50 transition-colors ${isSidebarCollapsed ? 'hidden' : 'block'}`}
+            className={`p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors ${isSidebarCollapsed ? 'hidden' : 'block'}`}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
           </button>
           {isSidebarCollapsed && (
-            <button 
+            <button
               onClick={() => setIsSidebarCollapsed(false)}
-              className="absolute top-5 right-1 p-1 bg-white border border-gray-200 rounded-full shadow-md text-gray-400 hover:text-spr-600 z-10"
+              className="absolute top-5 right-1 p-1 bg-slate-800 border border-slate-700 rounded-full shadow-md text-slate-400 hover:text-slate-100 z-10"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -198,28 +210,29 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 title="Candidates"
                 icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
               >
-                <NavItem to="/candidates" label="Candidate List" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                <NavItem to="/candidates/info" label="Candidate Info (Profile)" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                <NavItem to="/candidates/enquiry" label="Enquiries" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/candidates" label="All Candidates" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/candidates/info" label="Candidate Profiles" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/candidates/enquiry" label="Enquiries & Leads" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
-              <CollapsibleGroup 
+              <CollapsibleGroup
                 id="training"
-                isSidebarCollapsed={isSidebarCollapsed} 
+                isSidebarCollapsed={isSidebarCollapsed}
                 setIsSidebarCollapsed={setIsSidebarCollapsed}
                 openGroupId={openGroupId}
                 setOpenGroupId={setOpenGroupId}
-                title="Training" 
+                title="Training"
                 icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
               >
-                {/* Active Interviews quick link with badge */}
+                {/* Daily-use items first */}
+                <NavItem to="/training/attendance" label="Daily Attendance" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/training/monitor" label="Progress Tracker" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                {/* Interviews with badge */}
                 {!isSidebarCollapsed ? (
                   <Link
                     to="/training/interviews"
                     onClick={closeMobile}
-                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-1 font-medium text-sm overflow-hidden whitespace-nowrap ${
-                      false ? 'bg-spr-accent text-white shadow-md' : 'text-gray-600 hover:bg-spr-50 hover:text-spr-900'
-                    }`}
+                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-0.5 font-medium text-sm overflow-hidden whitespace-nowrap text-slate-400 hover:bg-slate-800 hover:text-slate-100`}
                   >
                     <span>Interviews & Resumes</span>
                     {activeInterviewCount > 0 && (
@@ -234,10 +247,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 ) : (
                   <NavItem to="/training/interviews" label="Interviews & Resumes" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 )}
-                <NavItem to="/training/monitor" label="Progress Monitor" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                <NavItem to="/training/attendance" label="Class Attendance" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                <NavItem to="/training/curriculum" label="Curriculum" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
-                <NavItem to="/training/interview-questions" label="Interview Prep" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                {/* Setup / Reference items */}
+                <NavItem to="/training/interview-questions" label="Interview Question Bank" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                <NavItem to="/training/curriculum" label="Curriculum Setup" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
               {isMaster && (
@@ -273,7 +285,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <Link
                     to="/web-leads"
                     onClick={closeMobile}
-                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-1 font-medium text-sm overflow-hidden whitespace-nowrap text-gray-600 hover:bg-spr-50 hover:text-spr-900`}
+                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-0.5 font-medium text-sm overflow-hidden whitespace-nowrap text-slate-400 hover:bg-slate-800 hover:text-slate-100`}
                   >
                     <span>Web Enquiries</span>
                     {unreadWebLeadsCount > 0 && (
@@ -291,7 +303,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </>
           ) : (
             <>
-              {!isSidebarCollapsed && <div className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase">Student Portal</div>}
+              {!isSidebarCollapsed && <div className="px-4 mb-2 text-xs font-bold text-slate-600 uppercase tracking-widest">Student Portal</div>}
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/candidates/info" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>} label="My Profile" onClick={closeMobile} />
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/training/dashboard" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>} label="Training Stats" onClick={closeMobile} />
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/training/interview-questions" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} label="Interview Prep" onClick={closeMobile} />
@@ -299,21 +311,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </>
           )}
 
-          <div className="mt-8 px-2 pb-4">
+          <div className="mt-6 px-2 pb-4">
              {!isSidebarCollapsed ? (
-               <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-3 overflow-hidden shadow-sm">
-                 <p className="text-sm font-bold text-gray-800 truncate">{user.name}</p>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">{user.role}</p>
+               <div className="bg-slate-800/70 p-3 rounded-xl border border-slate-700/50 mb-3 overflow-hidden">
+                 <p className="text-sm font-bold text-slate-100 truncate">{user.name}</p>
+                 <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">{user.role}</p>
                </div>
              ) : (
-               <div className="h-px bg-gray-200 mb-4 mx-2"></div>
+               <div className="h-px bg-slate-700 mb-4 mx-2"></div>
              )}
-             <button 
-                onClick={handleLogout} 
+             <button
+                onClick={handleLogout}
                 title="Sign Out"
-                className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg transition-colors font-bold text-sm text-red-600 hover:bg-red-50 overflow-hidden whitespace-nowrap ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg transition-colors font-bold text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 overflow-hidden whitespace-nowrap ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
              >
-                <div className={`shrink-0 flex items-center justify-center ${isSidebarCollapsed ? 'w-10 h-10 bg-red-50 rounded-lg shadow-sm border border-red-100' : 'w-5'}`}>
+                <div className={`shrink-0 flex items-center justify-center ${isSidebarCollapsed ? 'w-10 h-10 bg-red-900/20 rounded-lg border border-red-800/30' : 'w-5'}`}>
                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </div>
                 {!isSidebarCollapsed && <span>Sign Out</span>}

@@ -32,7 +32,7 @@ export const ActivityLogs: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit Logs</h1>
         <div className="flex gap-2">
            {isSuperUser && <Button variant="danger" onClick={handleClear}>Clear Logs</Button>}
            <Button variant="secondary" onClick={handleExportCSV}>Export CSV</Button>

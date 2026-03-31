@@ -41,6 +41,8 @@ export interface User {
   password?: string;
   isPasswordChanged?: boolean;
   email?: string;
+  phone?: string;
+  address?: string;
   role: 'admin' | 'staff' | 'candidate';
   modules: string[];
   linkedCandidateId?: string;

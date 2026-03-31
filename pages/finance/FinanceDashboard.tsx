@@ -13,20 +13,20 @@ const KpiCard: React.FC<{
   icon: React.ReactNode;
   trend?: 'up' | 'down' | 'neutral';
 }> = ({ label, value, sub, color, icon, trend }) => (
-  <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4`}>
-    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-      {icon}
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight truncate">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-    </div>
-    {trend && (
-      <div className={`text-xs font-bold px-2 py-1 rounded-full shrink-0 ${trend === 'up' ? 'bg-emerald-50 text-emerald-600' : trend === 'down' ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'}`}>
-        {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—'}
+  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="flex items-center justify-between mb-3">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+        {icon}
       </div>
-    )}
+      {trend && (
+        <div className={`text-xs font-bold px-2 py-1 rounded-full ${trend === 'up' ? 'bg-emerald-50 text-emerald-600' : trend === 'down' ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'}`}>
+          {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—'}
+        </div>
+      )}
+    </div>
+    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">{label}</p>
+    <p className="text-xl font-bold text-gray-900 tabular-nums leading-tight">{value}</p>
+    {sub && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{sub}</p>}
   </div>
 );
 

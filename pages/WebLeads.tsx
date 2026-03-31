@@ -73,20 +73,20 @@ export const WebLeadsPage: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Web Enquiries</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Web Enquiries</h1>
             {unreadCount > 0 && (
               <span className="bg-blue-600 text-white text-xs font-black px-2.5 py-1 rounded-full">{unreadCount} new</span>
             )}
           </div>
           <p className="text-gray-500 text-sm mt-1">Contact form submissions from the website. Respond and track each lead here.</p>
         </div>
-        <div className="flex gap-3 items-center flex-wrap">
+        <div className="flex gap-3 items-center flex-wrap w-full md:w-auto">
           <SearchInput
             placeholder="Search leads..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             onClear={() => setSearch('')}
-            containerClassName="w-64"
+            containerClassName="flex-1 md:w-64"
           />
           <select
             value={statusFilter}

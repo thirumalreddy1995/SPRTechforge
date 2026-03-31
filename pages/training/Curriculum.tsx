@@ -126,7 +126,7 @@ export const Curriculum: React.FC = () => {
         <div className="flex items-center gap-4">
            <BackButton />
            <div>
-             <h1 className="text-3xl font-bold text-gray-900">Curriculum Manager</h1>
+             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Curriculum Manager</h1>
              <p className="text-gray-500">Define training modules, topics, and syllabus structure.</p>
            </div>
         </div>

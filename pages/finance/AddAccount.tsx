@@ -74,7 +74,7 @@ export const AddAccount: React.FC = () => {
           <span className="text-sm font-medium">Back</span>
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{id ? 'Edit Account' : 'Add New Ledger Account'}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{id ? 'Edit Account' : 'Add New Ledger Account'}</h1>
           <p className="text-sm text-gray-400 mt-0.5">{id ? 'Update ledger account details.' : 'Create a new ledger for your chart of accounts.'}</p>
         </div>
       </div>

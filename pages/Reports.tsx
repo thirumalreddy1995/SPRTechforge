@@ -91,7 +91,7 @@ export const Reports: React.FC = () => {
     <div className="space-y-6">
        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">System Management & Reports</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">System Management & Reports</h1>
             <p className="text-gray-500">Comprehensive financial analysis and system health.</p>
           </div>
           <div className="flex bg-gray-100 p-1 rounded-lg">
