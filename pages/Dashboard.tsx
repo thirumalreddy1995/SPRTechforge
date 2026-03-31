@@ -40,7 +40,7 @@ export const Dashboard: React.FC = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Student Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Student Dashboard</h1>
             <p className="text-gray-500 mt-1">Welcome back, <span className="font-semibold text-gray-700">{user.name}</span>.</p>
           </div>
           <div className="bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm text-right">
@@ -174,7 +174,7 @@ export const Dashboard: React.FC = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Management Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Management Dashboard</h1>
             <p className="text-gray-500 mt-1">
               Welcome, <span className="font-semibold text-gray-700">{user.name}</span>
               <span className="text-gray-400 ml-2 hidden sm:inline">· {today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
@@ -185,7 +185,7 @@ export const Dashboard: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-white border-blue-100 border shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shrink-0">
@@ -348,7 +348,7 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Director Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Director Dashboard</h1>
           <p className="text-gray-500 mt-1">
             {today.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
@@ -377,7 +377,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Top KPI cards — hidden by default */}
       {showMetrics && (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-white border-emerald-100 border shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 shrink-0">

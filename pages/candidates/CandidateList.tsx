@@ -12,18 +12,35 @@ export const CandidateList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterText, setFilterText] = useState('');
   const [batchFilter, setBatchFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewCandidate, setViewCandidate] = useState<Candidate | null>(null);
+  const [showAllAmounts, setShowAllAmounts] = useState(false);
+  const [revealedRows, setRevealedRows] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
   const ITEMS_PER_PAGE = 10;
 
-  const uniqueBatches = useMemo(() =>
-    [...new Set(candidates.map(c => c.batchId))].sort(),
-    [candidates]
-  );
+  // Only show batches that have candidates in the current tab
+  const uniqueBatches = useMemo(() => {
+    const tabCandidates =
+      activeTab === 'all' ? candidates :
+      activeTab === 'placed' ? candidates.filter(c => c.status === CandidateStatus.Placed) :
+      candidates.filter(c => c.status !== CandidateStatus.Placed);
+    return [...new Set(tabCandidates.map(c => c.batchId))].sort();
+  }, [candidates, activeTab]);
+
+  const toggleRowAmount = (id: string) => {
+    setRevealedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const isAmountVisible = (id: string) => showAllAmounts || revealedRows.has(id);
 
   const getCandidateFinancials = (cId: string, agreed: number) => {
     const paid = transactions
@@ -50,13 +67,14 @@ export const CandidateList: React.FC = () => {
         (c.referredBy && c.referredBy.toLowerCase().includes(term)) ||
         c.phone.includes(term);
       const matchesBatch = batchFilter === 'All' || c.batchId === batchFilter;
+      const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
       const matchesTab =
         activeTab === 'all' ? true :
         activeTab === 'placed' ? c.status === CandidateStatus.Placed :
         c.status !== CandidateStatus.Placed;
-      return matchesText && matchesBatch && matchesTab;
+      return matchesText && matchesBatch && matchesStatus && matchesTab;
     });
-  }, [candidates, filterText, batchFilter, activeTab]);
+  }, [candidates, filterText, batchFilter, statusFilter, activeTab]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -126,7 +144,7 @@ export const CandidateList: React.FC = () => {
         <div className="flex items-center gap-4">
           <BackButton />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Candidates</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Candidates</h1>
             <p className="text-sm text-gray-500 mt-0.5">{summaryStats.total} total · {summaryStats.active} active · {summaryStats.placed} placed</p>
           </div>
         </div>
@@ -142,7 +160,7 @@ export const CandidateList: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Enrolled</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{summaryStats.total}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{uniqueBatches.length} batch{uniqueBatches.length !== 1 ? 'es' : ''}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{[...new Set(candidates.map(c => c.batchId))].length} batch{[...new Set(candidates.map(c => c.batchId))].length !== 1 ? 'es' : ''}</p>
         </div>
         <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400">In Training</p>
@@ -150,14 +168,25 @@ export const CandidateList: React.FC = () => {
           <p className="text-xs text-gray-400 mt-0.5">currently enrolled</p>
         </div>
         <div className="bg-white border border-emerald-100 rounded-xl p-4 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Total Collected</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1 tabular-nums whitespace-nowrap">{utils.formatCurrency(summaryStats.totalCollected)}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Total Collected</p>
+            <button onClick={() => setShowAllAmounts(v => !v)} className="text-gray-400 hover:text-emerald-600 transition-colors" title={showAllAmounts ? 'Hide all amounts' : 'Show all amounts'}>
+              {showAllAmounts ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              )}
+            </button>
+          </div>
+          <p className="text-2xl font-bold text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+            {showAllAmounts ? utils.formatCurrency(summaryStats.totalCollected) : '₹ ••••••'}
+          </p>
           <p className="text-xs text-gray-400 mt-0.5">{summaryStats.placed} placed</p>
         </div>
         <div className="bg-white border border-amber-100 rounded-xl p-4 shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Outstanding</p>
           <p className={`text-2xl font-bold mt-1 tabular-nums whitespace-nowrap ${summaryStats.totalDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-            {utils.formatCurrency(summaryStats.totalDue)}
+            {showAllAmounts ? utils.formatCurrency(summaryStats.totalDue) : '₹ ••••••'}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">balance due</p>
         </div>
@@ -171,7 +200,7 @@ export const CandidateList: React.FC = () => {
             { key: 'placed', label: 'Placed', count: tabCounts.placed },
             { key: 'all', label: 'All', count: tabCounts.all },
           ] as { key: TabType; label: string; count: number }[]).map(tab => (
-            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setCurrentPage(1); setBatchFilter('All'); setStatusFilter('All'); }}
               className={`pb-2.5 px-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-b-2 border-spr-600 text-spr-600' : 'text-gray-500 hover:text-gray-700'}`}>
               {tab.label}
               <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-spr-100 text-spr-700' : 'bg-gray-100 text-gray-500'}`}>{tab.count}</span>
@@ -194,8 +223,33 @@ export const CandidateList: React.FC = () => {
             <option value="All">All Batches</option>
             {uniqueBatches.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
-          {(filterText || batchFilter !== 'All') && (
-            <button onClick={() => { setFilterText(''); setBatchFilter('All'); setCurrentPage(1); }}
+          {activeTab !== 'placed' && (
+            <select
+              className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-spr-accent outline-none bg-white text-gray-800 text-sm"
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="All">All Statuses</option>
+              <option value={CandidateStatus.Training}>Training</option>
+              <option value={CandidateStatus.ReadyForInterview}>Ready for Interview</option>
+              <option value={CandidateStatus.Discontinued}>Discontinued</option>
+              {activeTab === 'all' && <option value={CandidateStatus.Placed}>Placed</option>}
+            </select>
+          )}
+          <button
+            onClick={() => { setShowAllAmounts(v => !v); setRevealedRows(new Set()); }}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${showAllAmounts ? 'bg-spr-50 border-spr-200 text-spr-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            title={showAllAmounts ? 'Hide all amounts' : 'Show all amounts'}
+          >
+            {showAllAmounts ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            )}
+            {showAllAmounts ? 'Hide Amounts' : 'Show Amounts'}
+          </button>
+          {(filterText || batchFilter !== 'All' || statusFilter !== 'All') && (
+            <button onClick={() => { setFilterText(''); setBatchFilter('All'); setStatusFilter('All'); setCurrentPage(1); }}
               className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1 whitespace-nowrap">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               Clear
@@ -207,8 +261,81 @@ export const CandidateList: React.FC = () => {
           Showing <span className="font-bold text-gray-700">{filtered.length}</span> {activeTab === 'placed' ? 'placed' : activeTab === 'active' ? 'active' : ''} candidates
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="md:hidden space-y-3">
+          {paginated.length > 0 ? paginated.map((c, idx) => {
+            const { paid, due } = getCandidateFinancials(c.id, c.agreedAmount);
+            return (
+              <div key={c.id} className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${!c.isActive ? 'opacity-60' : ''}`}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900">{c.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{c.phone}</p>
+                    {c.email && <p className="text-xs text-gray-400 truncate">{c.email}</p>}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                    <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-mono text-xs font-bold border border-blue-100">{c.batchId}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${getStatusColor(c.status)}`}>{c.status}</span>
+                  </div>
+                </div>
+                {activeTab === 'placed' && c.placedCompany && (
+                  <p className="text-xs text-emerald-700 font-semibold mb-2">{c.placedCompany}</p>
+                )}
+                {isAmountVisible(c.id) && (
+                  <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase">Agreed</p>
+                      <p className="text-xs font-bold text-gray-700 tabular-nums">{utils.formatCurrency(c.agreedAmount)}</p>
+                    </div>
+                    <div className="bg-emerald-50 rounded-lg p-2">
+                      <p className="text-[9px] text-emerald-500 font-bold uppercase">Paid</p>
+                      <p className="text-xs font-bold text-emerald-600 tabular-nums">{utils.formatCurrency(paid)}</p>
+                    </div>
+                    <div className={`rounded-lg p-2 ${due > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
+                      <p className="text-[9px] font-bold uppercase text-gray-400">Due</p>
+                      <p className={`text-xs font-bold tabular-nums ${due > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{due <= 0 ? 'Cleared' : utils.formatCurrency(due)}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-gray-100 pt-3 gap-2">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleToggleActive(c)} className={`w-9 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                      <span className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${c.isActive ? 'translate-x-4' : ''}`} />
+                    </button>
+                    <span className="text-xs text-gray-400">{c.isActive ? 'Active' : 'Inactive'}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => toggleRowAmount(c.id)} className={`p-2 rounded-lg transition-colors ${isAmountVisible(c.id) ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`} title="Toggle amounts">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                    <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="View">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                    <Link to={`/candidates/edit/${c.id}`} className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Edit">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    </Link>
+                    <Link to={`/candidates/agreement/${c.id}`} className="p-2 rounded-lg text-amber-500 hover:bg-amber-50" title="Agreement">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </Link>
+                    {isMaster && (
+                      <button onClick={() => handleDeleteClick(c.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50" title="Delete">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="py-16 text-center text-gray-400">
+              <svg className="w-12 h-12 mb-3 opacity-25 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <p className="font-medium text-gray-500">No candidates found</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -248,15 +375,21 @@ export const CandidateList: React.FC = () => {
                         {c.packageDetails && <p className="text-xs text-gray-400">{c.packageDetails}</p>}
                       </td>
                     )}
-                    <td className="py-3 px-4 text-right font-medium tabular-nums text-gray-700">{utils.formatCurrency(c.agreedAmount)}</td>
-                    <td className="py-3 px-4 text-right text-emerald-600 font-bold tabular-nums">{utils.formatCurrency(paid)}</td>
+                    <td className="py-3 px-4 text-right font-medium tabular-nums text-gray-700">
+                      {isAmountVisible(c.id) ? utils.formatCurrency(c.agreedAmount) : <span className="tracking-widest text-gray-400">••••</span>}
+                    </td>
+                    <td className="py-3 px-4 text-right text-emerald-600 font-bold tabular-nums">
+                      {isAmountVisible(c.id) ? utils.formatCurrency(paid) : <span className="tracking-widest text-gray-400">••••</span>}
+                    </td>
                     <td className={`py-3 px-4 text-right font-bold tabular-nums ${due > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {due <= 0 ? (
-                        <span className="flex items-center justify-end gap-1 text-emerald-600">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                          Cleared
-                        </span>
-                      ) : utils.formatCurrency(due)}
+                      {isAmountVisible(c.id) ? (
+                        due <= 0 ? (
+                          <span className="flex items-center justify-end gap-1 text-emerald-600">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            Cleared
+                          </span>
+                        ) : utils.formatCurrency(due)
+                      ) : <span className="tracking-widest text-gray-400">••••</span>}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button onClick={() => handleToggleActive(c)} className={`w-10 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
@@ -265,6 +398,13 @@ export const CandidateList: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex justify-center gap-1">
+                        <button onClick={() => toggleRowAmount(c.id)} className={`p-1.5 rounded-lg transition-colors ${isAmountVisible(c.id) ? 'text-spr-600 bg-spr-50 hover:bg-spr-100' : 'text-gray-400 hover:text-spr-600 hover:bg-gray-100'}`} title={isAmountVisible(c.id) ? 'Hide amounts' : 'Reveal amounts'}>
+                          {isAmountVisible(c.id) ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          )}
+                        </button>
                         <button onClick={() => setViewCandidate(c)} className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100" title="View Details">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </button>
@@ -356,18 +496,34 @@ export const CandidateList: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
-                  <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Agreed</label>
-                  <p className="text-lg font-bold text-slate-900 tabular-nums">{utils.formatCurrency(viewCandidate.agreedAmount)}</p>
-                </div>
-                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-center">
-                  <label className="text-[10px] text-emerald-600 font-bold uppercase block mb-1">Paid</label>
-                  <p className="text-lg font-bold text-emerald-700 tabular-nums">{utils.formatCurrency(paid)}</p>
-                </div>
-                <div className={`p-4 rounded-xl border text-center ${due > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
-                  <label className="text-[10px] font-bold uppercase block mb-1">Balance</label>
-                  <p className={`text-lg font-bold tabular-nums ${due > 0 ? 'text-amber-700' : 'text-green-700'}`}>{due <= 0 ? 'CLEARED' : utils.formatCurrency(due)}</p>
-                </div>
+                {(() => {
+                  const modalVisible = isAmountVisible(viewCandidate.id);
+                  return (
+                    <>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center relative">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Agreed</label>
+                        <p className="text-lg font-bold text-slate-900 tabular-nums">{modalVisible ? utils.formatCurrency(viewCandidate.agreedAmount) : <span className="tracking-widest">••••••</span>}</p>
+                      </div>
+                      <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-center">
+                        <label className="text-[10px] text-emerald-600 font-bold uppercase block mb-1">Paid</label>
+                        <p className="text-lg font-bold text-emerald-700 tabular-nums">{modalVisible ? utils.formatCurrency(paid) : <span className="tracking-widest">••••••</span>}</p>
+                      </div>
+                      <div className={`p-4 rounded-xl border text-center ${due > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+                        <label className="text-[10px] font-bold uppercase block mb-1">Balance</label>
+                        <p className={`text-lg font-bold tabular-nums ${due > 0 ? 'text-amber-700' : 'text-green-700'}`}>{modalVisible ? (due <= 0 ? 'CLEARED' : utils.formatCurrency(due)) : <span className="tracking-widest">••••••</span>}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="flex justify-center">
+                <button onClick={() => toggleRowAmount(viewCandidate.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${isAmountVisible(viewCandidate.id) ? 'bg-spr-50 border-spr-200 text-spr-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                  {isAmountVisible(viewCandidate.id) ? (
+                    <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>Hide Amounts</>
+                  ) : (
+                    <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>Reveal Amounts</>
+                  )}
+                </button>
               </div>
 
               {viewCandidate.status === CandidateStatus.Placed && (viewCandidate.placedCompany || viewCandidate.packageDetails) && (

@@ -140,7 +140,7 @@ Signature: _________________`;
           <span className="text-sm font-medium">Back</span>
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{id ? 'Edit Candidate' : 'Add New Candidate'}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{id ? 'Edit Candidate' : 'Add New Candidate'}</h1>
           <p className="text-sm text-gray-400 mt-0.5">{id ? 'Update candidate details below.' : 'Fill the form to register a new candidate.'}</p>
         </div>
       </div>

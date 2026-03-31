@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(grep -l \"batch\\\\|Batch\" /c/Users/thiru/Downloads/SPRTechforge/pages/**/*.tsx)",
+      "Bash(npm install -D tailwindcss@3 postcss autoprefixer)"
     ]
   }
 }

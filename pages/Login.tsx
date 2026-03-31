@@ -163,7 +163,7 @@ export const Login: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/30 overflow-hidden">
           {/* Card Header */}
-          <div className="bg-gradient-to-r from-slate-900 to-blue-900 px-8 py-7 text-center">
+          <div className="bg-gradient-to-r from-slate-900 to-blue-900 px-5 py-6 sm:px-8 sm:py-7 text-center">
             <div className="flex justify-center mb-4">
               <Logo size="lg" />
             </div>
@@ -173,7 +173,7 @@ export const Login: React.FC = () => {
           </div>
 
           {/* Card Body */}
-          <div className="px-8 py-7">
+          <div className="px-5 py-6 sm:px-8 sm:py-7">
             {!showChangePassword ? (
               <>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>

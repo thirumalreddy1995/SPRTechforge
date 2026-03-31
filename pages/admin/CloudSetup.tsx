@@ -71,7 +71,7 @@ export const CloudSetup: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
          <div className="flex items-center gap-3">
-             <h1 className="text-3xl font-bold text-gray-900">Cloud Setup</h1>
+             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Cloud Setup</h1>
              {/* Google Firebase Logo Icon */}
              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3.89 15.67L6.47 4.08C6.56 3.66 7.11 3.55 7.36 3.89L10.94 8.89L3.89 15.67Z" fill="#FFC107"/>

@@ -142,7 +142,7 @@ export const AttendanceSheet: React.FC = () => {
     <div className="space-y-6">
        <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-           <h1 className="text-3xl font-bold text-gray-900">Class Attendance</h1>
+           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Class Attendance</h1>
            <p className="text-gray-500">Mark daily attendance and topics for active candidates.</p>
         </div>
         <div className="flex gap-2">

@@ -46,7 +46,7 @@ export const CandidateInfo: React.FC = () => {
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-4">
               <BackButton />
-              <h1 className="text-3xl font-bold text-gray-900">Candidate Information</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Candidate Information</h1>
            </div>
         </div>
 
@@ -104,7 +104,7 @@ export const CandidateInfo: React.FC = () => {
                </button>
              ) : <BackButton />}
              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Profile Details</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile Details</h1>
                 <p className="text-gray-500">{targetCandidate.name} ({targetCandidate.batchId})</p>
              </div>
           </div>

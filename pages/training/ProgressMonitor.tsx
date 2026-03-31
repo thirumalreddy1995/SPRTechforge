@@ -15,7 +15,7 @@ export const ProgressMonitor: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
            <BackButton />
-           <h1 className="text-3xl font-bold text-gray-900">Progress Monitor</h1>
+           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Progress Monitor</h1>
         </div>
       </div>
 

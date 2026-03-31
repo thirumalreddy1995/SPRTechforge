@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string; action?: React.ReactNode }> = ({ children, className = '', title, action }) => (
-  <div className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden ${className}`}>
+  <div className={`bg-white border border-gray-200/80 rounded-2xl shadow-[0_1px_4px_0_rgba(15,23,42,0.08)] overflow-hidden ${className}`}>
     {(title || action) && (
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        {title && <h3 className="text-lg font-bold text-gray-800">{title}</h3>}
+      <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/60">
+        {title && <h3 className="text-base font-bold text-gray-800">{title}</h3>}
         {action && <div>{action}</div>}
       </div>
     )}
@@ -17,13 +17,13 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; tit
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' }> = ({ 
   children, variant = 'primary', className = '', ...props 
 }) => {
-  const base = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white shadow-sm";
+  const base = "px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white shadow-sm";
   const variants = {
-    primary: "bg-spr-accent hover:bg-spr-accent_hover text-white focus:ring-blue-500",
-    secondary: "bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 focus:ring-gray-200",
-    danger: "bg-spr-danger hover:bg-red-700 text-white focus:ring-red-500",
-    success: "bg-spr-success hover:bg-emerald-700 text-white focus:ring-emerald-500",
-    outline: "bg-transparent border border-white text-white hover:bg-white/10",
+    primary: "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white focus:ring-blue-500 shadow-blue-200",
+    secondary: "bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 focus:ring-gray-200",
+    danger: "bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus:ring-red-500",
+    success: "bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500",
+    outline: "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-200",
   };
   return (
     <button className={`${base} ${variants[variant]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} {...props}>
@@ -367,15 +367,15 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
   }[size];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className={`bg-white border border-gray-200 rounded-xl shadow-2xl w-full ${maxWidthClass} max-h-[90vh] overflow-y-auto transform transition-all scale-100 flex flex-col`}>
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 sticky top-0 bg-white z-10 shrink-0">
-          <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded hover:bg-gray-100">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/70 backdrop-blur-sm p-0 sm:p-4 animate-fade-in">
+      <div className={`bg-white border border-gray-100 rounded-t-2xl sm:rounded-2xl shadow-[0_20px_60px_-10px_rgba(15,23,42,0.3)] w-full ${maxWidthClass} max-h-[92vh] sm:max-h-[90vh] overflow-y-auto transform transition-all scale-100 flex flex-col`}>
+        <div className="flex justify-between items-center px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-sm z-10 shrink-0">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <div className="p-6 text-gray-600 flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 text-gray-600 flex-1 overflow-y-auto">
           {children}
         </div>
       </div>
@@ -414,8 +414,8 @@ export const ToastOverlay: React.FC = () => {
     : <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] animate-fade-in">
-       <div className={`${bg} text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 min-w-[300px]`}>
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[100] animate-fade-in">
+       <div className={`${bg} text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 w-full sm:min-w-[300px] sm:max-w-sm`}>
           <div className="shrink-0">{icon}</div>
           <span className="font-medium text-sm">{toast.message}</span>
        </div>
