@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 
@@ -92,6 +92,10 @@ interface AppContextType {
   deleteWebLead: (id: string) => void;
   markWebLeadRead: (id: string) => void;
 
+  interviewPrepSessions: InterviewPrepSession[];
+  addInterviewPrepSession: (s: InterviewPrepSession) => void;
+  deleteInterviewPrepSession: (id: string) => void;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -162,6 +166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [webLeads, setWebLeads] = useState<WebLead[]>([]);
+  const [interviewPrepSessions, setInterviewPrepSessions] = useState<InterviewPrepSession[]>([]);
 
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
@@ -220,10 +225,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
       const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
       const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
+      const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
 
       return () => {
         unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
-        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads();
+        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
       };
     } else {
       try {
@@ -245,6 +251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCandidateStatuses(data.candidateStatuses || DEFAULT_STATUSES);
           setEnquiries(data.enquiries || []);
           setWebLeads(data.webLeads || []);
+          setInterviewPrepSessions(data.interviewPrepSessions || []);
         }
       } catch (e) { }
       setDataLoaded(true);
@@ -272,10 +279,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         users, candidates, candidateProfiles, interviews, accounts, transactions,
         trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions,
-        activityLogs, candidateStatuses, enquiries, webLeads
+        activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions
       }));
     }
-  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, isCloudEnabled, dataLoaded]);
+  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, isCloudEnabled, dataLoaded]);
 
   const login = async (u?: string, p?: string) => {
     if (!u || !p) return { success: false, message: "Missing credentials" };
@@ -391,6 +398,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addInterviewQuestion = (q: InterviewQuestion) => { setInterviewQuestions(p => [...p, q]); if (isCloudEnabled) cloudService.saveItem('interviewQuestions', q); };
   const updateInterviewQuestion = (q: InterviewQuestion) => { setInterviewQuestions(p => p.map(x => x.id === q.id ? q : x)); if (isCloudEnabled) cloudService.updateItem('interviewQuestions', q.id, q); };
   const deleteInterviewQuestion = (id: string) => { setInterviewQuestions(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviewQuestions', id); };
+
+  const addInterviewPrepSession = (s: InterviewPrepSession) => {
+    setInterviewPrepSessions(p => [...p, s]);
+    if (isCloudEnabled) cloudService.saveItem('interviewPrepSessions', s);
+    logActivity('CREATE', `Interview prep session completed by ${s.candidateName} — Score: ${s.overallScore}%`, 'InterviewPrepSession', s.id);
+  };
+  const deleteInterviewPrepSession = (id: string) => {
+    setInterviewPrepSessions(p => p.filter(x => x.id !== id));
+    if (isCloudEnabled) cloudService.deleteItem('interviewPrepSessions', id);
+  };
 
   const clearActivityLogs = () => { setActivityLogs([]); if (isCloudEnabled) showToast("Cloud logs must be cleared manually in console.", "info"); };
   const addCandidateStatus = (s: string) => { if (!candidateStatuses.includes(s)) setCandidateStatuses(p => [...p, s]); };
@@ -630,6 +647,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       interviewQuestions, addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
       candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest,
       activityLogs, clearActivityLogs,
+      interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>
