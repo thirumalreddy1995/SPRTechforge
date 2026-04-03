@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx tsc --noEmit)",
       "Bash(grep -l \"batch\\\\|Batch\" /c/Users/thiru/Downloads/SPRTechforge/pages/**/*.tsx)",
-      "Bash(npm install -D tailwindcss@3 postcss autoprefixer)"
+      "Bash(npm install -D tailwindcss@3 postcss autoprefixer)",
+      "Bash(find /c/Users/thiru/Downloads/SPRTechforge/pages -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.json \\\\\\))",
+      "Bash(wc -l /c/Users/thiru/Downloads/SPRTechforge/pages/training/*.tsx)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

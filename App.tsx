@@ -32,6 +32,7 @@ import { ProgressMonitor } from './pages/training/ProgressMonitor';
 import { AttendanceSheet } from './pages/training/AttendanceSheet';
 import { InterviewQuestions } from './pages/training/InterviewQuestions';
 import { Interviews } from './pages/training/Interviews';
+import { InterviewPrepModule } from './pages/training/InterviewPrepModule';
 import { EnquiryPage } from './pages/candidates/Enquiry';
 import { WebLeadsPage } from './pages/WebLeads';
 
@@ -104,6 +105,7 @@ const AppRoutes = () => {
       <Route path="/training/attendance" element={<ProtectedRoute><Layout><AttendanceSheet /></Layout></ProtectedRoute>} />
       <Route path="/training/interview-questions" element={<ProtectedRoute><Layout><InterviewQuestions /></Layout></ProtectedRoute>} />
       <Route path="/training/interviews" element={<ProtectedRoute><Layout><Interviews /></Layout></ProtectedRoute>} />
+      <Route path="/training/interview-prep" element={<ProtectedRoute><Layout><InterviewPrepModule /></Layout></ProtectedRoute>} />
 
       <Route path="/web-leads" element={<AdminRoute><Layout><WebLeadsPage /></Layout></AdminRoute>} />
 

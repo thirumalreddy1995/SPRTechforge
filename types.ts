@@ -251,6 +251,30 @@ export interface WebLead {
   internalNote?: string;
 }
 
+export interface InterviewPrepResponse {
+  questionId: string;
+  question: string;
+  category: string;
+  modelAnswer: string;
+  spokenAnswer: string;
+  score: number;
+  feedback: string;
+  missedKeywords: string[];
+}
+
+export interface InterviewPrepSession {
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  date: string;
+  totalQuestions: number;
+  responses: InterviewPrepResponse[];
+  overallScore: number;
+  grade: string;
+  improvementAreas: string[];
+  strongAreas: string[];
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];
@@ -269,4 +293,5 @@ export interface AppState {
   interviews: InterviewSchedule[];
   enquiries: Enquiry[];
   webLeads: WebLead[];
+  interviewPrepSessions: InterviewPrepSession[];
 }
