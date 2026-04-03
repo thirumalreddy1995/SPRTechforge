@@ -9,6 +9,7 @@ export const Dashboard: React.FC = () => {
   const { user, candidates, accounts, transactions, getEntityBalance, trainingTopics, trainingLogs, interviews } = useApp();
   const navigate = useNavigate();
   const [showMetrics, setShowMetrics] = useState(false);
+  const [showFees, setShowFees] = useState(false);
 
   if (!user) return null;
 
@@ -72,32 +73,68 @@ export const Dashboard: React.FC = () => {
             </div>
           </Card>
 
-          <Card title="Fee Standing" className="border-l-4 border-l-emerald-500">
+          <Card
+            title="Fee Standing"
+            className="border-l-4 border-l-emerald-500"
+            action={
+              <button
+                type="button"
+                onClick={() => setShowFees(v => !v)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
+                title={showFees ? 'Hide amounts' : 'Show amounts'}
+              >
+                {showFees ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Show
+                  </>
+                )}
+              </button>
+            }
+          >
             <div className="space-y-4 pt-1">
               <div className="flex justify-between items-center border-b border-gray-50 pb-3">
                 <span className="text-xs text-gray-400 font-bold uppercase">Total Agreed</span>
-                <span className="font-bold text-gray-900 tabular-nums">{utils.formatCurrency(candidate?.agreedAmount || 0)}</span>
+                {showFees
+                  ? <span className="font-bold text-gray-900 tabular-nums">{utils.formatCurrency(candidate?.agreedAmount || 0)}</span>
+                  : <span className="font-bold text-gray-300 tracking-widest select-none">₹ ••••••</span>
+                }
               </div>
               <div className="flex justify-between items-center border-b border-gray-50 pb-3">
                 <span className="text-xs text-gray-400 font-bold uppercase">Total Paid</span>
-                <span className="font-bold text-emerald-600 tabular-nums">{utils.formatCurrency(paid)}</span>
+                {showFees
+                  ? <span className="font-bold text-emerald-600 tabular-nums">{utils.formatCurrency(paid)}</span>
+                  : <span className="font-bold text-gray-300 tracking-widest select-none">₹ ••••••</span>
+                }
               </div>
               {(candidate?.agreedAmount || 0) > 0 && (
                 <div>
                   <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
                     <div
                       className="bg-emerald-500 h-2 rounded-full transition-all duration-700"
-                      style={{ width: `${Math.min(100, (paid / (candidate?.agreedAmount || 1)) * 100)}%` }}
+                      style={{ width: showFees ? `${Math.min(100, (paid / (candidate?.agreedAmount || 1)) * 100)}%` : '0%' }}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 text-right">{Math.round((paid / (candidate?.agreedAmount || 1)) * 100)}% paid</p>
+                  {showFees
+                    ? <p className="text-[10px] text-gray-400 text-right">{Math.round((paid / (candidate?.agreedAmount || 1)) * 100)}% paid</p>
+                    : <p className="text-[10px] text-gray-400 text-right">Tap Show to reveal</p>
+                  }
                 </div>
               )}
               <div className="pt-1">
                 <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Balance Due</span>
-                <span className={`text-2xl font-black ${due > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                  {due <= 0 ? 'Fully Cleared ✓' : utils.formatCurrency(due)}
-                </span>
+                {showFees ? (
+                  <span className={`text-2xl font-black ${due > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {due <= 0 ? 'Fully Cleared ✓' : utils.formatCurrency(due)}
+                  </span>
+                ) : (
+                  <span className="text-2xl font-black text-gray-300 tracking-widest select-none">₹ ••••••</span>
+                )}
               </div>
             </div>
           </Card>

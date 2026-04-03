@@ -136,21 +136,49 @@ const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 8
 };
 
 // ─── Session history card ─────────────────────────────────────────────────────
+// Speed colour lookup (matches SPEED_SETTINGS palette without importing the array)
+function speedColor(label?: string) {
+  if (!label) return '#64748b';
+  if (label === 'Very Slow') return '#7c3aed';
+  if (label === 'Slow')      return '#2563eb';
+  if (label === 'Normal')    return '#16a34a';
+  if (label === 'Fast')      return '#d97706';
+  return '#dc2626'; // Very Fast
+}
+
 const SessionCard: React.FC<{ session: InterviewPrepSession; onDelete?: (id:string)=>void }> = ({ session, onDelete }) => {
   const [open, setOpen] = useState(false);
   const gc: Record<string,string> = { A:'bg-green-100 text-green-700', B:'bg-blue-100 text-blue-700', C:'bg-yellow-100 text-yellow-700', D:'bg-orange-100 text-orange-700', F:'bg-red-100 text-red-700' };
+  const spCol = speedColor(session.speedLabel);
+  const categories = [...new Set(session.responses.map(r => r.category))];
   return (
     <div className="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
       <div className="flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-50" onClick={()=>setOpen(o=>!o)}>
+        {/* Score */}
         <div className="flex flex-col items-center w-16 shrink-0">
           <span className="text-2xl font-black" style={{ color:scoreCol(session.overallScore) }}>{session.overallScore}%</span>
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gc[session.grade]||gc.F}`}>Grade {session.grade}</span>
         </div>
+        {/* Meta */}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-slate-800 text-sm">{new Date(session.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-          <div className="text-xs text-slate-500">{session.totalQuestions} questions · {session.strongAreas.length ? `Strong: ${session.strongAreas.join(', ')}` : 'Complete more sessions to identify strengths'}</div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+            <span className="text-xs text-slate-500">{session.totalQuestions} questions</span>
+            {/* Speed badge — always shown */}
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{background:`${spCol}18`, color:spCol}}>
+              🎚 {session.speedLabel || 'Speed N/A'}{session.speedRate ? ` · ${session.speedRate}×` : ''}
+            </span>
+            {/* Category chips */}
+            {categories.map(c => (
+              <span key={c} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{c}</span>
+            ))}
+          </div>
+          {session.strongAreas.length > 0 && (
+            <div className="text-xs text-slate-400 mt-0.5">Strong: {session.strongAreas.join(', ')}</div>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0">
           {onDelete && (
             <button onClick={e=>{e.stopPropagation();onDelete(session.id);}} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -159,8 +187,20 @@ const SessionCard: React.FC<{ session: InterviewPrepSession; onDelete?: (id:stri
           <svg className={`w-5 h-5 text-slate-400 transition-transform ${open?'rotate-180':''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
         </div>
       </div>
+
+      {/* Expanded detail */}
       {open && (
         <div className="border-t border-slate-100 p-4 bg-slate-50 space-y-3">
+          {/* Session meta summary */}
+          <div className="flex flex-wrap gap-3 pb-3 border-b border-slate-200">
+            <div className="text-xs text-slate-500"><span className="font-bold text-slate-700">Date:</span> {new Date(session.date).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            <div className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{background:`${spCol}18`, color:spCol}}>
+              🎚 Speed Level: {session.speedLabel || 'Not recorded'}{session.speedRate ? ` (${session.speedRate}× TTS)` : ''}
+            </div>
+            <div className="text-xs text-slate-500"><span className="font-bold text-slate-700">Questions:</span> {session.totalQuestions}</div>
+            <div className="text-xs text-slate-500"><span className="font-bold text-slate-700">Topics:</span> {categories.join(', ')}</div>
+          </div>
+
           {session.improvementAreas.length > 0 && (
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">Improvement Areas</div>
@@ -170,7 +210,7 @@ const SessionCard: React.FC<{ session: InterviewPrepSession; onDelete?: (id:stri
           {session.responses.map((r,i)=>(
             <div key={i} className={`p-3 rounded-lg border ${scoreBg(r.score)}`}>
               <div className="flex justify-between items-start gap-2 mb-1">
-                <div className="text-xs font-semibold text-slate-700 flex-1">Q{i+1}: {r.question}</div>
+                <div className="text-xs font-semibold text-slate-700 flex-1">Q{i+1} <span className="font-normal text-slate-400">[{r.category}]</span>: {r.question}</div>
                 <span className="text-sm font-black shrink-0" style={{color:scoreCol(r.score)}}>{r.score}%</span>
               </div>
               <div className="text-xs text-slate-500 mb-1"><b>You said:</b> {r.spokenAnswer || <em>Nothing captured</em>}</div>
@@ -418,11 +458,13 @@ export const InterviewPrepModule: React.FC = () => {
       setExpressionReport(expr);
       const cId = linkedCandidate?.id || user?.id || 'unknown';
       const cName = linkedCandidate?.name || user?.name || 'Candidate';
+      const sp = SPEED_SETTINGS[speedIdxRef.current];
       addInterviewPrepSession({
         id: utils.generateId(), candidateId: cId, candidateName: cName,
         date: new Date().toISOString(), totalQuestions: updatedResponses.length,
         responses: updatedResponses, overallScore: overall, grade: getGrade(overall),
         improvementAreas: improvement, strongAreas: strong,
+        speedLabel: sp.label, speedRate: sp.rate,
       });
     }
     setPhase('reviewing');
@@ -701,6 +743,10 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
     const uniqueCandIds = [...new Set(interviewPrepSessions.map(s=>s.candidateId))];
     const candStats = uniqueCandIds.map(cid => {
       const ss = interviewPrepSessions.filter(s=>s.candidateId===cid).sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime());
+      // Most common speed label across all sessions for this candidate
+      const speedCounts: Record<string,number> = {};
+      ss.forEach(s => { if (s.speedLabel) speedCounts[s.speedLabel] = (speedCounts[s.speedLabel]||0) + 1; });
+      const usualSpeed = Object.entries(speedCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
       return {
         id: cid,
         name: ss[0]?.candidateName || 'Unknown',
@@ -708,6 +754,8 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
         avg: Math.round(ss.reduce((a,b)=>a+b.overallScore,0)/ss.length),
         best: Math.max(...ss.map(s=>s.overallScore)),
         lastDate: new Date(ss[0].date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+        lastSpeed: ss[0]?.speedLabel || null,   // most recent session's speed
+        usualSpeed,                              // most frequently used speed
       };
     }).sort((a,b)=>b.avg-a.avg);
 
@@ -788,6 +836,9 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.grade==='A'?'bg-green-100 text-green-700':s.grade==='B'?'bg-blue-100 text-blue-700':s.grade==='C'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}`}>Grade {s.grade}</span>
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{background:`${speedColor(s.speedLabel)}18`,color:speedColor(s.speedLabel)}}>
+                                🎚 {s.speedLabel || 'Speed not recorded'}{s.speedRate ? ` · ${s.speedRate}×` : ''}
+                              </span>
                               <span className="text-xs text-slate-500">{new Date(s.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} · {s.totalQuestions} questions</span>
                             </div>
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -842,7 +893,17 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cs.name}</div>
-                              <div className="text-xs text-slate-400">{cs.count} session{cs.count!==1?'s':''} · Last: {cs.lastDate}</div>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                <span className="text-xs text-slate-400">{cs.count} session{cs.count!==1?'s':''} · Last: {cs.lastDate}</span>
+                                {cs.usualSpeed && (
+                                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{background:`${speedColor(cs.usualSpeed)}18`,color:speedColor(cs.usualSpeed)}}>
+                                    🎚 Usually {cs.usualSpeed}
+                                  </span>
+                                )}
+                                {cs.lastSpeed && cs.lastSpeed !== cs.usualSpeed && (
+                                  <span className="text-xs text-slate-400">Last: {cs.lastSpeed}</span>
+                                )}
+                              </div>
                             </div>
                             <div className="text-right shrink-0">
                               <div className="text-lg font-black" style={{color:scoreCol(cs.avg)}}>{cs.avg}%</div>

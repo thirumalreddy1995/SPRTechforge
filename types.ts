@@ -273,6 +273,8 @@ export interface InterviewPrepSession {
   grade: string;
   improvementAreas: string[];
   strongAreas: string[];
+  speedLabel?: string;   // e.g. "Normal", "Slow"
+  speedRate?: number;    // TTS rate used
 }
 
 export interface AppState {
