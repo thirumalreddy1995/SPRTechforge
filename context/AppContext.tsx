@@ -198,7 +198,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (isCloudEnabled) {
-      const handleSubError = (err: any) => { setCloudError(err.message); setDataLoaded(true); };
+      const handleSubError = (err: any) => {
+        setCloudError(err.message);
+        setDataLoaded(true);
+        setIsInitialized(true);
+      };
       //const unsubUsers = cloudService.subscribe('users', d => { if(d.length > 0) setUsers(d); else setUsers([DEFAULT_ADMIN]); setDataLoaded(true);}, handleSubError);
       const unsubUsers = cloudService.subscribe(
         'users',
