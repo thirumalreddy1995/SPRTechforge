@@ -277,6 +277,38 @@ export interface InterviewPrepSession {
   speedRate?: number;    // TTS rate used
 }
 
+export interface ChatAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+export type ChatType = 'dm' | 'announcement';
+
+export interface Chat {
+  id: string;
+  type: ChatType;
+  name?: string;
+  participants: string[];
+  createdAt: string;
+  createdBy: string;
+  lastMessageText?: string;
+  lastMessageAt?: string;
+  lastSenderId?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  attachments?: ChatAttachment[];
+  timestamp: string;
+  readBy: string[];
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];

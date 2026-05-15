@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 
@@ -96,6 +96,13 @@ interface AppContextType {
   addInterviewPrepSession: (s: InterviewPrepSession) => void;
   deleteInterviewPrepSession: (id: string) => void;
 
+  chats: Chat[];
+  chatMessages: ChatMessage[];
+  createOrGetDmChat: (otherUserId: string) => Promise<Chat>;
+  getOrCreateAnnouncementChat: () => Promise<Chat>;
+  sendChatMessage: (chatId: string, text: string, files?: File[]) => Promise<void>;
+  markChatRead: (chatId: string) => void;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -168,6 +175,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [webLeads, setWebLeads] = useState<WebLead[]>([]);
   const [interviewPrepSessions, setInterviewPrepSessions] = useState<InterviewPrepSession[]>([]);
 
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -230,10 +240,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
       const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
       const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
+      const unsubChats = cloudService.subscribe('chats', setChats);
+      const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
 
       return () => {
         unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
         unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
+        unsubChats(); unsubChatMessages();
       };
     } else {
       try {
@@ -256,6 +269,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setEnquiries(data.enquiries || []);
           setWebLeads(data.webLeads || []);
           setInterviewPrepSessions(data.interviewPrepSessions || []);
+          setChats(data.chats || []);
+          setChatMessages(data.chatMessages || []);
         }
       } catch (e) { }
       setDataLoaded(true);
@@ -283,10 +298,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         users, candidates, candidateProfiles, interviews, accounts, transactions,
         trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions,
-        activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions
+        activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions,
+        chats, chatMessages
       }));
     }
-  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, isCloudEnabled, dataLoaded]);
+  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, chats, chatMessages, isCloudEnabled, dataLoaded]);
 
   const login = async (u?: string, p?: string) => {
     if (!u || !p) return { success: false, message: "Missing credentials" };
@@ -623,6 +639,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const ANNOUNCEMENT_CHAT_ID = 'announcements-global';
+
+  const dmChatId = (a: string, b: string) => {
+    const [x, y] = [a, b].sort();
+    return `dm-${x}-${y}`;
+  };
+
+  const createOrGetDmChat = async (otherUserId: string): Promise<Chat> => {
+    if (!user) throw new Error('Not logged in');
+    if (otherUserId === user.id) throw new Error('Cannot DM yourself');
+    const id = dmChatId(user.id, otherUserId);
+    const existing = chats.find(c => c.id === id);
+    if (existing) return existing;
+    const chat: Chat = {
+      id,
+      type: 'dm',
+      participants: [user.id, otherUserId],
+      createdAt: new Date().toISOString(),
+      createdBy: user.id,
+    };
+    setChats(p => [...p, chat]);
+    if (isCloudEnabled) await cloudService.saveItem('chats', chat);
+    return chat;
+  };
+
+  const getOrCreateAnnouncementChat = async (): Promise<Chat> => {
+    if (!user) throw new Error('Not logged in');
+    const existing = chats.find(c => c.id === ANNOUNCEMENT_CHAT_ID);
+    if (existing) return existing;
+    const chat: Chat = {
+      id: ANNOUNCEMENT_CHAT_ID,
+      type: 'announcement',
+      name: 'Announcements',
+      participants: [],
+      createdAt: new Date().toISOString(),
+      createdBy: user.id,
+    };
+    setChats(p => [...p, chat]);
+    if (isCloudEnabled) await cloudService.saveItem('chats', chat);
+    return chat;
+  };
+
+  const sendChatMessage = async (chatId: string, text: string, files: File[] = []) => {
+    if (!user) throw new Error('Not logged in');
+    const trimmed = text.trim();
+    if (!trimmed && files.length === 0) return;
+
+    let attachments: ChatAttachment[] = [];
+    if (files.length > 0 && isCloudEnabled) {
+      for (const f of files) {
+        const path = `chats/${chatId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${f.name}`;
+        const up = await cloudService.uploadFile(path, f);
+        attachments.push(up);
+      }
+    }
+
+    const msg: ChatMessage = {
+      id: utils.generateId(),
+      chatId,
+      senderId: user.id,
+      senderName: user.name,
+      text: trimmed,
+      attachments: attachments.length > 0 ? attachments : undefined,
+      timestamp: new Date().toISOString(),
+      readBy: [user.id],
+    };
+    setChatMessages(p => [...p, msg]);
+    if (isCloudEnabled) await cloudService.saveItem('chatMessages', msg);
+
+    const chat = chats.find(c => c.id === chatId);
+    if (chat) {
+      const updated: Chat = {
+        ...chat,
+        lastMessageText: trimmed || (attachments.length > 0 ? `📎 ${attachments[0].name}` : ''),
+        lastMessageAt: msg.timestamp,
+        lastSenderId: user.id,
+      };
+      setChats(p => p.map(c => c.id === chatId ? updated : c));
+      if (isCloudEnabled) await cloudService.updateItem('chats', chatId, {
+        lastMessageText: updated.lastMessageText,
+        lastMessageAt: updated.lastMessageAt,
+        lastSenderId: updated.lastSenderId,
+      });
+    }
+  };
+
+  const markChatRead = (chatId: string) => {
+    if (!user) return;
+    const toUpdate = chatMessages.filter(m => m.chatId === chatId && !m.readBy.includes(user.id));
+    if (toUpdate.length === 0) return;
+    setChatMessages(p => p.map(m => {
+      if (m.chatId !== chatId || m.readBy.includes(user.id)) return m;
+      return { ...m, readBy: [...m.readBy, user.id] };
+    }));
+    if (isCloudEnabled) {
+      toUpdate.forEach(m => {
+        cloudService.updateItem('chatMessages', m.id, { readBy: [...m.readBy, user.id] }).catch(console.error);
+      });
+    }
+  };
+
   const syncLocalToCloud = async () => {
     if (!isCloudEnabled) return;
     try {
@@ -652,6 +769,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest,
       activityLogs, clearActivityLogs,
       interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
+      chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

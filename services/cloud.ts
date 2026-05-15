@@ -1,17 +1,25 @@
 
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  Firestore, 
-  collection, 
-  onSnapshot, 
-  doc, 
-  setDoc, 
-  deleteDoc, 
+import {
+  getFirestore,
+  Firestore,
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  deleteDoc,
   writeBatch,
   getDoc,
   updateDoc
 } from 'firebase/firestore';
+import {
+  getStorage,
+  FirebaseStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from 'firebase/storage';
 
 const STORAGE_KEY_CONFIG = 'SPR_TECHFORGE_FIREBASE_CONFIG';
 
@@ -58,6 +66,7 @@ const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = ENV_FIREBASE_CONFIG ?? FALLBACK_
 class CloudService {
   private app: FirebaseApp | null = null;
   private db: Firestore | null = null;
+  private storage: FirebaseStorage | null = null;
   private isInitialized = false;
 
   constructor() {
@@ -79,6 +88,7 @@ class CloudService {
          try {
             this.app = initializeApp(config);
             this.db = getFirestore(this.app);
+            this.storage = getStorage(this.app);
             this.isInitialized = true;
             console.log(`Firebase Firestore Initialized (project: ${config.projectId})`);
          } catch (err) {
@@ -260,6 +270,23 @@ class CloudService {
   
   public getSchemaSQL() {
       return "Firestore is a NoSQL database. No Schema definition is required. Collections are created automatically when you add data.";
+  }
+
+  public async uploadFile(path: string, file: File): Promise<{ url: string; name: string; type: string; size: number }> {
+    if (!this.storage) throw new Error("Storage not configured");
+    const ref = storageRef(this.storage, path);
+    await uploadBytes(ref, file, { contentType: file.type });
+    const url = await getDownloadURL(ref);
+    return { url, name: file.name, type: file.type, size: file.size };
+  }
+
+  public async deleteFile(path: string): Promise<void> {
+    if (!this.storage) return;
+    try {
+      await deleteObject(storageRef(this.storage, path));
+    } catch (e) {
+      console.warn("File delete failed:", e);
+    }
   }
 }
 

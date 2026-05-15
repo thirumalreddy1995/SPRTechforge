@@ -124,11 +124,12 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({ id, title, icon, ch
 };
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout, interviews, candidates, webLeads } = useApp();
+  const { user, logout, interviews, candidates, webLeads, chatMessages, chats } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (!user) return <>{children}</>;
 
@@ -140,6 +141,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const activeInterviewCount = interviews.filter(i => i.status === 'Scheduled').length;
   const todayInterviewCount = interviews.filter(i => i.date === todayStr && i.status === 'Scheduled').length;
   const unreadWebLeadsCount = webLeads.filter(l => !l.isRead).length;
+  const visibleChatIds = new Set(chats.filter(c => c.type === 'announcement' || c.participants.includes(user.id)).map(c => c.id));
+  const unreadChatCount = chatMessages.filter(m => visibleChatIds.has(m.chatId) && m.senderId !== user.id && !m.readBy.includes(user.id)).length;
 
   return (
     <div className="min-h-screen bg-[#edf0f7] flex flex-col md:flex-row text-slate-900 overflow-hidden">
@@ -199,6 +202,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               >
                 <NavItem to="/dashboard" label="Dashboard" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 <NavItem to="/address-book" label="Address Book" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                {!isSidebarCollapsed ? (
+                  <Link
+                    to="/chat"
+                    onClick={closeMobile}
+                    className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 mb-0.5 font-medium text-sm overflow-hidden whitespace-nowrap ${location.pathname.startsWith('/chat') ? 'bg-blue-600/20 text-blue-300' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                  >
+                    <span>Chat</span>
+                    {unreadChatCount > 0 && (
+                      <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shrink-0">
+                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <NavItem to="/chat" label="Chat" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                )}
               </CollapsibleGroup>
 
               <CollapsibleGroup
@@ -306,6 +325,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <>
               {!isSidebarCollapsed && <div className="px-4 mb-2 text-xs font-bold text-slate-600 uppercase tracking-widest">Student Portal</div>}
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/candidates/info" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>} label="My Profile" onClick={closeMobile} />
+              <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/chat" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>} label="Chat" onClick={closeMobile} />
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/training/dashboard" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>} label="Training Stats" onClick={closeMobile} />
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/training/interview-questions" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} label="Interview Prep" onClick={closeMobile} />
               <NavItem isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} to="/training/interview-prep" icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>} label="Prompt Practice" onClick={closeMobile} />
