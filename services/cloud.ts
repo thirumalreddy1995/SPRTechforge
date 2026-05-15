@@ -25,8 +25,25 @@ export interface FirebaseConfig {
   measurementId?: string;
 }
 
-// Hardcoded Default Configuration per user request
-const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
+// Build-time Firebase config. Picked from Vite env vars (VITE_FIREBASE_*) which the
+// GitHub Actions workflows inject per environment (prod vs QA). Falls back to the
+// original hardcoded production values so local `vite dev` keeps working without an
+// .env.local file — but CI builds for QA MUST inject QA secrets to avoid hitting prod.
+const ENV_FIREBASE_CONFIG: FirebaseConfig | null = (() => {
+  const env = (import.meta as any).env ?? {};
+  if (!env.VITE_FIREBASE_PROJECT_ID || !env.VITE_FIREBASE_API_KEY) return null;
+  return {
+    apiKey: env.VITE_FIREBASE_API_KEY,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: env.VITE_FIREBASE_APP_ID,
+    measurementId: env.VITE_FIREBASE_MEASUREMENT_ID,
+  };
+})();
+
+const FALLBACK_FIREBASE_CONFIG: FirebaseConfig = {
   apiKey: "AIzaSyDWiI7gQ-sCLiMfoNPAmbqrT_XNAH2SxL8",
   authDomain: "sprtechforge.firebaseapp.com",
   projectId: "sprtechforge",
@@ -35,6 +52,8 @@ const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
   appId: "1:576106145208:web:fcd3c869f30544efca2bcd",
   measurementId: "G-JN6S6L5KH5"
 };
+
+const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = ENV_FIREBASE_CONFIG ?? FALLBACK_FIREBASE_CONFIG;
 
 class CloudService {
   private app: FirebaseApp | null = null;
@@ -61,7 +80,7 @@ class CloudService {
             this.app = initializeApp(config);
             this.db = getFirestore(this.app);
             this.isInitialized = true;
-            console.log("Firebase Firestore Initialized");
+            console.log(`Firebase Firestore Initialized (project: ${config.projectId})`);
          } catch (err) {
             console.error("Firebase initialization failed:", err);
             this.isInitialized = false;
