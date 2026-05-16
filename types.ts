@@ -305,6 +305,8 @@ export interface ChatMessage {
   senderName: string;
   text: string;
   attachments?: ChatAttachment[];
+  callRoomId?: string;
+  callStartedAt?: string;
   timestamp: string;
   readBy: string[];
 }

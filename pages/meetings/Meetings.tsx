@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, Select, SearchInput } from '../../components/Components';
 import { Meeting, MeetingParticipant, MeetingType, RsvpStatus, User } from '../../types';
+
+const meetingRoomId = (meetingId: string) => `sprtechforge-meet-${meetingId}`;
 
 const RSVP_LABEL: Record<RsvpStatus, string> = {
   pending: 'Pending',
@@ -231,6 +234,7 @@ const DetailModal: React.FC<{
   meeting: Meeting | null;
   onEdit: () => void;
 }> = ({ isOpen, onClose, meeting, onEdit }) => {
+  const navigate = useNavigate();
   const { user, users, setRsvp, cancelMeeting, showToast } = useApp();
   if (!meeting || !user) return null;
 
@@ -292,6 +296,20 @@ const DetailModal: React.FC<{
 
         {meeting.description && (
           <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap">{meeting.description}</div>
+        )}
+
+        {meeting.status === 'scheduled' && (
+          <button
+            onClick={() => {
+              const url = `/call/${encodeURIComponent(meetingRoomId(meeting.id))}?title=${encodeURIComponent(meeting.title)}&returnTo=${encodeURIComponent('/meetings')}`;
+              onClose();
+              navigate(url);
+            }}
+            className="w-full px-4 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Join video call
+          </button>
         )}
 
         {meeting.status === 'scheduled' && (
@@ -357,14 +375,22 @@ const DetailModal: React.FC<{
 };
 
 const MeetingCard: React.FC<{ meeting: Meeting; onOpen: () => void; currentUserId: string }> = ({ meeting, onOpen, currentUserId }) => {
+  const navigate = useNavigate();
   const myRsvp = meeting.participants.find(p => p.userId === currentUserId)?.rsvp || 'pending';
   const isPast = new Date(meeting.endTime).getTime() < Date.now();
   const goingCount = meeting.participants.filter(p => p.rsvp === 'accepted').length;
+  const canJoinCall = !isPast && meeting.status === 'scheduled';
+
+  const handleJoinCall = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `/call/${encodeURIComponent(meetingRoomId(meeting.id))}?title=${encodeURIComponent(meeting.title)}&returnTo=${encodeURIComponent('/meetings')}`;
+    navigate(url);
+  };
 
   return (
-    <button
+    <div
       onClick={onOpen}
-      className={`w-full text-left bg-white border border-slate-200 rounded-lg p-3 hover:border-blue-400 hover:shadow-sm transition-all ${meeting.status === 'cancelled' ? 'opacity-60' : ''}`}
+      className={`w-full text-left bg-white border border-slate-200 rounded-lg p-3 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer ${meeting.status === 'cancelled' ? 'opacity-60' : ''}`}
     >
       <div className="flex items-start gap-3">
         <div className="text-center shrink-0 bg-slate-50 rounded-lg px-2 py-1 w-14">
@@ -388,8 +414,18 @@ const MeetingCard: React.FC<{ meeting: Meeting; onOpen: () => void; currentUserI
             )}
           </div>
         </div>
+        {canJoinCall && (
+          <button
+            onClick={handleJoinCall}
+            title="Join the video call"
+            className="shrink-0 self-center px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Join
+          </button>
+        )}
       </div>
-    </button>
+    </div>
   );
 };
 

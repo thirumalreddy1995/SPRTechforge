@@ -109,6 +109,8 @@ interface AppContextType {
   cancelMeeting: (id: string) => Promise<void>;
   setRsvp: (meetingId: string, status: RsvpStatus) => Promise<void>;
 
+  startCallInChat: (chatId: string) => Promise<string>;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -746,6 +748,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const startCallInChat = async (chatId: string): Promise<string> => {
+    if (!user) throw new Error('Not logged in');
+    const roomId = `sprtechforge-dm-${chatId}-${Date.now().toString(36)}`;
+    const msg: ChatMessage = {
+      id: utils.generateId(),
+      chatId,
+      senderId: user.id,
+      senderName: user.name,
+      text: `📹 ${user.name} started a video call`,
+      callRoomId: roomId,
+      callStartedAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      readBy: [user.id],
+    };
+    setChatMessages(p => [...p, msg]);
+    if (isCloudEnabled) await cloudService.saveItem('chatMessages', msg);
+
+    const chat = chats.find(c => c.id === chatId);
+    if (chat) {
+      const updated: Chat = {
+        ...chat,
+        lastMessageText: msg.text,
+        lastMessageAt: msg.timestamp,
+        lastSenderId: user.id,
+      };
+      setChats(p => p.map(c => c.id === chatId ? updated : c));
+      if (isCloudEnabled) await cloudService.updateItem('chats', chatId, {
+        lastMessageText: updated.lastMessageText,
+        lastMessageAt: updated.lastMessageAt,
+        lastSenderId: updated.lastSenderId,
+      });
+    }
+
+    return roomId;
+  };
+
   const markChatRead = (chatId: string) => {
     if (!user) return;
     const toUpdate = chatMessages.filter(m => m.chatId === chatId && !m.readBy.includes(user.id));
@@ -848,6 +886,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
       chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead,
       meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
+      startCallInChat,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

@@ -37,6 +37,7 @@ import { EnquiryPage } from './pages/candidates/Enquiry';
 import { WebLeadsPage } from './pages/WebLeads';
 import { ChatPage } from './pages/chat/Chat';
 import { MeetingsPage } from './pages/meetings/Meetings';
+import { CallRoom } from './pages/spconnect/CallRoom';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -116,6 +117,9 @@ const AppRoutes = () => {
 
       {/* Meetings */}
       <Route path="/meetings" element={<ProtectedRoute><Layout><MeetingsPage /></Layout></ProtectedRoute>} />
+
+      {/* Video/audio call (Jitsi) - intentionally no Layout, full-screen */}
+      <Route path="/call/:roomId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
 
       {/* Master Section */}
       <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, SearchInput } from '../../components/Components';
 import { Chat, ChatMessage, User } from '../../types';
@@ -68,7 +69,7 @@ const ChatListItem: React.FC<{
   );
 };
 
-const MessageBubble: React.FC<{ msg: ChatMessage; isOwn: boolean; showSender: boolean }> = ({ msg, isOwn, showSender }) => {
+const MessageBubble: React.FC<{ msg: ChatMessage; isOwn: boolean; showSender: boolean; onJoinCall: (roomId: string) => void }> = ({ msg, isOwn, showSender, onJoinCall }) => {
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1.5`}>
       <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
@@ -77,6 +78,15 @@ const MessageBubble: React.FC<{ msg: ChatMessage; isOwn: boolean; showSender: bo
         )}
         <div className={`px-3 py-2 rounded-2xl ${isOwn ? 'bg-blue-600 text-white rounded-br-md' : 'bg-slate-100 text-slate-900 rounded-bl-md'}`}>
           {msg.text && <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>}
+          {msg.callRoomId && (
+            <button
+              onClick={() => onJoinCall(msg.callRoomId!)}
+              className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold ${isOwn ? 'bg-white text-blue-700 hover:bg-blue-50' : 'bg-green-600 text-white hover:bg-green-700'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              Join call
+            </button>
+          )}
           {msg.attachments && msg.attachments.length > 0 && (
             <div className={`mt-1.5 space-y-1 ${msg.text ? '' : '-my-1'}`}>
               {msg.attachments.map((a, i) => {
@@ -156,7 +166,8 @@ const NewDmModal: React.FC<{ isOpen: boolean; onClose: () => void; onPicked: (us
 };
 
 export const ChatPage: React.FC = () => {
-  const { user, users, chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead, showToast } = useApp();
+  const navigate = useNavigate();
+  const { user, users, chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead, startCallInChat, showToast } = useApp();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -257,6 +268,22 @@ export const ChatPage: React.FC = () => {
     }
   };
 
+  const handleJoinCall = (roomId: string) => {
+    if (!activeChat) return;
+    const otherName = chatDisplayName(activeChat, user.id, users);
+    navigate(`/call/${encodeURIComponent(roomId)}?title=${encodeURIComponent(`Call with ${otherName}`)}&returnTo=${encodeURIComponent('/chat')}`);
+  };
+
+  const handleStartCall = async () => {
+    if (!activeChat || activeChat.type !== 'dm') return;
+    try {
+      const roomId = await startCallInChat(activeChat.id);
+      handleJoinCall(roomId);
+    } catch (e: any) {
+      showToast(e.message || 'Failed to start call', 'error');
+    }
+  };
+
   return (
     <Card className="p-0 overflow-hidden">
       <div className="flex h-[calc(100vh-180px)] min-h-[500px]">
@@ -318,14 +345,24 @@ export const ChatPage: React.FC = () => {
                   </p>
                 </div>
                 {activeChat.type === 'dm' && (
-                  <button
-                    onClick={() => setShowScheduleMeeting(true)}
-                    title="Schedule a meeting with this person"
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    Schedule
-                  </button>
+                  <>
+                    <button
+                      onClick={handleStartCall}
+                      title="Start an instant video call"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 hover:bg-green-700 text-white flex items-center gap-1.5 shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      Call
+                    </button>
+                    <button
+                      onClick={() => setShowScheduleMeeting(true)}
+                      title="Schedule a meeting with this person"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      Schedule
+                    </button>
+                  </>
                 )}
               </header>
 
@@ -335,7 +372,7 @@ export const ChatPage: React.FC = () => {
                 ) : activeMessages.map((m, i) => {
                   const prev = activeMessages[i - 1];
                   const showSender = !prev || prev.senderId !== m.senderId;
-                  return <MessageBubble key={m.id} msg={m} isOwn={m.senderId === user.id} showSender={showSender} />;
+                  return <MessageBubble key={m.id} msg={m} isOwn={m.senderId === user.id} showSender={showSender} onJoinCall={handleJoinCall} />;
                 })}
               </div>
 
