@@ -63,22 +63,3 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_QA }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID_QA }}
           channelId: live
-
-      # Cloud Functions deploy. Requires the Firebase project to be on the
-      # Blaze plan. If billing isn't enabled yet this step fails with a clear
-      # error but hosting deploy above will already have shipped the frontend.
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Install functions dependencies
-        working-directory: functions
-        run: npm install
-
-      - name: Deploy Cloud Functions
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-sa.json
-          FIREBASE_PROJECT_ID_QA: ${{ secrets.FIREBASE_PROJECT_ID_QA }}
-          SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_QA }}
-        run: |
-          printf '%s' "$SERVICE_ACCOUNT_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID_QA" --non-interactive --force

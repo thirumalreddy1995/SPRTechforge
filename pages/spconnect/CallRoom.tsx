@@ -1,7 +1,33 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import DailyIframe, { DailyCall } from '@daily-co/daily-js';
 import { useApp } from '../../context/AppContext';
+
+declare global {
+  interface Window {
+    JitsiMeetExternalAPI?: any;
+  }
+}
+
+const JITSI_DOMAIN = 'meet.jit.si';
+const SCRIPT_SRC = `https://${JITSI_DOMAIN}/external_api.js`;
+
+const loadJitsiScript = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (window.JitsiMeetExternalAPI) return resolve();
+    const existing = document.querySelector(`script[src="${SCRIPT_SRC}"]`) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Jitsi')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = SCRIPT_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Jitsi'));
+    document.body.appendChild(script);
+  });
+};
 
 export const CallRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -9,20 +35,18 @@ export const CallRoom: React.FC = () => {
   const navigate = useNavigate();
   const { user, callInvitations, endCall, showToast } = useApp();
   const containerRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<DailyCall | null>(null);
-  const handledDeclineRef = useRef(false);
+  const apiRef = useRef<any>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const title = searchParams.get('title') || 'Video call';
+  const title = searchParams.get('title') || '';
   const returnTo = searchParams.get('returnTo') || '/chat';
   const invitationId = searchParams.get('invitationId');
-  const roomUrlParam = searchParams.get('roomUrl');
   const invitation = invitationId ? callInvitations.find(i => i.id === invitationId) : null;
   const isCaller = !!invitation && !!user && invitation.callerId === user.id;
-  const roomUrl = roomUrlParam || invitation?.roomUrl || '';
+  const handledDeclineRef = useRef(false);
 
-  // Caller-side: bail out if the callee declines.
+  // Caller-side: if callee declines, exit the empty room with a toast.
   useEffect(() => {
     if (!invitation || !isCaller || handledDeclineRef.current) return;
     if (invitation.status === 'declined') {
@@ -36,71 +60,78 @@ export const CallRoom: React.FC = () => {
     if (invitation && invitation.status !== 'ended' && invitation.status !== 'declined') {
       endCall(invitation.id).catch(() => {});
     }
-    if (frameRef.current) {
-      try { frameRef.current.destroy(); } catch {}
-      frameRef.current = null;
-    }
     navigate(returnTo, { replace: true });
   };
 
   useEffect(() => {
-    if (!user || !roomUrl || !containerRef.current) return;
+    if (!roomId || !user) return;
     let cancelled = false;
 
-    const frame = DailyIframe.createFrame(containerRef.current, {
-      iframeStyle: {
-        position: 'absolute',
-        top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        border: '0',
-      },
-      showLeaveButton: true,
-      showFullscreenButton: true,
-      showUserNameChangeUI: false,
-    });
-
-    frameRef.current = frame;
-
-    frame
-      .join({ url: roomUrl, userName: user.name })
-      .then(() => {
+    const init = async () => {
+      try {
+        await loadJitsiScript();
         if (cancelled) return;
+        if (!containerRef.current) return;
+        if (!window.JitsiMeetExternalAPI) throw new Error('Jitsi API not available');
+
+        const api = new window.JitsiMeetExternalAPI(JITSI_DOMAIN, {
+          roomName: roomId,
+          parentNode: containerRef.current,
+          width: '100%',
+          height: '100%',
+          userInfo: {
+            displayName: user.name,
+            email: user.username,
+          },
+          configOverwrite: {
+            prejoinPageEnabled: false,
+            prejoinConfig: { enabled: false },
+            disableDeepLinking: true,
+            enableLobbyChat: false,
+            enableInsecureRoomNameWarning: false,
+            requireDisplayName: false,
+            disableModeratorIndicator: true,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+          },
+          interfaceConfigOverwrite: {
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_BRAND_WATERMARK: false,
+            MOBILE_APP_PROMO: false,
+            DISABLE_VIDEO_BACKGROUND: false,
+            HIDE_INVITE_MORE_HEADER: true,
+          },
+        });
+
+        api.addEventListener('readyToClose', () => {
+          handleLeave();
+        });
+
+        apiRef.current = api;
         setStatus('ready');
-      })
-      .catch((e) => {
+      } catch (e: any) {
         if (cancelled) return;
-        console.error('Daily join failed', e);
-        setErrorMsg(e?.errorMsg || e?.message || 'Could not join the call');
+        setErrorMsg(e?.message || 'Could not start the call');
         setStatus('error');
-      });
+      }
+    };
 
-    frame.on('left-meeting', () => {
-      handleLeave();
-    });
-    frame.on('error', (e: any) => {
-      console.error('Daily error', e);
-      setErrorMsg(e?.errorMsg || 'Call error');
-      setStatus('error');
-    });
+    init();
 
     return () => {
       cancelled = true;
-      try { frame.destroy(); } catch {}
-      frameRef.current = null;
+      if (apiRef.current) {
+        try { apiRef.current.dispose(); } catch {}
+        apiRef.current = null;
+      }
     };
-  }, [user?.id, roomUrl]);
+  }, [roomId, user?.id]);
 
   if (!user) return null;
-  if (!roomId || !roomUrl) {
+  if (!roomId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-200">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md text-center">
-          <p className="font-semibold mb-2">Missing call details</p>
-          <p className="text-sm text-slate-400 mb-4">No room URL was provided.</p>
-          <button onClick={() => navigate(returnTo, { replace: true })} className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm">Go back</button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center text-slate-700">
+        <p>Missing call ID.</p>
       </div>
     );
   }
@@ -111,8 +142,8 @@ export const CallRoom: React.FC = () => {
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate">{title}</p>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Powered by Daily.co</p>
+            <p className="text-sm font-semibold truncate">{title || 'Video call'}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Powered by Jitsi Meet</p>
           </div>
         </div>
         <button
@@ -124,7 +155,7 @@ export const CallRoom: React.FC = () => {
       </div>
       <div className="flex-1 relative">
         {status === 'loading' && (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-300 z-10 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
             <div className="text-center">
               <div className="inline-block w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-3" />
               <p className="text-sm">Joining call…</p>
@@ -132,11 +163,16 @@ export const CallRoom: React.FC = () => {
           </div>
         )}
         {status === 'error' && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md text-center">
               <p className="text-slate-100 font-semibold mb-1">Couldn't start the call</p>
               <p className="text-slate-400 text-sm mb-4">{errorMsg}</p>
-              <button onClick={handleLeave} className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm">Go back</button>
+              <button
+                onClick={handleLeave}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
+              >
+                Go back
+              </button>
             </div>
           </div>
         )}

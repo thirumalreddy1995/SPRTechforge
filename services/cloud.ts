@@ -20,11 +20,6 @@ import {
   getDownloadURL,
   deleteObject
 } from 'firebase/storage';
-import {
-  getFunctions,
-  Functions,
-  httpsCallable
-} from 'firebase/functions';
 
 const STORAGE_KEY_CONFIG = 'SPR_TECHFORGE_FIREBASE_CONFIG';
 
@@ -72,7 +67,6 @@ class CloudService {
   private app: FirebaseApp | null = null;
   private db: Firestore | null = null;
   private storage: FirebaseStorage | null = null;
-  private functions: Functions | null = null;
   private isInitialized = false;
 
   constructor() {
@@ -95,7 +89,6 @@ class CloudService {
             this.app = initializeApp(config);
             this.db = getFirestore(this.app);
             this.storage = getStorage(this.app);
-            this.functions = getFunctions(this.app, 'us-central1');
             this.isInitialized = true;
             console.log(`Firebase Firestore Initialized (project: ${config.projectId})`);
          } catch (err) {
@@ -294,13 +287,6 @@ class CloudService {
     } catch (e) {
       console.warn("File delete failed:", e);
     }
-  }
-
-  public async createCallRoom(opts: { roomName?: string; expiryMinutes?: number } = {}): Promise<{ name: string; url: string }> {
-    if (!this.functions) throw new Error('Cloud Functions not configured');
-    const callable = httpsCallable<typeof opts, { name: string; url: string; reused: boolean }>(this.functions, 'createCallRoom');
-    const res = await callable(opts);
-    return { name: res.data.name, url: res.data.url };
   }
 }
 
