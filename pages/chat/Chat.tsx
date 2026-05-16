@@ -281,7 +281,13 @@ export const ChatPage: React.FC = () => {
     try {
       const invitation = await callUser(otherId, activeChat.id);
       const otherName = chatDisplayName(activeChat, user.id, users);
-      navigate(`/call/${encodeURIComponent(invitation.roomId)}?title=${encodeURIComponent(`Calling ${otherName}…`)}&returnTo=${encodeURIComponent('/chat')}&invitationId=${encodeURIComponent(invitation.id)}`);
+      const params = new URLSearchParams({
+        title: `Calling ${otherName}…`,
+        returnTo: '/chat',
+        invitationId: invitation.id,
+      });
+      if (invitation.roomUrl) params.set('roomUrl', invitation.roomUrl);
+      navigate(`/call/${encodeURIComponent(invitation.roomId)}?${params.toString()}`);
     } catch (e: any) {
       showToast(e.message || 'Failed to start call', 'error');
     }

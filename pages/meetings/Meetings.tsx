@@ -3,8 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, Select, SearchInput } from '../../components/Components';
 import { Meeting, MeetingParticipant, MeetingType, RsvpStatus, User } from '../../types';
+import { cloudService } from '../../services/cloud';
 
-const meetingRoomId = (meetingId: string) => `sprtechforge-meet-${meetingId}`;
+const meetingRoomId = (meetingId: string) => `meet-${meetingId.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30)}`;
+
+const computeExpiryMinutes = (endTime: string): number => {
+  const remaining = Math.ceil((new Date(endTime).getTime() - Date.now()) / 60000);
+  return Math.min(Math.max(remaining + 30, 30), 12 * 60);
+};
+
+const joinMeetingCall = async (meeting: Meeting, navigate: (to: string) => void, onError: (msg: string) => void) => {
+  try {
+    const { name, url } = await cloudService.createCallRoom({
+      roomName: meetingRoomId(meeting.id),
+      expiryMinutes: computeExpiryMinutes(meeting.endTime),
+    });
+    const params = new URLSearchParams({
+      title: meeting.title,
+      returnTo: '/meetings',
+      roomUrl: url,
+    });
+    navigate(`/call/${encodeURIComponent(name)}?${params.toString()}`);
+  } catch (e: any) {
+    console.error(e);
+    onError(e?.message || 'Could not join the meeting call.');
+  }
+};
 
 const RSVP_LABEL: Record<RsvpStatus, string> = {
   pending: 'Pending',
@@ -236,6 +260,7 @@ const DetailModal: React.FC<{
 }> = ({ isOpen, onClose, meeting, onEdit }) => {
   const navigate = useNavigate();
   const { user, users, setRsvp, cancelMeeting, showToast } = useApp();
+  const [joining, setJoining] = useState(false);
   if (!meeting || !user) return null;
 
   const isOrganizer = meeting.organizerId === user.id;
@@ -300,15 +325,18 @@ const DetailModal: React.FC<{
 
         {meeting.status === 'scheduled' && (
           <button
-            onClick={() => {
-              const url = `/call/${encodeURIComponent(meetingRoomId(meeting.id))}?title=${encodeURIComponent(meeting.title)}&returnTo=${encodeURIComponent('/meetings')}`;
+            onClick={async () => {
+              if (joining) return;
+              setJoining(true);
               onClose();
-              navigate(url);
+              await joinMeetingCall(meeting, navigate, msg => showToast(msg, 'error'));
+              setJoining(false);
             }}
-            className="w-full px-4 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center justify-center gap-2"
+            disabled={joining}
+            className="w-full px-4 py-3 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-            Join video call
+            {joining ? 'Joining…' : 'Join video call'}
           </button>
         )}
 
@@ -376,15 +404,19 @@ const DetailModal: React.FC<{
 
 const MeetingCard: React.FC<{ meeting: Meeting; onOpen: () => void; currentUserId: string }> = ({ meeting, onOpen, currentUserId }) => {
   const navigate = useNavigate();
+  const { showToast } = useApp();
+  const [joining, setJoining] = useState(false);
   const myRsvp = meeting.participants.find(p => p.userId === currentUserId)?.rsvp || 'pending';
   const isPast = new Date(meeting.endTime).getTime() < Date.now();
   const goingCount = meeting.participants.filter(p => p.rsvp === 'accepted').length;
   const canJoinCall = !isPast && meeting.status === 'scheduled';
 
-  const handleJoinCall = (e: React.MouseEvent) => {
+  const handleJoinCall = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `/call/${encodeURIComponent(meetingRoomId(meeting.id))}?title=${encodeURIComponent(meeting.title)}&returnTo=${encodeURIComponent('/meetings')}`;
-    navigate(url);
+    if (joining) return;
+    setJoining(true);
+    await joinMeetingCall(meeting, navigate, msg => showToast(msg, 'error'));
+    setJoining(false);
   };
 
   return (
@@ -417,11 +449,12 @@ const MeetingCard: React.FC<{ meeting: Meeting; onOpen: () => void; currentUserI
         {canJoinCall && (
           <button
             onClick={handleJoinCall}
+            disabled={joining}
             title="Join the video call"
-            className="shrink-0 self-center px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold flex items-center gap-1.5"
+            className="shrink-0 self-center px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs font-semibold flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-            Join
+            {joining ? '…' : 'Join'}
           </button>
         )}
       </div>

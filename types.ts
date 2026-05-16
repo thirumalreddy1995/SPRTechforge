@@ -321,6 +321,7 @@ export interface CallInvitation {
   calleeName?: string;
   chatId?: string;
   roomId: string;
+  roomUrl?: string;
   status: CallInvitationStatus;
   createdAt: string;
   respondedAt?: string;

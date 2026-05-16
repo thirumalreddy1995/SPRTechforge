@@ -771,7 +771,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) throw new Error('Not logged in');
     if (calleeId === user.id) throw new Error('Cannot call yourself');
     const callee = users.find(u => u.id === calleeId);
-    const roomId = `sprtechforge-call-${user.id}-${calleeId}-${Date.now().toString(36)}`;
+
+    if (!isCloudEnabled) throw new Error('Calls require cloud sync');
+
+    let roomName: string;
+    let roomUrl: string;
+    try {
+      const room = await cloudService.createCallRoom({
+        roomName: `spr-${user.id.slice(0, 8)}-${calleeId.slice(0, 8)}-${Date.now().toString(36)}`,
+        expiryMinutes: 90,
+      });
+      roomName = room.name;
+      roomUrl = room.url;
+    } catch (e: any) {
+      console.error('Could not create call room', e);
+      throw new Error(e?.message || 'Could not start the call. Check that the call service is configured.');
+    }
+
     const invitation: CallInvitation = {
       id: utils.generateId(),
       callerId: user.id,
@@ -779,12 +795,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       calleeId,
       calleeName: callee?.name,
       chatId,
-      roomId,
+      roomId: roomName,
+      roomUrl,
       status: 'ringing',
       createdAt: new Date().toISOString(),
     };
     setCallInvitations(p => [...p, invitation]);
-    if (isCloudEnabled) await cloudService.saveItem('callInvitations', invitation);
+    await cloudService.saveItem('callInvitations', invitation);
     logActivity('CREATE', `Called ${callee?.name || 'a user'}`, 'CallInvitation', invitation.id);
     return invitation;
   };

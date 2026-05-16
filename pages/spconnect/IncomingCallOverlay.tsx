@@ -59,7 +59,13 @@ export const IncomingCallOverlay: React.FC = () => {
     try {
       const updated = await acceptCall(incomingCall.id);
       if (updated) {
-        navigate(`/call/${encodeURIComponent(updated.roomId)}?title=${encodeURIComponent(`Call with ${updated.callerName}`)}&returnTo=${encodeURIComponent('/chat')}&invitationId=${encodeURIComponent(updated.id)}`);
+        const params = new URLSearchParams({
+          title: `Call with ${updated.callerName}`,
+          returnTo: '/chat',
+          invitationId: updated.id,
+        });
+        if (updated.roomUrl) params.set('roomUrl', updated.roomUrl);
+        navigate(`/call/${encodeURIComponent(updated.roomId)}?${params.toString()}`);
       }
     } catch (e: any) {
       showToast(e.message || 'Failed to answer', 'error');
