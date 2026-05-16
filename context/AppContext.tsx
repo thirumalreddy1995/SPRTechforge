@@ -217,11 +217,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubUsers = cloudService.subscribe(
         'users',
         d => {
-          if (d.length > 0) setUsers(d);
-          else setUsers([DEFAULT_ADMIN]);
+          if (d.length === 0) {
+            setUsers([DEFAULT_ADMIN]);
+          } else {
+            const hasDefault = d.some((u: User) => u.id === DEFAULT_ADMIN.id);
+            if (hasDefault) {
+              setUsers(d);
+            } else {
+              // Firestore was just populated for the first time (e.g. someone added a user),
+              // which would otherwise wipe the in-memory bootstrap admin and lock everyone
+              // out. Persist DEFAULT_ADMIN to Firestore so its credentials keep working.
+              setUsers([DEFAULT_ADMIN, ...d]);
+              cloudService.saveItem('users', DEFAULT_ADMIN).catch(console.error);
+            }
+          }
 
           setDataLoaded(true);
-          setIsInitialized(true); // 🔥 REQUIRED
+          setIsInitialized(true);
         },
         handleSubError
       );
