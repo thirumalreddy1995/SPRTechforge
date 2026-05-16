@@ -33,7 +33,7 @@ export const CallRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useApp();
+  const { user, callInvitations, endCall, showToast } = useApp();
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<any>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -41,6 +41,27 @@ export const CallRoom: React.FC = () => {
 
   const title = searchParams.get('title') || '';
   const returnTo = searchParams.get('returnTo') || '/chat';
+  const invitationId = searchParams.get('invitationId');
+  const invitation = invitationId ? callInvitations.find(i => i.id === invitationId) : null;
+  const isCaller = !!invitation && !!user && invitation.callerId === user.id;
+  const handledDeclineRef = useRef(false);
+
+  // Caller-side: if callee declines, exit the empty room with a toast.
+  useEffect(() => {
+    if (!invitation || !isCaller || handledDeclineRef.current) return;
+    if (invitation.status === 'declined') {
+      handledDeclineRef.current = true;
+      showToast(`${invitation.calleeName || 'They'} declined the call`, 'info');
+      navigate(returnTo, { replace: true });
+    }
+  }, [invitation?.status, isCaller, navigate, returnTo, showToast]);
+
+  const handleLeave = () => {
+    if (invitation && invitation.status !== 'ended' && invitation.status !== 'declined') {
+      endCall(invitation.id).catch(() => {});
+    }
+    navigate(returnTo, { replace: true });
+  };
 
   useEffect(() => {
     if (!roomId || !user) return;
@@ -63,18 +84,27 @@ export const CallRoom: React.FC = () => {
             email: user.username,
           },
           configOverwrite: {
-            prejoinPageEnabled: true,
+            prejoinPageEnabled: false,
+            prejoinConfig: { enabled: false },
             disableDeepLinking: true,
+            enableLobbyChat: false,
+            enableInsecureRoomNameWarning: false,
+            requireDisplayName: false,
+            disableModeratorIndicator: true,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_BRAND_WATERMARK: false,
             MOBILE_APP_PROMO: false,
+            DISABLE_VIDEO_BACKGROUND: false,
+            HIDE_INVITE_MORE_HEADER: true,
           },
         });
 
         api.addEventListener('readyToClose', () => {
-          navigate(returnTo, { replace: true });
+          handleLeave();
         });
 
         apiRef.current = api;
@@ -117,7 +147,7 @@ export const CallRoom: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate(returnTo, { replace: true })}
+          onClick={handleLeave}
           className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
         >
           Leave
@@ -138,7 +168,7 @@ export const CallRoom: React.FC = () => {
               <p className="text-slate-100 font-semibold mb-1">Couldn't start the call</p>
               <p className="text-slate-400 text-sm mb-4">{errorMsg}</p>
               <button
-                onClick={() => navigate(returnTo, { replace: true })}
+                onClick={handleLeave}
                 className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm"
               >
                 Go back

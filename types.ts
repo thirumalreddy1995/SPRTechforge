@@ -311,6 +311,21 @@ export interface ChatMessage {
   readBy: string[];
 }
 
+export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';
+
+export interface CallInvitation {
+  id: string;
+  callerId: string;
+  callerName: string;
+  calleeId: string;
+  calleeName?: string;
+  chatId?: string;
+  roomId: string;
+  status: CallInvitationStatus;
+  createdAt: string;
+  respondedAt?: string;
+}
+
 export type MeetingType = 'meeting' | 'class' | 'other';
 export type MeetingStatus = 'scheduled' | 'cancelled' | 'completed';
 export type RsvpStatus = 'pending' | 'accepted' | 'declined' | 'tentative';

@@ -38,6 +38,7 @@ import { WebLeadsPage } from './pages/WebLeads';
 import { ChatPage } from './pages/chat/Chat';
 import { MeetingsPage } from './pages/meetings/Meetings';
 import { CallRoom } from './pages/spconnect/CallRoom';
+import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -134,6 +135,7 @@ export default function App() {
     <AppProvider>
       <HashRouter>
         <ToastOverlay />
+        <IncomingCallOverlay />
         <AppRoutes />
       </HashRouter>
     </AppProvider>

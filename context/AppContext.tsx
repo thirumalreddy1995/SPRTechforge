@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 
@@ -111,6 +111,13 @@ interface AppContextType {
 
   startCallInChat: (chatId: string) => Promise<string>;
 
+  callInvitations: CallInvitation[];
+  incomingCall: CallInvitation | null;
+  callUser: (calleeId: string, chatId?: string) => Promise<CallInvitation>;
+  acceptCall: (invitationId: string) => Promise<CallInvitation | null>;
+  declineCall: (invitationId: string) => Promise<void>;
+  endCall: (invitationId: string) => Promise<void>;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -186,6 +193,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [chats, setChats] = useState<Chat[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [callInvitations, setCallInvitations] = useState<CallInvitation[]>([]);
 
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
@@ -264,11 +272,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubChats = cloudService.subscribe('chats', setChats);
       const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
       const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
+      const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
 
       return () => {
         unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
         unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-        unsubChats(); unsubChatMessages(); unsubMeetings();
+        unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv();
       };
     } else {
       try {
@@ -748,6 +757,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const RING_TIMEOUT_MS = 45000;
+
+  const incomingCall: CallInvitation | null = user
+    ? (callInvitations.find(inv =>
+        inv.calleeId === user.id &&
+        inv.status === 'ringing' &&
+        Date.now() - new Date(inv.createdAt).getTime() < RING_TIMEOUT_MS
+      ) || null)
+    : null;
+
+  const callUser = async (calleeId: string, chatId?: string): Promise<CallInvitation> => {
+    if (!user) throw new Error('Not logged in');
+    if (calleeId === user.id) throw new Error('Cannot call yourself');
+    const callee = users.find(u => u.id === calleeId);
+    const roomId = `sprtechforge-call-${user.id}-${calleeId}-${Date.now().toString(36)}`;
+    const invitation: CallInvitation = {
+      id: utils.generateId(),
+      callerId: user.id,
+      callerName: user.name,
+      calleeId,
+      calleeName: callee?.name,
+      chatId,
+      roomId,
+      status: 'ringing',
+      createdAt: new Date().toISOString(),
+    };
+    setCallInvitations(p => [...p, invitation]);
+    if (isCloudEnabled) await cloudService.saveItem('callInvitations', invitation);
+    logActivity('CREATE', `Called ${callee?.name || 'a user'}`, 'CallInvitation', invitation.id);
+    return invitation;
+  };
+
+  const acceptCall = async (invitationId: string): Promise<CallInvitation | null> => {
+    const inv = callInvitations.find(i => i.id === invitationId);
+    if (!inv) return null;
+    const updated: CallInvitation = { ...inv, status: 'accepted', respondedAt: new Date().toISOString() };
+    setCallInvitations(p => p.map(x => x.id === invitationId ? updated : x));
+    if (isCloudEnabled) await cloudService.updateItem('callInvitations', invitationId, { status: 'accepted', respondedAt: updated.respondedAt });
+    return updated;
+  };
+
+  const declineCall = async (invitationId: string): Promise<void> => {
+    const inv = callInvitations.find(i => i.id === invitationId);
+    if (!inv) return;
+    setCallInvitations(p => p.map(x => x.id === invitationId ? { ...x, status: 'declined', respondedAt: new Date().toISOString() } : x));
+    if (isCloudEnabled) await cloudService.updateItem('callInvitations', invitationId, { status: 'declined', respondedAt: new Date().toISOString() });
+  };
+
+  const endCall = async (invitationId: string): Promise<void> => {
+    setCallInvitations(p => p.map(x => x.id === invitationId ? { ...x, status: 'ended' as CallInvitationStatus } : x));
+    if (isCloudEnabled) {
+      try { await cloudService.updateItem('callInvitations', invitationId, { status: 'ended' }); } catch (e) { console.warn(e); }
+    }
+  };
+
   const startCallInChat = async (chatId: string): Promise<string> => {
     if (!user) throw new Error('Not logged in');
     const roomId = `sprtechforge-dm-${chatId}-${Date.now().toString(36)}`;
@@ -887,6 +951,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead,
       meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
       startCallInChat,
+      callInvitations, incomingCall, callUser, acceptCall, declineCall, endCall,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

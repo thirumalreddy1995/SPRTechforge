@@ -167,7 +167,7 @@ const NewDmModal: React.FC<{ isOpen: boolean; onClose: () => void; onPicked: (us
 
 export const ChatPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, users, chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead, startCallInChat, showToast } = useApp();
+  const { user, users, chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead, callUser, showToast } = useApp();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -276,9 +276,12 @@ export const ChatPage: React.FC = () => {
 
   const handleStartCall = async () => {
     if (!activeChat || activeChat.type !== 'dm') return;
+    const otherId = activeChat.participants.find(id => id !== user.id);
+    if (!otherId) return;
     try {
-      const roomId = await startCallInChat(activeChat.id);
-      handleJoinCall(roomId);
+      const invitation = await callUser(otherId, activeChat.id);
+      const otherName = chatDisplayName(activeChat, user.id, users);
+      navigate(`/call/${encodeURIComponent(invitation.roomId)}?title=${encodeURIComponent(`Calling ${otherName}…`)}&returnTo=${encodeURIComponent('/chat')}&invitationId=${encodeURIComponent(invitation.id)}`);
     } catch (e: any) {
       showToast(e.message || 'Failed to start call', 'error');
     }
