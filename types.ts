@@ -309,6 +309,32 @@ export interface ChatMessage {
   readBy: string[];
 }
 
+export type MeetingType = 'meeting' | 'class' | 'other';
+export type MeetingStatus = 'scheduled' | 'cancelled' | 'completed';
+export type RsvpStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
+
+export interface MeetingParticipant {
+  userId: string;
+  rsvp: RsvpStatus;
+  respondedAt?: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  meetingType: MeetingType;
+  organizerId: string;
+  organizerName: string;
+  participants: MeetingParticipant[];
+  startTime: string; // ISO
+  endTime: string;   // ISO
+  location?: string;
+  linkedChatId?: string;
+  status: MeetingStatus;
+  createdAt: string;
+}
+
 export interface AppState {
   currentUser: User | null;
   users: User[];

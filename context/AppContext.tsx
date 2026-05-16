@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 
@@ -103,6 +103,12 @@ interface AppContextType {
   sendChatMessage: (chatId: string, text: string, files?: File[]) => Promise<void>;
   markChatRead: (chatId: string) => void;
 
+  meetings: Meeting[];
+  createMeeting: (input: Omit<Meeting, 'id' | 'organizerId' | 'organizerName' | 'createdAt' | 'status'>) => Promise<Meeting>;
+  updateMeeting: (m: Meeting) => Promise<void>;
+  cancelMeeting: (id: string) => Promise<void>;
+  setRsvp: (meetingId: string, status: RsvpStatus) => Promise<void>;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -177,6 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [chats, setChats] = useState<Chat[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
 
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
@@ -254,11 +261,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
       const unsubChats = cloudService.subscribe('chats', setChats);
       const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
+      const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
 
       return () => {
         unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
         unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-        unsubChats(); unsubChatMessages();
+        unsubChats(); unsubChatMessages(); unsubMeetings();
       };
     } else {
       try {
@@ -283,6 +291,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setInterviewPrepSessions(data.interviewPrepSessions || []);
           setChats(data.chats || []);
           setChatMessages(data.chatMessages || []);
+          setMeetings(data.meetings || []);
         }
       } catch (e) { }
       setDataLoaded(true);
@@ -311,10 +320,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users, candidates, candidateProfiles, interviews, accounts, transactions,
         trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions,
         activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions,
-        chats, chatMessages
+        chats, chatMessages, meetings
       }));
     }
-  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, chats, chatMessages, isCloudEnabled, dataLoaded]);
+  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, chats, chatMessages, meetings, isCloudEnabled, dataLoaded]);
 
   const login = async (u?: string, p?: string) => {
     if (!u || !p) return { success: false, message: "Missing credentials" };
@@ -752,6 +761,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const createMeeting = async (input: Omit<Meeting, 'id' | 'organizerId' | 'organizerName' | 'createdAt' | 'status'>) => {
+    if (!user) throw new Error('Not logged in');
+    const meeting: Meeting = {
+      ...input,
+      id: utils.generateId(),
+      organizerId: user.id,
+      organizerName: user.name,
+      status: 'scheduled',
+      createdAt: new Date().toISOString(),
+      participants: input.participants.map(p =>
+        p.userId === user.id
+          ? { ...p, rsvp: 'accepted', respondedAt: new Date().toISOString() }
+          : p
+      ),
+    };
+    setMeetings(p => [...p, meeting]);
+    if (isCloudEnabled) await cloudService.saveItem('meetings', meeting);
+    logActivity('CREATE', `Meeting scheduled: ${meeting.title}`, 'Meeting', meeting.id);
+    return meeting;
+  };
+
+  const updateMeeting = async (m: Meeting) => {
+    setMeetings(p => p.map(x => x.id === m.id ? m : x));
+    if (isCloudEnabled) await cloudService.saveItem('meetings', m);
+    logActivity('UPDATE', `Meeting updated: ${m.title}`, 'Meeting', m.id);
+  };
+
+  const cancelMeeting = async (id: string) => {
+    const target = meetings.find(m => m.id === id);
+    if (!target) return;
+    const updated: Meeting = { ...target, status: 'cancelled' };
+    setMeetings(p => p.map(x => x.id === id ? updated : x));
+    if (isCloudEnabled) await cloudService.updateItem('meetings', id, { status: 'cancelled' });
+    logActivity('UPDATE', `Meeting cancelled: ${target.title}`, 'Meeting', id);
+  };
+
+  const setRsvp = async (meetingId: string, status: RsvpStatus) => {
+    if (!user) throw new Error('Not logged in');
+    const meeting = meetings.find(m => m.id === meetingId);
+    if (!meeting) return;
+    const now = new Date().toISOString();
+    const existing = meeting.participants.find(p => p.userId === user.id);
+    let newParticipants: MeetingParticipant[];
+    if (existing) {
+      newParticipants = meeting.participants.map(p =>
+        p.userId === user.id ? { ...p, rsvp: status, respondedAt: now } : p
+      );
+    } else {
+      // User wasn't pre-invited but is replying anyway — add them
+      newParticipants = [...meeting.participants, { userId: user.id, rsvp: status, respondedAt: now }];
+    }
+    const updated: Meeting = { ...meeting, participants: newParticipants };
+    setMeetings(p => p.map(x => x.id === meetingId ? updated : x));
+    if (isCloudEnabled) await cloudService.updateItem('meetings', meetingId, { participants: newParticipants });
+  };
+
   const syncLocalToCloud = async () => {
     if (!isCloudEnabled) return;
     try {
@@ -782,6 +847,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activityLogs, clearActivityLogs,
       interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
       chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead,
+      meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

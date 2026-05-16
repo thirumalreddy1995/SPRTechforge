@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, SearchInput } from '../../components/Components';
 import { Chat, ChatMessage, User } from '../../types';
+import { NewOrEditMeetingModal } from '../meetings/Meetings';
 
 const ANNOUNCEMENT_CHAT_ID = 'announcements-global';
 
@@ -161,6 +162,7 @@ export const ChatPage: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
+  const [showScheduleMeeting, setShowScheduleMeeting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -315,6 +317,16 @@ export const ChatPage: React.FC = () => {
                       : 'Direct message'}
                   </p>
                 </div>
+                {activeChat.type === 'dm' && (
+                  <button
+                    onClick={() => setShowScheduleMeeting(true)}
+                    title="Schedule a meeting with this person"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Schedule
+                  </button>
+                )}
               </header>
 
               <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 bg-slate-50/40">
@@ -381,6 +393,15 @@ export const ChatPage: React.FC = () => {
         </section>
       </div>
       <NewDmModal isOpen={showNewDm} onClose={() => setShowNewDm(false)} onPicked={handlePickDm} />
+      <NewOrEditMeetingModal
+        isOpen={showScheduleMeeting}
+        onClose={() => setShowScheduleMeeting(false)}
+        defaultParticipantIds={
+          activeChat?.type === 'dm'
+            ? activeChat.participants.filter(id => id !== user.id)
+            : undefined
+        }
+      />
     </Card>
   );
 };

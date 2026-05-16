@@ -36,6 +36,7 @@ import { InterviewPrepModule } from './pages/training/InterviewPrepModule';
 import { EnquiryPage } from './pages/candidates/Enquiry';
 import { WebLeadsPage } from './pages/WebLeads';
 import { ChatPage } from './pages/chat/Chat';
+import { MeetingsPage } from './pages/meetings/Meetings';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -112,6 +113,9 @@ const AppRoutes = () => {
 
       {/* Chat */}
       <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
+
+      {/* Meetings */}
+      <Route path="/meetings" element={<ProtectedRoute><Layout><MeetingsPage /></Layout></ProtectedRoute>} />
 
       {/* Master Section */}
       <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />
