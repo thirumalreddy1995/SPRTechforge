@@ -253,6 +253,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 ) : (
                   <NavItem to="/meetings" label="Meetings" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 )}
+                <NavItem to="/email" label="Email" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
               <CollapsibleGroup

@@ -311,6 +311,33 @@ export interface ChatMessage {
   readBy: string[];
 }
 
+export interface EmailAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+export type EmailDirection = 'inbound' | 'outbound';
+
+export interface EmailMessage {
+  id: string;             // Gmail message id for inbound, generated for outbound
+  direction: EmailDirection;
+  from: string;
+  to: string[];
+  cc?: string[];
+  subject: string;
+  body: string;
+  isHtml?: boolean;
+  snippet?: string;
+  attachments?: EmailAttachment[];
+  date: string;           // ISO
+  threadId?: string;
+  isRead?: boolean;
+  sentByUserId?: string;
+  sentByUserName?: string;
+}
+
 export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';
 
 export interface CallInvitation {

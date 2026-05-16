@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
+import { emailService, isEmailConfigured, SendEmailInput } from '../services/emailService';
 
 interface AppContextType {
   user: User | null;
@@ -117,6 +118,9 @@ interface AppContextType {
   acceptCall: (invitationId: string) => Promise<CallInvitation | null>;
   declineCall: (invitationId: string) => Promise<void>;
   endCall: (invitationId: string) => Promise<void>;
+
+  isEmailConfigured: boolean;
+  sendEmail: (input: SendEmailInput) => Promise<void>;
 
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
@@ -805,6 +809,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isCloudEnabled) await cloudService.updateItem('callInvitations', invitationId, { status: 'declined', respondedAt: new Date().toISOString() });
   };
 
+  const sendEmail = async (input: SendEmailInput): Promise<void> => {
+    await emailService.sendEmail(input);
+    const recipients = Array.isArray(input.to) ? input.to.join(', ') : input.to;
+    logActivity('CREATE', `Emailed ${recipients}: ${input.subject}`, 'Email');
+  };
+
   const endCall = async (invitationId: string): Promise<void> => {
     setCallInvitations(p => p.map(x => x.id === invitationId ? { ...x, status: 'ended' as CallInvitationStatus } : x));
     if (isCloudEnabled) {
@@ -952,6 +962,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
       startCallInChat,
       callInvitations, incomingCall, callUser, acceptCall, declineCall, endCall,
+      isEmailConfigured: isEmailConfigured(), sendEmail,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

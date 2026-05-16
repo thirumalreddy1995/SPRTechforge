@@ -37,6 +37,7 @@ import { EnquiryPage } from './pages/candidates/Enquiry';
 import { WebLeadsPage } from './pages/WebLeads';
 import { ChatPage } from './pages/chat/Chat';
 import { MeetingsPage } from './pages/meetings/Meetings';
+import { EmailPage } from './pages/spconnect/Email';
 import { CallRoom } from './pages/spconnect/CallRoom';
 import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
 
@@ -118,6 +119,9 @@ const AppRoutes = () => {
 
       {/* Meetings */}
       <Route path="/meetings" element={<ProtectedRoute><Layout><MeetingsPage /></Layout></ProtectedRoute>} />
+
+      {/* Email */}
+      <Route path="/email" element={<ProtectedRoute><Layout><EmailPage /></Layout></ProtectedRoute>} />
 
       {/* Video/audio call (Jitsi) - intentionally no Layout, full-screen */}
       <Route path="/call/:roomId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
