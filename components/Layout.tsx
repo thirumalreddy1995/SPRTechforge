@@ -210,6 +210,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               >
                 <NavItem to="/dashboard" label="Dashboard" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
                 <NavItem to="/address-book" label="Address Book" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+              </CollapsibleGroup>
+
+              <CollapsibleGroup
+                id="spr-connect"
+                isSidebarCollapsed={isSidebarCollapsed}
+                setIsSidebarCollapsed={setIsSidebarCollapsed}
+                openGroupId={openGroupId}
+                setOpenGroupId={setOpenGroupId}
+                title="SPRConnect"
+                icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
+              >
                 {!isSidebarCollapsed ? (
                   <Link
                     to="/chat"
