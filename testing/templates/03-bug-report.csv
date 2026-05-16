@@ -1,0 +1,36 @@
+Field,Value,Notes
+Bug ID,BUG-001,Auto-increment. Use the next free number from 04-bug-tracker.csv
+Title,Short one-line summary,e.g. 'Cancelling an interview does not clear the today badge'
+Module / Epic,E5 Interviews,Pick from: E1 Auth · E2 Candidates · E3 Enquiries · E4 Training · E5 Interviews · E6 Finance · E7 Chat · E8 Meetings · E9 Video · E10 Email · Cross-cutting
+Story ID,SPR-030,Link to the user story being tested
+Test Case ID,TC-017,Link to the test case that revealed it
+Severity,High,Critical / High / Medium / Low (see 04-agile-process.md)
+Priority,P1,P0 / P1 / P2 / P3 (see 04-agile-process.md)
+Reporter,Tester 2,Your name
+Date Reported,2026-05-16,YYYY-MM-DD
+Environment,QA,QA / Local
+Browser & OS,Chrome 127 on Windows 11,Always include version numbers
+Build / Commit,9f37fb3,Get this from the deployed app footer or last git push
+Pre-conditions,Logged in as admin; at least one scheduled interview today,What state the app needs to be in
+Steps to Reproduce,"1. Schedule an interview for today
+2. Go to Interviews list
+3. Cancel the interview
+4. Look at sidebar Training group",One step per line; be specific
+Expected Result,"Sidebar badge 'Today: N' should decrement by 1 when an interview for today is cancelled",
+Actual Result,"Badge still shows the old count; only updates after a full page refresh",
+Frequency,Always,Always / Sometimes / Once / Cannot reproduce
+Workaround,Refresh the page,If any
+Screenshots / Logs,/shared/bugs/BUG-001-screenshot.png,Link to shared drive folder; include console logs if relevant
+Loom / Video,(optional),If steps are tricky to write
+Status,New,Set this initially; lead changes to Open after triage
+Assignee,(blank),Dev fills in
+Comments,(thread below),
+,,
+2026-05-16 14:22 Tester 2,Filed,
+2026-05-16 14:30 Lead,Confirmed; priority is P1 because Interviews badge accuracy is in our master KPI; moved to Open and assigned to dev,
+,,
+,,
+INSTRUCTIONS,,
+,,
+"How to use this template","Make a copy of this file per bug, OR — better — file one row per bug directly into 04-bug-tracker.csv. This single-bug template is mostly for richer write-ups with screenshots/Looms inline that don't fit a row.",
+"Where to put it","If you use this template per bug, save copies in your shared drive under /bugs/. The bug tracker (04-bug-tracker.csv) is the single source of truth for status.",

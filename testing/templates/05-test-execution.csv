@@ -1,0 +1,22 @@
+Cycle,Sprint,TC ID,Story ID,Title,Executed By,Execution Date,Browser & OS,Build/Commit,Status,Actual Result,Bugs Raised,Time Taken (min),Notes
+S1-Cycle1,S1,TC-001,SPR-001,Login with valid bootstrap admin,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Logged in successfully; dashboard rendered,,2,Smooth
+S1-Cycle1,S1,TC-002,SPR-002,Login with wrong password,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Inline error 'Invalid credentials' shown as expected,,1,
+S1-Cycle1,S1,TC-003,SPR-002,Login with unknown username,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Same inline error,,1,
+S1-Cycle1,S1,TC-004,SPR-002,Login with empty fields,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Validation prevented submit,,1,
+S1-Cycle1,S1,TC-005,SPR-003,Logout returns to landing,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Session cleared; /dashboard redirected to /login,,2,
+S1-Cycle1,S1,TC-006,SPR-004,Session expires after timeout,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Not Run,,,5,Need to coordinate with dev — possibly tweak SESSION_TIMEOUT_MS
+S1-Cycle1,S1,TC-007,SPR-006,Admin can add a new user,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,New user created and could log in,,3,
+S1-Cycle1,S1,TC-008,SPR-068,Bootstrap admin auto-restored regression,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,DEFAULT_ADMIN re-appeared after first save,,4,Past prod bug regression
+S1-Cycle1,S1,TC-009,SPR-010,Master vs non-master sidebar visibility,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,Finance hidden for non-master,,3,
+S1-Cycle1,S1,TC-045,SPR-065,Smoke pass on Chrome,Tester 1,2026-05-18,Chrome 127 / Win 11,9f37fb3,Pass,All sidebar pages opened without console errors,,5,
+S1-Cycle1,S1,TC-046,SPR-065,Smoke pass on Edge,Tester 1,2026-05-18,Edge 127 / Win 11,9f37fb3,Pass,Same as Chrome,,5,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+INSTRUCTIONS,,,,,,,,,,,,,
+"Cycle: free-form label like S1-Cycle1 (sprint + run number). A new cycle starts whenever you re-run a batch against a new build.",,,,,,,,,,,,,
+"Status: Pass / Fail / Blocked / Not Run / Deferred. For Fail, file a bug and put its ID in 'Bugs Raised'.",,,,,,,,,,,,,
+"Build/Commit: copy the commit hash from the running app (footer if you wire it up, or git log of master/QA).",,,,,,,,,,,,,
+"Once a sprint, the lead computes pass rate from this sheet for the status email: =COUNTIF(J:J,'Pass') / COUNTA(J:J).",,,,,,,,,,,,,
+"Keep ALL cycles — don't overwrite. Trend over time matters more than the last run.",,,,,,,,,,,,,

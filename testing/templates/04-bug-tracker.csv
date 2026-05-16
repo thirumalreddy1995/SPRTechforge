@@ -1,0 +1,20 @@
+Bug ID,Title,Module/Epic,Story ID,Test Case ID,Severity,Priority,Status,Reporter,Date Reported,Assignee,Environment,Browser & OS,Build/Commit,Steps to Reproduce,Expected,Actual,Workaround,Screenshot Link,Date Resolved,Fixed In Build,Verified By,Sprint,Comments
+BUG-001,Cancelling an interview does not clear the today badge,E5 Interviews,SPR-030,TC-017,High,P1,New,Tester 2,2026-05-18,,QA,Chrome 127 / Win 11,9f37fb3,"1. Schedule interview today
+2. Cancel it
+3. Look at sidebar badge",Badge should decrement,Badge stays until manual refresh,Refresh page,/shared/bugs/BUG-001.png,,,,S2,Filed 2026-05-18 — example only
+BUG-002,Bootstrap admin re-saves itself on every login,E1 Auth,SPR-068,TC-008,Low,P3,New,Tester 1,2026-05-18,,QA,Edge 127 / Win 11,9f37fb3,"1. Login as admin-01
+2. Check Firestore logs for users collection writes",One DEFAULT_ADMIN write only when missing,Write happens on every login attempt even when admin-01 exists,None needed,,,,,S2,"Filed 2026-05-18 — example. Probably a no-op write but increases Firestore usage."
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+INSTRUCTIONS,,,,,,,,,,,,,,,,,,,,,,,
+"This is the single source of truth for bug status. One bug per row.",,,,,,,,,,,,,,,,,,,,,,,
+"Status values: New, Open, In Progress, Fixed, Verified, Closed, Reopened, Deferred, Won't Fix. See 04-agile-process.md for the full lifecycle.",,,,,,,,,,,,,,,,,,,,,,,
+"Severity (technical): Critical / High / Medium / Low. Priority (when to fix): P0 / P1 / P2 / P3.",,,,,,,,,,,,,,,,,,,,,,,
+"In Excel, freeze the header row (View > Freeze Panes > Freeze Top Row) and turn on AutoFilter (Data > Filter) so you can slice by status / priority / assignee.",,,,,,,,,,,,,,,,,,,,,,,
+"Apply conditional formatting on Status: red for New/Open/Reopened, yellow for In Progress/Fixed, green for Verified/Closed, grey for Deferred/Won't Fix.",,,,,,,,,,,,,,,,,,,,,,,
