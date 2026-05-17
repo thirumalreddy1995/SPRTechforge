@@ -1,6 +1,6 @@
 # SPRTechforge — Test Management Pack
 
-Everything your 4-person testing team needs to test the application end-to-end using Agile methodology. This pack is meant to live in the repo so it's versioned alongside the code, but the working files (user stories, test cases, bugs, etc.) are CSVs designed to be opened directly in Excel and saved as `.xlsx` for day-to-day use.
+Everything your 4-person test team needs to run Agile testing on the SPRTechforge application. The working file is **[SPR-Testing.xlsx](SPR-Testing.xlsx)** — a single Excel workbook with 7 sheets, proper dropdowns on every status field, frozen headers, autofilters, and ~140 pre-populated user stories with detailed acceptance criteria.
 
 ---
 
@@ -9,114 +9,143 @@ Everything your 4-person testing team needs to test the application end-to-end u
 ```
 testing/
 ├── README.md                       ← you are here
-├── 01-scope.md                     ← What we test, what we don't, environments
+├── 01-scope.md                     ← What we test, environments, browsers
 ├── 02-test-plan.md                 ← Strategy, roles for 4 testers, schedule
-├── 03-automation-plan.md           ← Tooling + phased rollout (Playwright)
-├── 04-agile-process.md             ← Sprint cadence, ceremonies, DoD/DoR
-└── templates/
-    ├── 01-user-stories.csv         ← All ~50 stories across 10 epics
-    ├── 02-test-cases.csv           ← Manual test cases (~80 to start)
-    ├── 03-bug-report.csv           ← Single-bug template for filing
-    ├── 04-bug-tracker.csv          ← Consolidated bug status tracker
-    ├── 05-test-execution.csv       ← Run results per test case per cycle
-    ├── 06-sprint-board.csv         ← 5-sprint plan with assignments
-    └── 07-automation-coverage.csv  ← Manual-vs-automated tracking
+├── 03-automation-plan.md           ← Playwright pyramid + phased rollout
+├── 04-agile-process.md             ← Sprints, ceremonies, DoR/DoD, lifecycles
+├── SPR-Testing.xlsx                ← THE working file — open this in Excel
+└── generator/
+    ├── package.json                ← One devDep: exceljs
+    ├── build.js                    ← Re-generates SPR-Testing.xlsx
+    └── data/
+        ├── stories.js              ← Source data for the User Stories sheet
+        └── test-cases.js           ← Source data for the Test Cases sheet
 ```
 
 ---
 
-## How to use this in Excel
+## What's inside SPR-Testing.xlsx
 
-Each CSV is one sheet. You have two options to get one consolidated workbook:
+| Sheet | Content | Dropdowns on |
+| --- | --- | --- |
+| **README** | On-sheet intro, status legend, conventions | — |
+| **User Stories** | 142 stories across 10 epics, 3–5 acceptance criteria each | Epic, Priority, Effort, Status, Owner, Sprint |
+| **Test Cases** | 91 manual test cases linked back to stories | Type, Priority, Status, Owner |
+| **Bugs** | Merged report + tracker. 2 example rows + 200 blank rows ready to fill | Module, Severity, Priority, Status, Environment, Frequency, Sprint, Reporter, Assignee, Verified By |
+| **Test Execution** | 2 example rows + 500 blank rows for per-cycle Pass/Fail/Blocked tracking | Sprint, Executed By, Status |
+| **Sprint Board** | 6-sprint plan with tester assignments pre-loaded | Sprint, Epic, Owner, Priority, Effort, Status, Committed, Done |
+| **Automation Coverage** | One row per test case showing Manual vs Automated | Priority, Automation Status, Last Run Result, Automation Owner |
 
-**Option A — One workbook, multiple sheets (recommended)**
+Each sheet has:
 
-1. Open a blank workbook in Excel.
-2. For each CSV file: `Data → Get Data → From Text/CSV` → pick the file → `Load`. This adds it as a new sheet.
-3. Rename each sheet to something readable (e.g., "User Stories", "Test Cases", etc.).
-4. Save the workbook as **`SPR-Testing.xlsx`** somewhere shared (OneDrive / Google Drive / SharePoint).
-5. Add filters to each sheet (`Data → Filter`) and turn the data into formatted Tables (`Insert → Table`) so dropdowns and conditional formatting work.
-
-**Option B — One CSV per file (keep them separate)**
-
-If you'd rather treat each as its own file: just double-click any CSV to open in Excel and `Save As → Excel Workbook (.xlsx)`. Repeat for each.
-
-The CSV files in the repo are the canonical templates. Once your team starts filling them in, those filled-in files live in your shared drive, not in git — keep test results out of the codebase.
-
----
-
-## Where to start (day one for the team)
-
-1. **Lead reads** `01-scope.md`, `02-test-plan.md`, `04-agile-process.md`. About 30 minutes.
-2. **All 4 testers read** `04-agile-process.md` so everyone speaks the same language. About 10 minutes.
-3. **Convert the CSVs to one Excel workbook** following Option A above. Put it in a shared drive.
-4. **Sprint planning meeting** — pull stories from `01-user-stories.csv` into Sprint 0 using `06-sprint-board.csv`. The board is pre-populated with a recommended 5-sprint plan and tester assignments. Adjust as you see fit.
-5. **Testers write their own test cases** under their assigned stories, using `02-test-cases.csv` as the template. Each row is one test case.
-6. **Daily** — testers update `05-test-execution.csv` (Pass / Fail / Blocked) and file bugs in `04-bug-tracker.csv` if anything fails.
-7. **Sprint review** at end of each sprint, retro, plan next.
+- Frozen header row (you can scroll without losing column titles)
+- Coloured priority cells (P0 = red, P1 = orange, P2 = yellow, P3 = grey)
+- Alternating row stripes for readability
+- AutoFilter enabled on the header row
 
 ---
 
-## Roles for your 4-person team
+## How to use
 
-The plan in `02-test-plan.md` and `06-sprint-board.csv` assumes this division:
+### Day one
 
-| Role                                 | Person          | Owns                                                         |
-| ------------------------------------ | --------------- | ------------------------------------------------------------ |
-| **QA Lead** (also tester)            | Tester 1        | Test plan, sprint planning, story grooming, regression suite |
-| **Functional Tester — Core**         | Tester 2        | Auth, Users, Candidates, Enquiries, Training, Interviews     |
-| **Functional Tester — Finance + Email** | Tester 3     | Finance (master), SPRConnect → Email, Admin                  |
-| **Functional Tester — SPRConnect**   | Tester 4        | Chat, Meetings, Video Calls                                  |
+1. **Lead** opens `SPR-Testing.xlsx`, saves a copy to your shared drive (OneDrive / SharePoint / Google Drive), and shares the link with the team. **From now on, that shared-drive copy is the working file** — not the one in the repo.
+2. **All 4 testers** open the workbook, read the **README** sheet, then `02-test-plan.md` + `04-agile-process.md` for context (~20 min).
+3. **Sprint 0 begins** using the Sprint Board sheet. Sprint 0 row already lists the setup tasks (accounts, smoke suite, etc.).
 
-Cross-coverage: everyone runs the smoke suite at sprint start; everyone files bugs against anyone's area; the lead arbitrates priorities and triages.
+### Each sprint
+
+1. **Plan** (Mon W1) — In the Sprint Board, set `Committed = Yes` and `Status = Sprint` for the stories you're picking up this sprint.
+2. **Design** (Tue–Wed W1) — Add or extend rows in the Test Cases sheet for stories that need new cases.
+3. **Execute** (Thu W1 → Wed W2) — Run cases manually. Add a row in the Test Execution sheet for each (test case × cycle). Status is Pass / Fail / Blocked / Not Run / Skipped / Deferred.
+4. **File bugs** — Anything that fails gets a row in the Bugs sheet. Bug ID format is `BUG-###`.
+5. **Daily triage** (15 min, after standup) — Lead + dev walk through `Status = New` rows in the Bugs sheet and promote to Open with priority/severity.
+6. **Demo + retro** (Fri W2) — Mark completed stories `Status = Done` in both the User Stories sheet AND the Sprint Board sheet.
+
+### Filing a bug (the merged way)
+
+- Open the **Bugs** sheet → scroll to the first empty row.
+- Pick the next free `BUG-###` ID.
+- Fill in Title, Module/Epic, Story ID, Test Case ID (if any), Severity, Priority, Steps to Reproduce, Expected, Actual.
+- Status starts at `New`; lead changes to `Open` at triage.
+- Screenshots / Looms go into your shared drive; paste the link into the Screenshot or Loom column.
+- One bug per row — never compound multiple issues into one row.
+
+### Updating a status
+
+Click any status cell — the dropdown arrow appears in the cell. Pick from the list. The cell types in this workbook do **not** accept free-text values for status fields, so typos that would fragment your filters are impossible.
+
+---
+
+## Conventions
+
+- **Story IDs**: `SPR-###` (e.g., `SPR-001`, `SPR-142`).
+- **Test Case IDs**: `TC-###`.
+- **Bug IDs**: `BUG-###`.
+- **Sprint IDs**: `S0`–`S5`.
+- **Severity (technical)**: Critical / High / Medium / Low.
+- **Priority (when to fix)**: P0 (showstopper) → P3 (cosmetic). See `04-agile-process.md` for the severity↔priority mapping.
+
+---
+
+## Need to reset the workbook?
+
+If the workbook gets in a bad state and you want to regenerate from the source data:
+
+```bash
+cd testing/generator
+npm install        # one-time
+npm run build      # rewrites ../SPR-Testing.xlsx
+```
+
+You'll lose anything you typed into the workbook copy in the repo. **Your shared-drive copy is untouched** — that's the actual working file.
+
+To customise the seeded story/test data going forward, edit:
+
+- `testing/generator/data/stories.js`
+- `testing/generator/data/test-cases.js`
+
+Then re-run `npm run build` and your changes show up the next time someone resets.
+
+---
+
+## Roles for the 4-person team
+
+| Role | Person | Epics |
+| --- | --- | --- |
+| **QA Lead** (also tests) | Tester 1 | E1 Auth, regression, cross-browser, smoke automation |
+| **Functional — Core domain** | Tester 2 | E2 Candidates · E3 Enquiries · E4 Training · E5 Interviews |
+| **Functional — Finance + Email** | Tester 3 | E6 Finance · E10 Email |
+| **Functional — SPRConnect realtime** | Tester 4 | E7 Chat · E8 Meetings · E9 Video calls |
+
+Cross-coverage: every tester runs the smoke suite at sprint start; everyone can file bugs against anyone's area; the lead arbitrates.
 
 ---
 
 ## Test environments
 
-| Environment | URL                                         | Use for                              |
-| ----------- | ------------------------------------------- | ------------------------------------ |
-| **QA**      | https://sprtechforge-qa.web.app             | All testing (this is your main env)  |
-| **Local**   | `npm run dev` (http://localhost:5173)       | Reproducing bugs, dev-side investigation |
-| **Production** | https://sprtechforge.com                  | **Do not test against prod.** UAT only |
+| Env | URL | Use for |
+| --- | --- | --- |
+| **QA** | https://sprtechforge-qa.web.app | All testing (main env) |
+| **Local** | `npm run dev` (http://localhost:5173) | Reproducing bugs locally |
+| **Production** | https://sprtechforge.com | **Do not test against prod.** UAT only |
 
-Bootstrap login on QA (for first session):
+Bootstrap login on QA:
 
 ```
 Username: thirumalreddy@sprtechforge.com
 Password: ThiruPriya@13
 ```
 
-After your first session, the QA Lead should create one Firestore user per tester (Admin → Users → Add User) so each person has their own credentials and activity logs are clean.
-
----
-
-## Conventions
-
-- **Story IDs**: `SPR-###` (sequential, no gaps). Same prefix as the project, kept consistent across all sheets.
-- **Test Case IDs**: `TC-###`.
-- **Bug IDs**: `BUG-###`.
-- **Sprint IDs**: `S0`, `S1`, `S2`, `S3`, `S4`, `S5`.
-- **Priorities**: P0 (showstopper) → P3 (cosmetic). See `04-agile-process.md` for severity ↔ priority mapping.
-- **Statuses** — see each template's header rows for the allowed values. Use Excel data validation dropdowns to enforce them.
+Replace this with rotated tester accounts during Sprint 0.
 
 ---
 
 ## What's NOT in this pack (and why)
 
-- **Performance/load testing tooling** (k6, JMeter) — not relevant at this team size. We add it if/when usage grows.
-- **Security testing artifacts** (OWASP checklist, pentest plan) — out of scope for this round. Add separately when the app handles real PII at scale.
-- **Test data generation scripts** — your dataset is small enough to seed manually via Admin → Users. We can automate later if needed.
-- **CI dashboards / test reporting tools** (TestRail, Zephyr, etc.) — Excel covers it for 4 testers. Graduate to a tool when you outgrow this.
+- Performance / load tooling (k6, JMeter) — out of scope at this team size
+- Security audit artifacts (pentest plan, OWASP checklist) — separate engagement when warranted
+- Test data factories or seed scripts — your dataset is small; manual seeding via Admin → Users is fine
+- CI dashboards (TestRail / Zephyr / qTest) — Excel is the right size for 4 testers
 
----
-
-## Maintenance
-
-When the dev team adds a new feature:
-
-1. Add a new user story row to `01-user-stories.csv` (or the live workbook).
-2. Tester assigned to that area writes new test cases in `02-test-cases.csv`.
-3. Schedule the story into the next sprint via `06-sprint-board.csv`.
-
-When automation is added for a manual test case, mark it `Automated` in `07-automation-coverage.csv` so we know what's still being run by hand.
+Add any of these only when the team outgrows the current setup.
