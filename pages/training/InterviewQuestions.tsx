@@ -1,8 +1,251 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, Button, Modal, Input, ConfirmationModal, BackButton } from '../../components/Components';
+import { Card, Button, Modal, Input, ConfirmationModal, BackButton, Select } from '../../components/Components';
 import * as utils from '../../utils';
 import { InterviewModule, InterviewQuestion } from '../../types';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bulk upload modal — paste text, drop a .txt/.csv, or upload an Excel (.xlsx).
+// The xlsx library is dynamic-imported so it only loads when the user opens
+// this modal, keeping it out of the main bundle.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const parseCsvLine = (line: string): string => {
+  // Take the first column. Handles "quoted, with commas" and escaped "" quotes.
+  const m = line.match(/^\s*"((?:[^"]|"")*)"\s*(?:,|$)/);
+  if (m) return m[1].replace(/""/g, '"').trim();
+  const idx = line.indexOf(',');
+  return (idx === -1 ? line : line.slice(0, idx)).trim();
+};
+
+const stripHeader = (rows: string[]): string[] => {
+  if (rows.length > 0 && /^(question|questions|q)\s*$/i.test(rows[0])) return rows.slice(1);
+  return rows;
+};
+
+const BulkUploadQuestionsModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  defaultModuleId?: string;
+}> = ({ isOpen, onClose, defaultModuleId }) => {
+  const { interviewModules, interviewQuestions, addInterviewQuestionsBulk, showToast } = useApp();
+  const [activeTab, setActiveTab] = useState<'paste' | 'file'>('paste');
+  const [moduleId, setModuleId] = useState<string>('');
+  const [pasteText, setPasteText] = useState('');
+  const [parsed, setParsed] = useState<string[]>([]);
+  const [fileName, setFileName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Default module on open
+  useEffect(() => {
+    if (!isOpen) return;
+    if (defaultModuleId) setModuleId(defaultModuleId);
+    else if (interviewModules.length > 0) setModuleId(interviewModules[0].id);
+    setActiveTab('paste');
+    setPasteText('');
+    setParsed([]);
+    setFileName('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [isOpen, defaultModuleId]);
+
+  // Re-parse pasted text whenever it changes (only while paste tab is active)
+  useEffect(() => {
+    if (activeTab !== 'paste') return;
+    const lines = pasteText
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+    setParsed(stripHeader(lines));
+  }, [pasteText, activeTab]);
+
+  const handleFile = async (file: File) => {
+    const lower = file.name.toLowerCase();
+    setFileName(file.name);
+    try {
+      if (lower.endsWith('.csv') || lower.endsWith('.txt')) {
+        const text = await file.text();
+        const cells = text
+          .split(/\r?\n/)
+          .map(parseCsvLine)
+          .filter(q => q.length > 0);
+        setParsed(stripHeader(cells));
+      } else if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        const xlsx: any = await import('xlsx');
+        const data = await file.arrayBuffer();
+        const wb = xlsx.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = xlsx.utils.sheet_to_json(ws, { header: 1, blankrows: false }) as any[][];
+        const cells = rows
+          .map(r => String((r && r[0]) ?? '').trim())
+          .filter(q => q.length > 0);
+        setParsed(stripHeader(cells));
+      } else {
+        showToast('Unsupported file type. Use .csv, .txt or .xlsx', 'error');
+        setParsed([]);
+        setFileName('');
+      }
+    } catch (e: any) {
+      console.error(e);
+      showToast(e?.message || 'Could not read file', 'error');
+      setParsed([]);
+    }
+  };
+
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const handleCommit = async () => {
+    if (!moduleId) { showToast('Pick a module first', 'error'); return; }
+    if (parsed.length === 0) { showToast('Nothing to import', 'error'); return; }
+    setSaving(true);
+    try {
+      const existing = interviewQuestions.filter(q => q.moduleId === moduleId);
+      const startOrder = existing.length > 0 ? Math.max(...existing.map(q => q.order)) : 0;
+      const newQs: InterviewQuestion[] = parsed.map((text, i) => ({
+        id: utils.generateId(),
+        moduleId,
+        question: text,
+        order: startOrder + i + 1,
+      }));
+      await addInterviewQuestionsBulk(newQs);
+      showToast(`Imported ${newQs.length} question${newQs.length === 1 ? '' : 's'}`, 'success');
+      onClose();
+    } catch (e: any) {
+      showToast(e?.message || 'Import failed', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const moduleName = useMemo(
+    () => interviewModules.find(m => m.id === moduleId)?.title || '',
+    [interviewModules, moduleId]
+  );
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Bulk upload questions" size="lg">
+      <div className="space-y-3">
+        {interviewModules.length === 0 ? (
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+            You need at least one Interview Module before importing questions. Click "+ Add Module" first.
+          </div>
+        ) : (
+          <>
+            <Select
+              label="Target module"
+              value={moduleId}
+              onChange={e => setModuleId(e.target.value)}
+            >
+              {interviewModules.map(m => (
+                <option key={m.id} value={m.id}>{m.title}</option>
+              ))}
+            </Select>
+
+            <div className="flex gap-1 border-b border-slate-200">
+              {(['paste', 'file'] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setActiveTab(t)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === t
+                      ? 'border-blue-600 text-blue-700'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {t === 'paste' ? 'Paste text' : 'Upload file'}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === 'paste' ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Paste questions (one per line)
+                </label>
+                <textarea
+                  value={pasteText}
+                  onChange={e => setPasteText(e.target.value)}
+                  rows={10}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                  placeholder={`What is JSX?\nExplain the virtual DOM\nDifference between useEffect and useLayoutEffect\n…`}
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Empty lines are ignored. If the first line is "Question" (header), it's skipped automatically. Works for Notepad, WordPad, anywhere you have a list of questions.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Upload a file (.xlsx, .csv, or .txt)
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50"
+                  >
+                    Choose file…
+                  </button>
+                  <span className="text-xs text-slate-500 truncate">{fileName || 'No file chosen'}</span>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.txt,.xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  In Excel: put one question per row in the first column. A "Question" header row is optional and will be skipped if present. Other columns are ignored.
+                </p>
+              </div>
+            )}
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Preview ({parsed.length} question{parsed.length === 1 ? '' : 's'})
+                </span>
+                {moduleName && (
+                  <span className="text-[11px] text-slate-500">Target: <strong>{moduleName}</strong></span>
+                )}
+              </div>
+              {parsed.length === 0 ? (
+                <p className="text-xs text-slate-400 italic py-3 text-center">
+                  Nothing parsed yet. {activeTab === 'paste' ? 'Paste some questions above.' : 'Pick a file above.'}
+                </p>
+              ) : (
+                <ol className="text-sm text-slate-800 max-h-40 overflow-y-auto space-y-0.5 list-decimal pl-5">
+                  {parsed.slice(0, 50).map((q, i) => (
+                    <li key={i} className="truncate" title={q}>{q}</li>
+                  ))}
+                  {parsed.length > 50 && (
+                    <li className="list-none text-xs text-slate-500 italic">…and {parsed.length - 50} more</li>
+                  )}
+                </ol>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+              <Button
+                variant="primary"
+                onClick={handleCommit}
+                disabled={saving || parsed.length === 0 || !moduleId}
+              >
+                {saving ? 'Importing…' : `Import ${parsed.length || ''} ${parsed.length === 1 ? 'question' : 'questions'}`}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+};
 
 const COLORS = [
   { label: 'Orange', value: 'border-l-orange-500' },
@@ -36,6 +279,9 @@ export const InterviewQuestions: React.FC = () => {
   
   // --- Selection State for Batch Delete ---
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+
+  // --- Bulk Upload State ---
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
@@ -163,7 +409,15 @@ export const InterviewQuestions: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
             {isAdmin && (
-               <Button onClick={openAddModule}>+ Add Module</Button>
+               <>
+                  <Button variant="secondary" onClick={() => setShowBulkUpload(true)} title="Import many questions from Excel, CSV, or pasted text">
+                     <span className="inline-flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
+                        Bulk Upload
+                     </span>
+                  </Button>
+                  <Button onClick={openAddModule}>+ Add Module</Button>
+               </>
             )}
             <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -311,12 +565,17 @@ export const InterviewQuestions: React.FC = () => {
          </form>
       </Modal>
 
-      <ConfirmationModal 
-        isOpen={!!deleteModuleId} 
-        onClose={() => setDeleteModuleId(null)} 
-        onConfirm={handleDeleteModule} 
-        title="Delete Module" 
-        message="Are you sure you want to delete this module? All contained questions will be lost." 
+      <ConfirmationModal
+        isOpen={!!deleteModuleId}
+        onClose={() => setDeleteModuleId(null)}
+        onConfirm={handleDeleteModule}
+        title="Delete Module"
+        message="Are you sure you want to delete this module? All contained questions will be lost."
+      />
+
+      <BulkUploadQuestionsModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
       />
     </div>
   );

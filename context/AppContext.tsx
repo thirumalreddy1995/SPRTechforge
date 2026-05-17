@@ -77,6 +77,7 @@ interface AppContextType {
 
   interviewQuestions: InterviewQuestion[];
   addInterviewQuestion: (q: InterviewQuestion) => void;
+  addInterviewQuestionsBulk: (qs: InterviewQuestion[]) => Promise<void>;
   updateInterviewQuestion: (q: InterviewQuestion) => void;
   deleteInterviewQuestion: (id: string) => void;
 
@@ -452,6 +453,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteInterviewModule = (id: string) => { setInterviewModules(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviewModules', id); };
 
   const addInterviewQuestion = (q: InterviewQuestion) => { setInterviewQuestions(p => [...p, q]); if (isCloudEnabled) cloudService.saveItem('interviewQuestions', q); };
+  const addInterviewQuestionsBulk = async (qs: InterviewQuestion[]) => {
+    if (qs.length === 0) return;
+    setInterviewQuestions(p => [...p, ...qs]);
+    if (isCloudEnabled) await cloudService.uploadBatch('interviewQuestions', qs);
+    logActivity('CREATE', `Bulk imported ${qs.length} interview questions`, 'InterviewQuestion');
+  };
   const updateInterviewQuestion = (q: InterviewQuestion) => { setInterviewQuestions(p => p.map(x => x.id === q.id ? q : x)); if (isCloudEnabled) cloudService.updateItem('interviewQuestions', q.id, q); };
   const deleteInterviewQuestion = (id: string) => { setInterviewQuestions(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviewQuestions', id); };
 
@@ -954,7 +961,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       trainingTopics, addTrainingTopic, updateTrainingTopic, deleteTrainingTopic,
       trainingLogs, addTrainingLog, batchUpdateTrainingLogs,
       interviewModules, addInterviewModule, updateInterviewModule, deleteInterviewModule,
-      interviewQuestions, addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
+      interviewQuestions, addInterviewQuestion, addInterviewQuestionsBulk, updateInterviewQuestion, deleteInterviewQuestion,
       candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest,
       activityLogs, clearActivityLogs,
       interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
