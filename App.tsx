@@ -40,6 +40,7 @@ import { MeetingsPage } from './pages/meetings/Meetings';
 import { EmailPage } from './pages/spconnect/Email';
 import { CallRoom } from './pages/spconnect/CallRoom';
 import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
+import { isMasterUser } from './utils';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -61,8 +62,9 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
   if (!isInitialized) return null;
   if (!user) return <Navigate to="/login" replace />;
-  // Secure master check based on the specific master username
-  if (user.username !== 'thirumalreddy@sprtechforge.com') return <Navigate to="/dashboard" replace />;
+  // G-06: master gate now reads the isMaster flag on the user record. Server-side
+  // enforcement of the same predicate lands with G-02 Firestore rules.
+  if (!isMasterUser(user)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 

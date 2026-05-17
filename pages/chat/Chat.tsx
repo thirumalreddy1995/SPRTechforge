@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, SearchInput } from '../../components/Components';
 import { Chat, ChatMessage, User } from '../../types';
 import { NewOrEditMeetingModal } from '../meetings/Meetings';
+import { isMasterUser } from '../../utils';
 
 const ANNOUNCEMENT_CHAT_ID = 'announcements-global';
 
@@ -227,7 +228,7 @@ export const ChatPage: React.FC = () => {
 
   const canPostInActive = activeChat
     ? activeChat.type === 'announcement'
-      ? user.role === 'admin' || user.username === 'thirumalreddy@sprtechforge.com'
+      ? user.role === 'admin' || isMasterUser(user)
       : activeChat.participants.includes(user.id)
     : false;
 

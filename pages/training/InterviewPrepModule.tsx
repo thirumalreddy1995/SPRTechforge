@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button } from '../../components/Components';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 import { InterviewPrepSession, InterviewPrepResponse } from '../../types';
 
 // ─── Q&A Bank ─────────────────────────────────────────────────────────────────
@@ -232,7 +233,7 @@ export const InterviewPrepModule: React.FC = () => {
   const { user, candidates, interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession, showToast } = useApp();
 
   const isCandidate = user?.role === 'candidate';
-  const isAdmin = user?.role === 'admin' || user?.username === 'thirumalreddy@sprtechforge.com';
+  const isAdmin = user?.role === 'admin' || isMasterUser(user);
   const linkedCandidate = isCandidate ? candidates.find(c => c.id === user?.linkedCandidateId) : null;
   const mySessions = isCandidate ? interviewPrepSessions.filter(s => s.candidateId === (linkedCandidate?.id || user?.id)) : [];
 

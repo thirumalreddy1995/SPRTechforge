@@ -4,6 +4,7 @@ import { Card, Button, Input, Select } from '../../components/Components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { User } from '../../types';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 
 export const AddUser: React.FC = () => {
   const { users, addUser, updateUser, showToast, user: currentUser } = useApp();
@@ -22,9 +23,12 @@ export const AddUser: React.FC = () => {
     }
   }, [id, users]);
 
-  const isEditingMasterAdmin = form.username === 'thirumalreddy@sprtechforge.com';
-  const isCurrentUserMasterAdmin = currentUser?.username === 'thirumalreddy@sprtechforge.com';
-  
+  // G-06: check the isMaster flag on the form (loaded from the persisted user record),
+  // not a hardcoded username. The form is hydrated from `users.find(u => u.id === id)`
+  // so it carries the flag through.
+  const isEditingMasterAdmin = !!form.isMaster;
+  const isCurrentUserMasterAdmin = isMasterUser(currentUser);
+
   // Restriction: Only the master admin can change their own password.
   const canChangePassword = !isEditingMasterAdmin || isCurrentUserMasterAdmin;
 
@@ -43,7 +47,11 @@ export const AddUser: React.FC = () => {
       role: form.role as any,
       // Default modules for admin no longer include finance
       modules: form.role === 'admin' ? ['candidates', 'users', 'training'] : form.modules || [],
-      isPasswordChanged: id ? form.isPasswordChanged : false
+      isPasswordChanged: id ? form.isPasswordChanged : false,
+      // G-06: preserve isMaster on edits — this UI never grants or revokes the flag.
+      // The flag is set only by the bootstrap admin record or the startup auto-patch;
+      // a future master-only "Transfer master role" UI will land later.
+      isMaster: form.isMaster
     };
 
     if (id) { 

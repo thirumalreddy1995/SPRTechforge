@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, Select, SearchInput } from '../../components/Components';
 import { Meeting, MeetingParticipant, MeetingType, RsvpStatus, User } from '../../types';
+import { isMasterUser } from '../../utils';
 
 const meetingRoomId = (meetingId: string) => `sprtechforge-meet-${meetingId}`;
 
@@ -239,7 +240,7 @@ const DetailModal: React.FC<{
   if (!meeting || !user) return null;
 
   const isOrganizer = meeting.organizerId === user.id;
-  const isMaster = user.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
   const canEdit = (isOrganizer || isMaster) && meeting.status === 'scheduled';
   const myRsvp = meeting.participants.find(p => p.userId === user.id)?.rsvp || 'pending';
 

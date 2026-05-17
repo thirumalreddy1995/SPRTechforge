@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus, AuditEvent, AuditEventCategory, AuditEventType } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 import { emailService, isEmailConfigured, SendEmailInput } from '../services/emailService';
@@ -150,15 +150,25 @@ const STORAGE_KEY = 'SPR_TECHFORGE_FRESH_V10';
 const SESSION_KEY = 'SPR_TECHFORGE_SESSION_V4';
 const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
+// G-06: the bootstrap admin record. `isMaster: true` is the authoritative master flag;
+// the legacy `username === 'thirumalreddy@sprtechforge.com'` check has been removed from
+// the runtime. Existing Firestore records lacking the flag are patched at startup (see
+// the users-subscribe handler below) and the patch action is logged to the `events`
+// collection as category='security', eventType='BOOTSTRAP_ISMASTER_PATCH'.
+// The plaintext password here is a Sprint-A residual risk (tracked in
+// CODE_REVIEW_FINDINGS.md). It will be replaced by a bcrypt hash in G-01 and rotated
+// out of source via the post-deploy password-change step in RUNBOOK.md.
+const MASTER_BOOTSTRAP_USERNAME = 'thirumalreddy@sprtechforge.com';
 const DEFAULT_ADMIN: User = {
   id: 'admin-01',
   name: 'Thirumal Reddy',
-  username: 'thirumalreddy@sprtechforge.com',
+  username: MASTER_BOOTSTRAP_USERNAME,
   password: 'ThiruPriya@13',
   role: 'admin',
   modules: ['candidates', 'finance', 'users', 'training'],
   authProvider: 'local',
-  isPasswordChanged: true
+  isPasswordChanged: true,
+  isMaster: true
 };
 
 const DEFAULT_ACCOUNTS: Account[] = [
@@ -228,6 +238,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isCloudEnabled) cloudService.saveItem('activityLogs', log).catch(console.error);
   };
 
+  // G-06/G-07 scaffold: append-only writer for security & business audit events.
+  // Full Audit page UI and login-failure plumbing land in G-07; G-06 uses this only
+  // to log BOOTSTRAP_ISMASTER_PATCH. Writes go to the single `events` collection per
+  // the G-07 single-collection decision (see CODE_REVIEW_FINDINGS.md).
+  const logAuditEvent = (
+    category: AuditEventCategory,
+    eventType: AuditEventType,
+    fields: Partial<Omit<AuditEvent, 'id' | 'timestamp' | 'category' | 'eventType'>> = {}
+  ) => {
+    const event: AuditEvent = {
+      id: utils.generateId(),
+      timestamp: new Date().toISOString(),
+      category,
+      eventType,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+      ...fields
+    };
+    if (isCloudEnabled) cloudService.saveItem('events', event).catch(console.error);
+  };
+
   useEffect(() => {
     if (isCloudEnabled) {
       const handleSubError = (err: any) => {
@@ -244,7 +274,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             const hasDefault = d.some((u: User) => u.id === DEFAULT_ADMIN.id);
             if (hasDefault) {
-              setUsers(d);
+              // G-06 auto-patch: if the bootstrap admin (or any record matching the
+              // bootstrap username) exists in Firestore but lacks isMaster=true, patch
+              // it and log to the `events` collection. Idempotent: once patched, the
+              // next snapshot already has the flag and this branch is a no-op.
+              const stale = d.find(
+                (u: User) =>
+                  (u.id === DEFAULT_ADMIN.id || u.username === MASTER_BOOTSTRAP_USERNAME) &&
+                  u.isMaster !== true
+              );
+              if (stale) {
+                const patched: User = { ...stale, isMaster: true };
+                const updated = d.map((u: User) => (u.id === stale.id ? patched : u));
+                setUsers(updated);
+                cloudService.saveItem('users', patched).catch(console.error);
+                logAuditEvent('security', 'BOOTSTRAP_ISMASTER_PATCH', {
+                  targetId: stale.id,
+                  actorUsername: stale.username,
+                  reason: 'Bootstrap admin record was missing isMaster flag; patched at startup.'
+                });
+              } else {
+                setUsers(d);
+              }
             } else {
               // Firestore was just populated for the first time (e.g. someone added a user),
               // which would otherwise wipe the in-memory bootstrap admin and lock everyone

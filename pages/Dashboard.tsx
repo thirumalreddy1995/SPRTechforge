@@ -4,6 +4,7 @@ import { Card, Button } from '../components/Components';
 import { AccountType, TransactionType, CandidateStatus } from '../types';
 import { Link, useNavigate } from 'react-router-dom';
 import * as utils from '../utils';
+import { isMasterUser } from '../utils';
 
 export const Dashboard: React.FC = () => {
   const { user, candidates, accounts, transactions, getEntityBalance, trainingTopics, trainingLogs, interviews } = useApp();
@@ -15,7 +16,7 @@ export const Dashboard: React.FC = () => {
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const isSuperAdmin = user.username === 'thirumalreddy@sprtechforge.com';
+  const isSuperAdmin = isMasterUser(user);
 
   // --- CANDIDATE DASHBOARD VIEW ---
   if (user.role === 'candidate') {

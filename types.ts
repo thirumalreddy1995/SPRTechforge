@@ -47,6 +47,34 @@ export interface User {
   modules: string[];
   linkedCandidateId?: string;
   authProvider?: 'local' | 'google';
+  // G-06: master capability is a flag on the user record, not a hardcoded username
+  // comparison. Exactly one user should carry isMaster=true at a time. Server-side
+  // enforcement lands with G-02 Firestore rules; the bootstrap admin is patched at
+  // startup if the flag is missing.
+  isMaster?: boolean;
+}
+
+// AuditEvent scaffold. Full pipeline (rate limits, full Audit page, login-failed logging)
+// lands in G-07. Single unified `events` collection with a `category` discriminator —
+// see CODE_REVIEW_FINDINGS.md "G-07 collection design — single collection".
+export type AuditEventCategory = 'security' | 'business';
+export type AuditEventType =
+  | 'BOOTSTRAP_ISMASTER_PATCH'
+  | 'LOGIN_FAILED'
+  | 'LOGIN_RATE_LIMITED'
+  | 'PERMISSION_DENIED';
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  category: AuditEventCategory;
+  eventType: AuditEventType;
+  actorId?: string;
+  actorUsername?: string;
+  targetId?: string;
+  reason?: string;
+  userAgent?: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface PasswordResetRequest {

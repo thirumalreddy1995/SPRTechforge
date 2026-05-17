@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Card, Button, Input, Modal, ConfirmationModal, BackButton } from '../../components/Components';
 import { CandidateStatus, InterviewSchedule } from '../../types';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 
 const STATUS_COLORS: Record<string, string> = {
   Scheduled: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -20,7 +21,7 @@ const OUTCOME_COLORS: Record<string, string> = {
 export const Interviews: React.FC = () => {
   const { candidates, updateCandidate, interviews, addInterview, updateInterview, deleteInterview, showToast, user } = useApp();
 
-  const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
   const isAdmin = user?.role === 'admin' || isMaster;
 
   const [activeTab, setActiveTab] = useState<'ReadyCandidates' | 'Active' | 'History'>('Active');

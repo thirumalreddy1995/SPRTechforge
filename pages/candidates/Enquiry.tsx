@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Card, Button, Input, Modal, ConfirmationModal, BackButton, SearchInput } from '../../components/Components';
 import { Enquiry, EnquiryStatus } from '../../types';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 import { useNavigate } from 'react-router-dom';
 
 const STATUS_COLORS: Record<EnquiryStatus, string> = {
@@ -29,7 +30,7 @@ const EMPTY_FORM: Partial<Enquiry> = {
 export const EnquiryPage: React.FC = () => {
   const { enquiries, addEnquiry, updateEnquiry, deleteEnquiry, addEnquiryNote, mergeEnquiryToCandidate, user, showToast } = useApp();
   const navigate = useNavigate();
-  const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
 
   const [activeTab, setActiveTab] = useState<EnquiryStatus | 'All'>('All');
   const [searchText, setSearchText] = useState('');

@@ -27,3 +27,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Break-glass: Firebase Admin SDK keys (see RUNBOOK.md §1.2). Never commit.
+scripts/.firebase-admin-key.json
+scripts/*.serviceAccount*.json
+
+# Backups (see RUNBOOK.md §1.1). Keep out of git; store on encrypted local disk.
+backups/

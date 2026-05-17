@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Logo, Button } from './Components';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { isMasterUser } from '../utils';
 
 const NavItem: React.FC<{
   to: string;
@@ -136,7 +137,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const closeMobile = () => setMobileMenuOpen(false);
   const handleLogout = () => { logout(); navigate('/'); };
 
-  const isMaster = user.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
   const todayStr = new Date().toISOString().split('T')[0];
   const activeInterviewCount = interviews.filter(i => i.status === 'Scheduled').length;
   const todayInterviewCount = interviews.filter(i => i.date === todayStr && i.status === 'Scheduled').length;
