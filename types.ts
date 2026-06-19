@@ -47,6 +47,34 @@ export interface User {
   modules: string[];
   linkedCandidateId?: string;
   authProvider?: 'local' | 'google';
+  // G-06: master capability is a flag on the user record, not a hardcoded username
+  // comparison. Exactly one user should carry isMaster=true at a time. Server-side
+  // enforcement lands with G-02 Firestore rules; the bootstrap admin is patched at
+  // startup if the flag is missing.
+  isMaster?: boolean;
+}
+
+// AuditEvent scaffold. Full pipeline (rate limits, full Audit page, login-failed logging)
+// lands in G-07. Single unified `events` collection with a `category` discriminator —
+// see CODE_REVIEW_FINDINGS.md "G-07 collection design — single collection".
+export type AuditEventCategory = 'security' | 'business';
+export type AuditEventType =
+  | 'BOOTSTRAP_ISMASTER_PATCH'
+  | 'LOGIN_FAILED'
+  | 'LOGIN_RATE_LIMITED'
+  | 'PERMISSION_DENIED';
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  category: AuditEventCategory;
+  eventType: AuditEventType;
+  actorId?: string;
+  actorUsername?: string;
+  targetId?: string;
+  reason?: string;
+  userAgent?: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface PasswordResetRequest {
@@ -115,18 +143,43 @@ export interface Candidate {
   resumeName?: string;
 }
 
+export type InterviewStatus =
+  | 'pending_confirmation'  // candidate-scheduled, awaiting admin confirmation
+  | 'Scheduled'             // confirmed and active
+  | 'Attended'              // interview took place
+  | 'No-show'               // candidate did not appear
+  | 'Cleared'               // passed / selected
+  | 'Rejected'              // failed / rejected
+  | 'Completed'             // legacy — treated as Attended
+  | 'Rescheduled'
+  | 'Cancelled';
+
+export interface InterviewStatusChange {
+  status: string;
+  changedBy: string;       // userId
+  changedByName: string;
+  changedAt: string;       // ISO timestamp
+  previousStatus: string;
+}
+
 export interface InterviewSchedule {
   id: string;
   candidateId: string;
   date: string;
   time: string;
+  endTime?: string;                              // for conflict-overlap detection
   companyName: string;
   interviewType: 'F2F' | 'Zoom' | 'Teams' | 'Telephonic';
-  round: string; // e.g. "L1", "L2", "HR"
-  supportPerson?: string; // Who is supporting
-  status: 'Scheduled' | 'Completed' | 'Rescheduled' | 'Cancelled';
+  round: string;
+  supportPerson?: string;
+  interviewerName?: string;                      // assigned interviewer display name
+  status: InterviewStatus;
   outcome?: 'Selected' | 'Rejected' | 'Pending';
   notes?: string;
+  scheduledBy?: string;                          // userId of who created it
+  scheduledByRole?: 'admin' | 'staff' | 'candidate';
+  scheduledAt?: string;                          // ISO creation timestamp
+  statusHistory?: InterviewStatusChange[];       // full audit trail
 }
 
 export interface Account {
@@ -275,6 +328,108 @@ export interface InterviewPrepSession {
   strongAreas: string[];
   speedLabel?: string;   // e.g. "Normal", "Slow"
   speedRate?: number;    // TTS rate used
+}
+
+export interface ChatAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+export type ChatType = 'dm' | 'announcement';
+
+export interface Chat {
+  id: string;
+  type: ChatType;
+  name?: string;
+  participants: string[];
+  createdAt: string;
+  createdBy: string;
+  lastMessageText?: string;
+  lastMessageAt?: string;
+  lastSenderId?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  attachments?: ChatAttachment[];
+  callRoomId?: string;
+  callStartedAt?: string;
+  timestamp: string;
+  readBy: string[];
+}
+
+export interface EmailAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+export type EmailDirection = 'inbound' | 'outbound';
+
+export interface EmailMessage {
+  id: string;             // Gmail message id for inbound, generated for outbound
+  direction: EmailDirection;
+  from: string;
+  to: string[];
+  cc?: string[];
+  subject: string;
+  body: string;
+  isHtml?: boolean;
+  snippet?: string;
+  attachments?: EmailAttachment[];
+  date: string;           // ISO
+  threadId?: string;
+  isRead?: boolean;
+  sentByUserId?: string;
+  sentByUserName?: string;
+}
+
+export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';
+
+export interface CallInvitation {
+  id: string;
+  callerId: string;
+  callerName: string;
+  calleeId: string;
+  calleeName?: string;
+  chatId?: string;
+  roomId: string;
+  status: CallInvitationStatus;
+  createdAt: string;
+  respondedAt?: string;
+}
+
+export type MeetingType = 'meeting' | 'class' | 'other';
+export type MeetingStatus = 'scheduled' | 'cancelled' | 'completed';
+export type RsvpStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
+
+export interface MeetingParticipant {
+  userId: string;
+  rsvp: RsvpStatus;
+  respondedAt?: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  meetingType: MeetingType;
+  organizerId: string;
+  organizerName: string;
+  participants: MeetingParticipant[];
+  startTime: string; // ISO
+  endTime: string;   // ISO
+  location?: string;
+  linkedChatId?: string;
+  status: MeetingStatus;
+  createdAt: string;
 }
 
 export interface AppState {

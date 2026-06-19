@@ -35,6 +35,12 @@ import { Interviews } from './pages/training/Interviews';
 import { InterviewPrepModule } from './pages/training/InterviewPrepModule';
 import { EnquiryPage } from './pages/candidates/Enquiry';
 import { WebLeadsPage } from './pages/WebLeads';
+import { ChatPage } from './pages/chat/Chat';
+import { MeetingsPage } from './pages/meetings/Meetings';
+import { EmailPage } from './pages/spconnect/Email';
+import { CallRoom } from './pages/spconnect/CallRoom';
+import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
+import { isMasterUser } from './utils';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -56,8 +62,9 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
   if (!isInitialized) return null;
   if (!user) return <Navigate to="/login" replace />;
-  // Secure master check based on the specific master username
-  if (user.username !== 'thirumalreddy@sprtechforge.com') return <Navigate to="/dashboard" replace />;
+  // G-06: master gate now reads the isMaster flag on the user record. Server-side
+  // enforcement of the same predicate lands with G-02 Firestore rules.
+  if (!isMasterUser(user)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
@@ -109,6 +116,18 @@ const AppRoutes = () => {
 
       <Route path="/web-leads" element={<AdminRoute><Layout><WebLeadsPage /></Layout></AdminRoute>} />
 
+      {/* Chat */}
+      <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
+
+      {/* Meetings */}
+      <Route path="/meetings" element={<ProtectedRoute><Layout><MeetingsPage /></Layout></ProtectedRoute>} />
+
+      {/* Email */}
+      <Route path="/email" element={<ProtectedRoute><Layout><EmailPage /></Layout></ProtectedRoute>} />
+
+      {/* Video/audio call (Jitsi) - intentionally no Layout, full-screen */}
+      <Route path="/call/:roomId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
+
       {/* Master Section */}
       <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />
       <Route path="/admin/test-runner" element={<MasterRoute><Layout><TestRunner /></Layout></MasterRoute>} />
@@ -122,6 +141,7 @@ export default function App() {
     <AppProvider>
       <HashRouter>
         <ToastOverlay />
+        <IncomingCallOverlay />
         <AppRoutes />
       </HashRouter>
     </AppProvider>

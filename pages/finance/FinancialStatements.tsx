@@ -42,23 +42,39 @@ export const FinancialStatements: React.FC = () => {
   }), [transactions, plStart, plEnd]);
 
   // ── P&L Calculations ──────────────────────────────────────────────────────
+  // Income: credit side is an Income account, or the credit side is a Candidate entity
+  // (candidates pay fees directly — treated as the revenue source in this system)
   const incomeTxns = plTxns.filter(t => {
-    if (t.type !== TransactionType.Income) return false;
     if (t.fromEntityType === 'Candidate') return true;
     const acc = accounts.find(a => a.id === t.fromEntityId);
     return acc?.type === AccountType.Income;
   });
 
-  const paymentTxns = plTxns.filter(t => t.type === TransactionType.Payment);
+  // Expenses: debit side is an Expense or Salary account
+  // Using account classification instead of transaction type so that salary
+  // recorded as a Transfer still counts as an expense.
+  const expenseTxns = plTxns.filter(t => {
+    const acc = accounts.find(a => a.id === t.toEntityId);
+    return acc?.type === AccountType.Expense || acc?.type === AccountType.Salary;
+  });
 
   const totalIncome  = incomeTxns.reduce((s, t) => s + t.amount, 0);
-  const totalExpense = paymentTxns.reduce((s, t) => s + t.amount, 0);
+  const totalExpense = expenseTxns.reduce((s, t) => s + t.amount, 0);
   const netPL        = totalIncome - totalExpense;
 
-  // Group expenses by category
-  const expenseBreakdown = paymentTxns.reduce((acc, t) => {
+  // Group income by source
+  const incomeBreakdown = incomeTxns.reduce((acc, t) => {
+    const cat = t.fromEntityType === 'Candidate'
+      ? 'Candidate Fees'
+      : (accounts.find(a => a.id === t.fromEntityId)?.name || 'Other Income');
+    acc[cat] = (acc[cat] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Group expenses by account name / sub-type
+  const expenseBreakdown = expenseTxns.reduce((acc, t) => {
     const acctObj = accounts.find(a => a.id === t.toEntityId);
-    const cat = acctObj?.subType || acctObj?.name || 'General Payment';
+    const cat = acctObj?.subType || acctObj?.name || 'General Expense';
     acc[cat] = (acc[cat] || 0) + t.amount;
     return acc;
   }, {} as Record<string, number>);
@@ -100,13 +116,28 @@ export const FinancialStatements: React.FC = () => {
   const trialRows = useMemo(() =>
     accounts.map(a => {
       const bal = getEntityBalance(a.id, 'Account');
-      const isLiability = [AccountType.Creditor, AccountType.Loan, AccountType.Tax, AccountType.Salary].includes(a.type);
-      const isIncome     = [AccountType.Income, AccountType.Equity, AccountType.Capital].includes(a.type);
+
+      // Credit-normal accounts whose balance is stored as POSITIVE when they carry a credit
+      // (Income, Equity, Capital: balance += when credited, which is natural)
+      const creditNormalPositive = new Set<AccountType>([
+        AccountType.Income, AccountType.Equity, AccountType.Capital,
+      ]);
+      // Credit-normal accounts whose balance is stored as NEGATIVE when they carry a credit
+      // (Creditor, Loan, Tax, Salary: stored negative = we owe money — our convention)
+      const creditNormalNegative = new Set<AccountType>([
+        AccountType.Creditor, AccountType.Loan, AccountType.Tax, AccountType.Salary,
+      ]);
+
       let debit = 0, credit = 0;
-      if (isLiability || isIncome) {
-        if (bal < 0) debit = Math.abs(bal); else credit = bal;
+      if (creditNormalPositive.has(a.type)) {
+        // Positive balance → Credit column (normal state); negative → Debit (unusual)
+        if (bal >= 0) credit = bal; else debit = Math.abs(bal);
+      } else if (creditNormalNegative.has(a.type)) {
+        // Negative balance → Credit column (we owe); positive → Debit (unusual — overpaid)
+        if (bal <= 0) credit = Math.abs(bal); else debit = bal;
       } else {
-        if (bal > 0) debit = bal; else credit = Math.abs(bal);
+        // Debit-normal (Bank, Cash, Debtor, FixedAsset, CurrentAsset, Expense)
+        if (bal >= 0) debit = bal; else credit = Math.abs(bal);
       }
       return { account: a, balance: bal, debit, credit };
     }).sort((a, b) => a.account.name.localeCompare(b.account.name)),
@@ -324,10 +355,17 @@ export const FinancialStatements: React.FC = () => {
                     <td className="py-3 px-5 font-bold text-emerald-800 uppercase text-xs tracking-wider border-r border-gray-100">OPERATING INCOME</td>
                     <td />
                   </tr>
-                  <tr>
-                    <td className="py-2.5 px-5 pl-10 text-gray-700 border-r border-gray-100">Fees & Consultancy Revenue</td>
-                    <td className="py-2.5 px-5 text-right text-gray-900 tabular-nums">{utils.formatCurrency(totalIncome)}</td>
-                  </tr>
+                  {Object.entries(incomeBreakdown).map(([cat, amt]) => (
+                    <tr key={cat}>
+                      <td className="py-2.5 px-5 pl-10 text-gray-700 border-r border-gray-100">{cat}</td>
+                      <td className="py-2.5 px-5 text-right text-gray-900 tabular-nums">{utils.formatCurrency(amt)}</td>
+                    </tr>
+                  ))}
+                  {Object.keys(incomeBreakdown).length === 0 && (
+                    <tr>
+                      <td className="py-3 px-5 pl-10 text-gray-400 italic border-r border-gray-100" colSpan={2}>No income recorded in this period.</td>
+                    </tr>
+                  )}
                   <tr className="bg-gray-50 font-bold">
                     <td className="py-3 px-5 text-right text-gray-700 border-r border-gray-100">Total Operating Revenue (A)</td>
                     <td className="py-3 px-5 text-right text-emerald-700 tabular-nums">{utils.formatCurrency(totalIncome)}</td>
@@ -364,7 +402,7 @@ export const FinancialStatements: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-[11px] text-gray-400 italic">* Loans, transfers, and creditor receipts are excluded from operating profit.</p>
+            <p className="mt-4 text-[11px] text-gray-400 italic">* Income and expenses are classified by account type, not transaction label. Transfers between bank/cash accounts are excluded.</p>
           </div>
         )}
 

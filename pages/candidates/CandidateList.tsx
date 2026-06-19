@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Card, Button, Pagination, ConfirmationModal, Modal, BackButton, SearchInput } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 import { CandidateStatus, Candidate, TransactionType } from '../../types';
 
 type TabType = 'active' | 'placed' | 'all';
@@ -20,7 +21,7 @@ export const CandidateList: React.FC = () => {
   const [revealedRows, setRevealedRows] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
   const ITEMS_PER_PAGE = 10;
 
   // Only show batches that have candidates in the current tab

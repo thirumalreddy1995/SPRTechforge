@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, Pagination, SearchInput } from '../../components/Components';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 
 export const ActivityLogs: React.FC = () => {
   const { activityLogs, user, clearActivityLogs } = useApp();
@@ -9,7 +10,7 @@ export const ActivityLogs: React.FC = () => {
   const [filterText, setFilterText] = useState('');
 
   const ITEMS_PER_PAGE = 15;
-  const isSuperUser = user?.username === 'thirumalreddy@sprtechforge.com';
+  const isSuperUser = isMasterUser(user);
 
   const filtered = activityLogs.filter(log => 
     log.description.toLowerCase().includes(filterText.toLowerCase()) ||

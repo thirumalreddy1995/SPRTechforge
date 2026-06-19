@@ -1,4 +1,9 @@
-import { Transaction, AccountType } from './types';
+import { Transaction, AccountType, User } from './types';
+
+// G-06: single source of truth for master-capability checks. Replaces hardcoded
+// `user.username === 'thirumalreddy@sprtechforge.com'` comparisons across the codebase.
+// Server-side enforcement of the same rule lands with G-02 Firestore rules.
+export const isMasterUser = (u?: User | null): boolean => !!u?.isMaster;
 
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-IN', {

@@ -4,10 +4,11 @@ import { Card, Button, Input, Select } from '../../components/Components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Candidate, CandidateStatus, TransactionType } from '../../types';
 import * as utils from '../../utils';
+import { isMasterUser } from '../../utils';
 
 export const AddCandidate: React.FC = () => {
   const { addCandidate, updateCandidate, candidates, candidateStatuses, addCandidateStatus, showToast, transactions, user } = useApp();
-  const isMaster = user?.username === 'thirumalreddy@sprtechforge.com';
+  const isMaster = isMasterUser(user);
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);

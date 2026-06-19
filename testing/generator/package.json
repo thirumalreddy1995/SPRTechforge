@@ -1,0 +1,13 @@
+{
+  "name": "spr-testing-workbook-generator",
+  "version": "1.0.0",
+  "description": "One-shot script that builds SPR-Testing.xlsx from inline data. Re-run only if you need to reset the workbook to its scaffolded state — day-to-day edits should happen in Excel.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

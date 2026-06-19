@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, ConfirmationModal, BackButton } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
+import { isMasterUser } from '../../utils';
 
 export const UserList: React.FC = () => {
   const { users, deleteUser, user: currentUser, passwordResetRequests, resolvePasswordResetRequest } = useApp();
@@ -13,7 +14,7 @@ export const UserList: React.FC = () => {
   
   const navigate = useNavigate();
 
-  const isSuperUser = currentUser?.id === 'admin-01' || currentUser?.username === 'thirumalreddy@sprtechforge.com';
+  const isSuperUser = isMasterUser(currentUser);
   const isAdmin = currentUser?.role === 'admin';
 
   const handleDeleteClick = (id: string) => {
@@ -85,7 +86,7 @@ export const UserList: React.FC = () => {
       {/* Mobile card view */}
       <div className="md:hidden space-y-3">
         {users.map(u => {
-          const isMasterRow = u.username === 'thirumalreddy@sprtechforge.com';
+          const isMasterRow = isMasterUser(u);
           return (
             <div key={u.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start mb-2">
@@ -147,7 +148,7 @@ export const UserList: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {users.map(u => {
-                const isMasterRow = u.username === 'thirumalreddy@sprtechforge.com';
+                const isMasterRow = isMasterUser(u);
                 return (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium text-gray-900">
