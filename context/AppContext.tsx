@@ -34,6 +34,7 @@ interface AppContextType {
   addInterview: (i: InterviewSchedule) => void;
   updateInterview: (i: InterviewSchedule) => void;
   deleteInterview: (id: string) => void;
+  changeInterviewStatus: (id: string, newStatus: string, changedBy: string, changedByName: string) => void;
 
   markAgreementSent: (candidateId: string) => void;
   markAgreementAccepted: (candidateId: string) => void;
@@ -424,6 +425,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addInterview = (i: InterviewSchedule) => { setInterviews(p => [...p, i]); if (isCloudEnabled) cloudService.saveItem('interviews', i); };
   const updateInterview = (i: InterviewSchedule) => { setInterviews(p => p.map(x => x.id === i.id ? i : x)); if (isCloudEnabled) cloudService.updateItem('interviews', i.id, i); };
   const deleteInterview = (id: string) => { setInterviews(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviews', id); };
+  const changeInterviewStatus = (id: string, newStatus: string, changedBy: string, changedByName: string) => {
+    setInterviews(p => p.map(x => {
+      if (x.id !== id) return x;
+      const entry = { status: newStatus, changedBy, changedByName, changedAt: new Date().toISOString(), previousStatus: x.status };
+      const updated = { ...x, status: newStatus as InterviewSchedule['status'], statusHistory: [...(x.statusHistory || []), entry] };
+      if (isCloudEnabled) cloudService.updateItem('interviews', id, updated);
+      return updated;
+    }));
+  };
 
   const addEnquiry = (e: Enquiry) => { setEnquiries(p => [...p, e]); if (isCloudEnabled) cloudService.saveItem('enquiries', e); logActivity('CREATE', `Enquiry added: ${e.name}`, 'Enquiry', e.id); };
   const updateEnquiry = (e: Enquiry) => { setEnquiries(p => p.map(x => x.id === e.id ? e : x)); if (isCloudEnabled) cloudService.updateItem('enquiries', e.id, e); };
@@ -1003,7 +1013,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       users, addUser, updateUser, deleteUser,
       candidates, addCandidate, updateCandidate, deleteCandidate,
       candidateProfiles, updateCandidateProfile,
-      interviews, addInterview, updateInterview, deleteInterview,
+      interviews, addInterview, updateInterview, deleteInterview, changeInterviewStatus,
       enquiries, addEnquiry, updateEnquiry, deleteEnquiry, addEnquiryNote, mergeEnquiryToCandidate,
       webLeads, addWebLead, updateWebLead, deleteWebLead, markWebLeadRead,
       accounts, addAccount, updateAccount, deleteAccount,

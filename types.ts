@@ -143,18 +143,43 @@ export interface Candidate {
   resumeName?: string;
 }
 
+export type InterviewStatus =
+  | 'pending_confirmation'  // candidate-scheduled, awaiting admin confirmation
+  | 'Scheduled'             // confirmed and active
+  | 'Attended'              // interview took place
+  | 'No-show'               // candidate did not appear
+  | 'Cleared'               // passed / selected
+  | 'Rejected'              // failed / rejected
+  | 'Completed'             // legacy — treated as Attended
+  | 'Rescheduled'
+  | 'Cancelled';
+
+export interface InterviewStatusChange {
+  status: string;
+  changedBy: string;       // userId
+  changedByName: string;
+  changedAt: string;       // ISO timestamp
+  previousStatus: string;
+}
+
 export interface InterviewSchedule {
   id: string;
   candidateId: string;
   date: string;
   time: string;
+  endTime?: string;                              // for conflict-overlap detection
   companyName: string;
   interviewType: 'F2F' | 'Zoom' | 'Teams' | 'Telephonic';
-  round: string; // e.g. "L1", "L2", "HR"
-  supportPerson?: string; // Who is supporting
-  status: 'Scheduled' | 'Completed' | 'Rescheduled' | 'Cancelled';
+  round: string;
+  supportPerson?: string;
+  interviewerName?: string;                      // assigned interviewer display name
+  status: InterviewStatus;
   outcome?: 'Selected' | 'Rejected' | 'Pending';
   notes?: string;
+  scheduledBy?: string;                          // userId of who created it
+  scheduledByRole?: 'admin' | 'staff' | 'candidate';
+  scheduledAt?: string;                          // ISO creation timestamp
+  statusHistory?: InterviewStatusChange[];       // full audit trail
 }
 
 export interface Account {

@@ -74,14 +74,19 @@ export const AccountStatement: React.FC = () => {
   // Build rows with running balance
   let running = openingBal;
   const rows = history.map(t => {
-    const isTo  = t.toEntityId === id && t.toEntityType === type;
+    const isTo   = t.toEntityId   === id && t.toEntityType   === type;
+    const isFrom = t.fromEntityId === id && t.fromEntityType === type;
+    // Balance delta follows the same convention as calculateEntityBalance
     const delta = isTo
       ? (isIncomeNature ? -t.amount :  t.amount)
       : (isIncomeNature ?  t.amount : -t.amount);
     running += delta;
 
-    const debit  = delta < 0 ? Math.abs(delta) : 0;
-    const credit = delta > 0 ? delta : 0;
+    // Column assignment is always by journal-entry side, not by delta sign:
+    // Dr column = this account was debited (it is the "to" entity)
+    // Cr column = this account was credited (it is the "from" entity)
+    const debit  = isTo   ? t.amount : 0;
+    const credit = isFrom ? t.amount : 0;
     return { ...t, debit, credit, runningBalance: running };
   });
 
@@ -94,14 +99,13 @@ export const AccountStatement: React.FC = () => {
 
   const handleDownload = () => {
     const data = rows.map(r => ({
-      Date:           new Date(r.date).toLocaleDateString('en-IN'),
-      Description:    r.description,
-      Party:          r.debit > 0
-        ? `To: ${getEntityName(r.toEntityId, r.toEntityType)}`
-        : `From: ${getEntityName(r.fromEntityId, r.fromEntityType)}`,
-      Debit:          r.debit  || '',
-      Credit:         r.credit || '',
-      'Balance':      r.runningBalance,
+      Date:        new Date(r.date).toLocaleDateString('en-IN'),
+      Description: r.description,
+      'Debit Account (Dr)':  r.debit  > 0 ? getEntityName(r.toEntityId,   r.toEntityType)   : '',
+      'Credit Account (Cr)': r.credit > 0 ? getEntityName(r.fromEntityId, r.fromEntityType) : '',
+      'Dr Amount':  r.debit  || '',
+      'Cr Amount':  r.credit || '',
+      Balance:      r.runningBalance,
     }));
     utils.downloadCSV(data, `${entityName}_ledger.csv`);
   };
@@ -158,13 +162,13 @@ export const AccountStatement: React.FC = () => {
             </p>
           </div>
         )}
-        <div className="bg-white rounded-xl border border-gray-100 border-l-4 border-l-emerald-400 shadow-sm p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Credits (+)</p>
-          <p className="text-xl font-bold mt-1 text-emerald-600 tabular-nums">{utils.formatCurrency(totalCredits)}</p>
+        <div className="bg-white rounded-xl border border-gray-100 border-l-4 border-l-blue-400 shadow-sm p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Debited (Dr)</p>
+          <p className="text-xl font-bold mt-1 text-blue-700 tabular-nums">{utils.formatCurrency(totalDebits)}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 border-l-4 border-l-red-400 shadow-sm p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Debits (−)</p>
-          <p className="text-xl font-bold mt-1 text-red-600 tabular-nums">{utils.formatCurrency(totalDebits)}</p>
+        <div className="bg-white rounded-xl border border-gray-100 border-l-4 border-l-orange-400 shadow-sm p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Credited (Cr)</p>
+          <p className="text-xl font-bold mt-1 text-orange-700 tabular-nums">{utils.formatCurrency(totalCredits)}</p>
         </div>
         <div className={`bg-white rounded-xl border border-gray-100 border-l-4 shadow-sm p-4 ${closingBalance >= 0 ? 'border-l-blue-500' : 'border-l-red-500'}`}>
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
