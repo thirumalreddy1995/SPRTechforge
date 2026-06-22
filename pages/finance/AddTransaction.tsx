@@ -34,7 +34,7 @@ const TYPE_DESCRIPTIONS: Record<string, { color: string; hint: string; debitLabe
 };
 
 export const AddTransaction: React.FC = () => {
-  const { addTransaction, updateTransaction, transactions, accounts, candidates, showToast } = useApp();
+  const { addTransaction, updateTransaction, transactions, accounts, candidates, showToast, getEntityBalance } = useApp();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
@@ -60,36 +60,77 @@ export const AddTransaction: React.FC = () => {
   }, [id, transactions]);
 
   // Build grouped entity options
-  const buildOptions = (includeAll = false): SearchableSelectOption[] => [
-    ...accounts
-      .filter(a => a.type === AccountType.Bank || a.type === AccountType.Cash)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: a.name, group: 'Bank & Cash', meta: a.subType })),
-    ...candidates
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(c => ({ value: c.id, label: c.name, group: 'Candidates', meta: c.batchId })),
-    ...accounts
-      .filter(a => a.type === AccountType.Creditor || a.type === AccountType.Salary)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: a.name, group: 'Creditors / Staff', meta: a.subType })),
-    ...accounts
-      .filter(a => a.type === AccountType.Expense)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: a.name, group: 'Expenses', meta: a.subType })),
-    ...accounts
-      .filter(a => a.type === AccountType.Income)
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: a.name, group: 'Income Accounts', meta: a.subType })),
-    ...accounts
-      .filter(a => ![AccountType.Bank, AccountType.Cash, AccountType.Creditor, AccountType.Salary, AccountType.Expense, AccountType.Income].includes(a.type))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(a => ({ value: a.id, label: a.name, group: a.type, meta: a.subType })),
-  ];
+  const buildOptions = (includeAll = false): SearchableSelectOption[] => {
+    const formatBalance = (id: string, type: 'Account' | 'Candidate') => {
+      const balance = getEntityBalance(id, type);
+      return utils.formatCurrency(balance);
+    };
+
+    return [
+      ...accounts
+        .filter(a => a.type === AccountType.Bank || a.type === AccountType.Cash)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          value: a.id,
+          label: a.name,
+          group: 'Bank & Cash',
+          meta: `${a.subType ? `${a.subType} · ` : ''}${formatBalance(a.id, 'Account')}`,
+        })),
+      ...candidates
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(c => ({
+          value: c.id,
+          label: c.name,
+          group: 'Candidates',
+          meta: `${c.batchId ? `${c.batchId} · ` : ''}${formatBalance(c.id, 'Candidate')}`,
+        })),
+      ...accounts
+        .filter(a => a.type === AccountType.Creditor || a.type === AccountType.Salary)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          value: a.id,
+          label: a.name,
+          group: 'Creditors / Staff',
+          meta: `${a.subType ? `${a.subType} · ` : ''}${formatBalance(a.id, 'Account')}`,
+        })),
+      ...accounts
+        .filter(a => a.type === AccountType.Expense)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          value: a.id,
+          label: a.name,
+          group: 'Expenses',
+          meta: `${a.subType ? `${a.subType} · ` : ''}${formatBalance(a.id, 'Account')}`,
+        })),
+      ...accounts
+        .filter(a => a.type === AccountType.Income)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          value: a.id,
+          label: a.name,
+          group: 'Income Accounts',
+          meta: `${a.subType ? `${a.subType} · ` : ''}${formatBalance(a.id, 'Account')}`,
+        })),
+      ...accounts
+        .filter(a => ![AccountType.Bank, AccountType.Cash, AccountType.Creditor, AccountType.Salary, AccountType.Expense, AccountType.Income].includes(a.type))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          value: a.id,
+          label: a.name,
+          group: a.type,
+          meta: `${a.subType ? `${a.subType} · ` : ''}${formatBalance(a.id, 'Account')}`,
+        })),
+    ];
+  };
 
   const entityOptions = buildOptions();
   const cfg = TYPE_DESCRIPTIONS[type];
 
   const amountNum = parseFloat(amount) || 0;
+  const fromBalance = fromId ? getEntityBalance(fromId, candidates.some(c => c.id === fromId) ? 'Candidate' : 'Account') : 0;
+  const toBalance   = toId ? getEntityBalance(toId, candidates.some(c => c.id === toId) ? 'Candidate' : 'Account') : 0;
+  const selectedFromName = fromId ? entityOptions.find(o => o.value === fromId)?.label : '';
+  const selectedToName = toId ? entityOptions.find(o => o.value === toId)?.label : '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +202,32 @@ export const AddTransaction: React.FC = () => {
         {/* ── Entry Header (Date, Amount, Description) ───────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-bold uppercase text-gray-400 tracking-wider mb-4">Entry Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Debit Account <span className="text-red-500">*</span></label>
+              <SearchableSelect
+                value={toId}
+                onChange={setToId}
+                options={entityOptions}
+                placeholder={`— ${cfg.debitLabel} —`}
+                required
+                hint={toId ? `Current balance: ${utils.formatCurrency(toBalance)}` : 'Select debit account first to see its balance'}
+                containerClassName=""
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Credit Account <span className="text-red-500">*</span></label>
+              <SearchableSelect
+                value={fromId}
+                onChange={setFromId}
+                options={entityOptions}
+                placeholder={`— ${cfg.creditLabel} —`}
+                required
+                hint={fromId ? `Current balance: ${utils.formatCurrency(fromBalance)}` : 'Select credit account first to see its balance'}
+                containerClassName=""
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date <span className="text-red-500">*</span></label>
@@ -233,6 +300,7 @@ export const AddTransaction: React.FC = () => {
                       placeholder={`— ${cfg.debitLabel} —`}
                       required
                       containerClassName=""
+                      hint={toId ? `Balance: ${utils.formatCurrency(toBalance)}` : undefined}
                     />
                     <p className="text-[10px] text-gray-400 mt-1 ml-1">{cfg.debitLabel}</p>
                   </td>
@@ -258,6 +326,7 @@ export const AddTransaction: React.FC = () => {
                       placeholder={`— ${cfg.creditLabel} —`}
                       required
                       containerClassName=""
+                      hint={fromId ? `Balance: ${utils.formatCurrency(fromBalance)}` : undefined}
                     />
                     <p className="text-[10px] text-gray-400 mt-1 ml-1">{cfg.creditLabel}</p>
                   </td>
