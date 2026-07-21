@@ -309,8 +309,27 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <NavItem to="/training/curriculum" label="Curriculum Setup" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
               </CollapsibleGroup>
 
+              {(user.role === 'admin' || user.modules.includes('users')) && (
+                <CollapsibleGroup
+                  id="seminar"
+                  isSidebarCollapsed={isSidebarCollapsed}
+                  setIsSidebarCollapsed={setIsSidebarCollapsed}
+                  openGroupId={openGroupId}
+                  setOpenGroupId={setOpenGroupId}
+                  title="Seminar"
+                  icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>}
+                >
+                  <NavItem to="/seminar/dashboard" label="Dashboard" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/seminar/import" label="Import Candidates" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/seminar/candidates" label="Candidates" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/seminar/campaign" label="Campaign" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/seminar/questions" label="Questions" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                  <NavItem to="/seminar/settings" label="Settings" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
+                </CollapsibleGroup>
+              )}
+
               {isMaster && (
-                <CollapsibleGroup 
+                <CollapsibleGroup
                   id="finance"
                   isSidebarCollapsed={isSidebarCollapsed} 
                   setIsSidebarCollapsed={setIsSidebarCollapsed}
