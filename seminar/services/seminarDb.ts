@@ -84,6 +84,18 @@ export const saveSeminarBatch = async (name: string, items: { id: string }[]) =>
   }
 };
 
+/** Batched delete across collections: [{collection, id}, ...]. */
+export const deleteSeminarDocs = async (refs: { collection: string; id: string }[]) => {
+  const CHUNK = 450;
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = writeBatch(db());
+    refs.slice(i, i + CHUNK).forEach(r => {
+      batch.delete(doc(db(), r.collection, r.id));
+    });
+    await batch.commit();
+  }
+};
+
 // --- Settings (single-row config) ---
 
 export const defaultSeminarSettings = (): SeminarSettings => ({
