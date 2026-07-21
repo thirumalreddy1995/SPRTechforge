@@ -13,7 +13,12 @@ export interface SeminarCandidate {
   phone: string; // E.164 (+91XXXXXXXXXX) or '' when invalid/missing
   city?: string;
   state?: string;
+  gender?: string;
   qualification?: string;
+  courseStream?: string;
+  institution?: string;
+  yearOfPassing?: string;
+  totalExperience?: string;
   degreeGroup: string; // source sheet name, e.g. "B.Tech-BE"
   inviteToken: string; // unique URL token for the public registration page
   emailStatus: SeminarEmailStatus;
@@ -83,7 +88,9 @@ export interface SeminarSettings {
 
 // Import pipeline types -------------------------------------------------------
 
-export type SeminarField = 'fullName' | 'email' | 'phone' | 'city' | 'state' | 'qualification';
+export type SeminarField =
+  | 'fullName' | 'email' | 'phone' | 'city' | 'state' | 'gender'
+  | 'qualification' | 'courseStream' | 'institution' | 'yearOfPassing' | 'totalExperience';
 
 export interface SheetMapping {
   sheetName: string;

@@ -27,12 +27,21 @@ export const SeminarImport: React.FC = () => {
       const xlsx: any = await import('xlsx');
       const wb = xlsx.utils.book_new();
 
-      // Data sheet: exactly the columns the importer auto-detects. The sheet
-      // name becomes the candidates' degreeGroup on import.
-      const dataSheet = xlsx.utils.aoa_to_sheet([
-        ['Full Name', 'Email', 'Phone', 'City', 'State', 'Qualification / Degree'],
-      ]);
-      dataSheet['!cols'] = [{ wch: 28 }, { wch: 32 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 24 }];
+      // Data sheet: matches the standard candidate-list format. Every column
+      // is auto-detected on import (S.No is ignored). The sheet name becomes
+      // the candidates' degreeGroup on import.
+      const headers = [
+        'S.No', 'Full Name', 'Email', 'Phone', 'Gender', 'State', 'City',
+        'Qualification / Degree', 'Course / Stream', 'Institution',
+        'Year of Passing', 'Total Experience (Years)',
+      ];
+      const dataSheet = xlsx.utils.aoa_to_sheet([headers]);
+      dataSheet['!cols'] = [
+        { wch: 6 }, { wch: 28 }, { wch: 32 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 16 },
+        { wch: 24 }, { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 22 },
+      ];
+      // AutoFilter dropdowns on the header row, like the original file.
+      dataSheet['!autofilter'] = { ref: `A1:${xlsx.utils.encode_col(headers.length - 1)}1` };
       xlsx.utils.book_append_sheet(wb, dataSheet, 'Candidates');
 
       // Instructions sheet: has no name/contact columns, so the importer
@@ -40,7 +49,7 @@ export const SeminarImport: React.FC = () => {
       const instructions = xlsx.utils.aoa_to_sheet([
         ['How to use this template'],
         [''],
-        ['1. Fill the "Candidates" sheet. Full Name plus Email or Phone is required per row; City, State and Qualification are optional.'],
+        ['1. Fill the "Candidates" sheet. Full Name plus Email or Phone is required per row; all other columns (S.No, Gender, State, City, Qualification, Course, Institution, Year of Passing, Experience) are optional.'],
         ['2. Phone: 10-digit numbers are fine (9849123456) — +91 is added automatically. 91XXXXXXXXXX and +91XXXXXXXXXX also work.'],
         ['3. The sheet name ("Candidates") is saved as each person\'s degree group. Rename it (e.g. "B.Tech-BE") or add more sheets — one per degree group.'],
         ['4. Duplicates are matched by email (then phone), so importing the same file twice never creates duplicates.'],

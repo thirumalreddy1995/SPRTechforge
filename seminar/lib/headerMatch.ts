@@ -10,7 +10,12 @@ const SYNONYMS: Record<SeminarField, string[]> = {
   phone: ['phone', 'phoneno', 'phonenumber', 'mobile', 'mobileno', 'mobilenumber', 'contact', 'contactno', 'contactnumber', 'whatsapp', 'whatsappno', 'whatsappnumber'],
   city: ['city', 'location', 'town'],
   state: ['state'],
-  qualification: ['qualification', 'degree', 'qualificationdegree', 'education', 'course'],
+  gender: ['gender', 'sex'],
+  qualification: ['qualification', 'degree', 'qualificationdegree', 'education', 'highestqualification'],
+  courseStream: ['coursestream', 'course', 'stream', 'branch', 'specialization', 'specialisation'],
+  institution: ['institution', 'college', 'university', 'institute', 'collegename'],
+  yearOfPassing: ['yearofpassing', 'passingyear', 'yop', 'passoutyear', 'passedoutyear', 'yearofpassout', 'graduationyear', 'passout'],
+  totalExperience: ['totalexperience', 'totalexperienceyears', 'experience', 'experienceyears', 'expyears', 'exp', 'workexperience'],
 };
 
 export const normalizeHeader = (h: any): string =>
@@ -32,15 +37,23 @@ const scoreHeader = (header: string, field: SeminarField): number => {
   return best;
 };
 
-export const SEMINAR_FIELDS: SeminarField[] = ['fullName', 'email', 'phone', 'city', 'state', 'qualification'];
+export const SEMINAR_FIELDS: SeminarField[] = [
+  'fullName', 'email', 'phone', 'gender', 'city', 'state',
+  'qualification', 'courseStream', 'institution', 'yearOfPassing', 'totalExperience',
+];
 
 export const FIELD_LABELS: Record<SeminarField, string> = {
   fullName: 'Name',
   email: 'Email',
   phone: 'Phone',
+  gender: 'Gender',
   city: 'City',
   state: 'State',
   qualification: 'Qualification / Degree',
+  courseStream: 'Course / Stream',
+  institution: 'Institution',
+  yearOfPassing: 'Year of Passing',
+  totalExperience: 'Total Experience (Years)',
 };
 
 /**
@@ -48,9 +61,8 @@ export const FIELD_LABELS: Record<SeminarField, string> = {
  * once; higher scores win. Returns -1 for undetected fields.
  */
 export const detectMapping = (headers: any[]): Record<SeminarField, number> => {
-  const mapping = {
-    fullName: -1, email: -1, phone: -1, city: -1, state: -1, qualification: -1,
-  } as Record<SeminarField, number>;
+  const mapping = {} as Record<SeminarField, number>;
+  SEMINAR_FIELDS.forEach(f => { mapping[f] = -1; });
 
   // Collect all (field, column, score) candidates, assign greedily by score.
   const scored: { field: SeminarField; col: number; score: number }[] = [];

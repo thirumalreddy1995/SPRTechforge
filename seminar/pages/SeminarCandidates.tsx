@@ -227,8 +227,13 @@ export const SeminarCandidates: React.FC = () => {
               <div>
                 <Row label="Email">{detail.email || '—'}</Row>
                 <Row label="Phone">{detail.phone || '—'}</Row>
+                <Row label="Gender">{detail.gender || '—'}</Row>
                 <Row label="City / State">{[detail.city, detail.state].filter(Boolean).join(', ') || '—'}</Row>
                 <Row label="Qualification">{detail.qualification || '—'}</Row>
+                <Row label="Course / Stream">{detail.courseStream || '—'}</Row>
+                <Row label="Institution">{detail.institution || '—'}</Row>
+                <Row label="Year of Passing">{detail.yearOfPassing || '—'}</Row>
+                <Row label="Experience (Years)">{detail.totalExperience || '—'}</Row>
                 <Row label="Degree Group">{detail.degreeGroup}</Row>
                 <Row label="Imported">{new Date(detail.createdAt).toLocaleString()}</Row>
                 <Row label="Invite Status">{detail.emailStatus}{detail.subjectVariant ? ` (subject ${detail.subjectVariant})` : ''}</Row>

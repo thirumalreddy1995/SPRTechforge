@@ -74,7 +74,12 @@ export const buildCandidatesFromSheets = (
         phone,
         city: cleanText(cell(m.city)) || undefined,
         state: cleanText(cell(m.state)) || undefined,
+        gender: cleanText(cell(m.gender)) || undefined,
         qualification: cleanText(cell(m.qualification)) || undefined,
+        courseStream: cleanText(cell(m.courseStream)) || undefined,
+        institution: cleanText(cell(m.institution)) || undefined,
+        yearOfPassing: cleanText(cell(m.yearOfPassing)) || undefined,
+        totalExperience: cleanText(cell(m.totalExperience)) || undefined,
         degreeGroup: sheet.sheetName,
       };
 

@@ -76,6 +76,27 @@ const TESTS: { name: string; fn: () => void }[] = [
     },
   },
   {
+    name: 'Headers: full template format detected (12 columns, S.No ignored)',
+    fn: () => {
+      const m = detectMapping([
+        'S.No', 'Full Name', 'Email', 'Phone', 'Gender', 'State', 'City',
+        'Qualification / Degree', 'Course / Stream', 'Institution',
+        'Year of Passing', 'Total Experience (Years)',
+      ]);
+      assert(m.fullName === 1, `fullName got col ${m.fullName}`);
+      assert(m.email === 2, `email got col ${m.email}`);
+      assert(m.phone === 3, `phone got col ${m.phone}`);
+      assert(m.gender === 4, `gender got col ${m.gender}`);
+      assert(m.state === 5, `state got col ${m.state}`);
+      assert(m.city === 6, `city got col ${m.city}`);
+      assert(m.qualification === 7, `qualification got col ${m.qualification}`);
+      assert(m.courseStream === 8, `courseStream got col ${m.courseStream}`);
+      assert(m.institution === 9, `institution got col ${m.institution}`);
+      assert(m.yearOfPassing === 10, `yearOfPassing got col ${m.yearOfPassing}`);
+      assert(m.totalExperience === 11, `totalExperience got col ${m.totalExperience}`);
+    },
+  },
+  {
     name: 'Headers: summary sheet is auto-skipped',
     fn: () => {
       const m = detectMapping(['Degree', 'Count', 'Percentage']);
