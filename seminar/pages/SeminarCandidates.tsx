@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Card, Pagination, SearchInput, Select } from '../../components/Components';
+import { Button, Card, ConfirmationModal, Modal, Pagination, SearchInput, Select } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
+import { isMasterUser } from '../../utils';
 import { useSeminar } from '../context/SeminarContext';
+import { SeminarCandidate } from '../types';
 import { buildTemplateVars, renderTemplate } from '../lib/template';
 
 // Candidates table with per-candidate WhatsApp / SMS deep links and a
@@ -12,18 +14,32 @@ import { buildTemplateVars, renderTemplate } from '../lib/template';
 const PAGE_SIZE = 50;
 
 export const SeminarCandidates: React.FC = () => {
-  const { showToast } = useApp();
-  const { candidates, registrations, settings, isLoading } = useSeminar();
+  const { user, showToast } = useApp();
+  const { candidates, registrations, questions, campaignLog, settings, deleteCandidate, isLoading } = useSeminar();
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [detail, setDetail] = useState<SeminarCandidate | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SeminarCandidate | null>(null);
+
+  const isMaster = isMasterUser(user);
 
   const regByCandidate = useMemo(() => {
     const m = new Map<string, string>();
     registrations.forEach(r => m.set(r.candidateId, r.status === 'registered' ? r.preferredMode : 'declined'));
     return m;
   }, [registrations]);
+
+  const handleDelete = async (c: SeminarCandidate) => {
+    try {
+      await deleteCandidate(c.id);
+      if (detail?.id === c.id) setDetail(null);
+      showToast(`${c.fullName} deleted (registration, questions and send history included)`, 'success');
+    } catch (e: any) {
+      showToast(`Delete failed: ${e.message || e}`, 'error');
+    }
+  };
 
   const groups = useMemo(() => Array.from(new Set(candidates.map(c => c.degreeGroup))).sort(), [candidates]);
 
@@ -150,7 +166,12 @@ export const SeminarCandidates: React.FC = () => {
                 const sms = smsLink(c);
                 return (
                   <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-2 font-bold text-gray-900 whitespace-nowrap">{c.fullName}<span className="block text-[11px] text-gray-400 font-normal">{c.city || ''}</span></td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <button onClick={() => setDetail(c)} className="font-bold text-gray-900 hover:text-blue-600 text-left" title="View full details">
+                        {c.fullName}
+                      </button>
+                      <span className="block text-[11px] text-gray-400 font-normal">{c.city || ''}</span>
+                    </td>
                     <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.email || '—'}<span className="block text-[11px] text-gray-400">{c.phone || 'no phone'}</span></td>
                     <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.degreeGroup}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
@@ -165,9 +186,11 @@ export const SeminarCandidates: React.FC = () => {
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <div className="flex gap-2 items-center">
+                        <button onClick={() => setDetail(c)} className="text-blue-600 hover:text-blue-800 text-xs font-bold" title="View full details">View</button>
                         {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-800 text-xs font-bold" title="Open WhatsApp with a personalized message">WhatsApp</a>}
                         {sms && <a href={sms} className="text-blue-600 hover:text-blue-800 text-xs font-bold" title="Open SMS with a personalized message">SMS</a>}
                         <button onClick={() => copyInviteLink(c)} className="text-gray-500 hover:text-gray-800 text-xs font-bold" title="Copy this candidate's invite link">Copy link</button>
+                        {isMaster && <button onClick={() => setDeleteTarget(c)} className="text-red-500 hover:text-red-700 text-xs font-bold" title="Delete this candidate (master only)">Delete</button>}
                       </div>
                     </td>
                   </tr>
@@ -186,6 +209,92 @@ export const SeminarCandidates: React.FC = () => {
           onPageChange={setPage}
         />
       </Card>
+
+      {detail && (() => {
+        const reg = registrations.find(r => r.candidateId === detail.id);
+        const qs = questions.filter(q => q.candidateId === detail.id).sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+        const logs = campaignLog.filter(l => l.candidateId === detail.id).sort((a, b) => (a.sentAt < b.sentAt ? 1 : -1));
+        const inviteLink = buildTemplateVars(detail, settings).link;
+        const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+          <div className="flex flex-col sm:flex-row sm:gap-3 py-1.5 border-b border-gray-50">
+            <span className="w-40 shrink-0 text-xs font-bold text-gray-500 uppercase pt-0.5">{label}</span>
+            <span className="text-sm text-gray-800 break-all">{children}</span>
+          </div>
+        );
+        return (
+          <Modal isOpen={true} onClose={() => setDetail(null)} title={detail.fullName} size="lg">
+            <div className="space-y-5">
+              <div>
+                <Row label="Email">{detail.email || '—'}</Row>
+                <Row label="Phone">{detail.phone || '—'}</Row>
+                <Row label="City / State">{[detail.city, detail.state].filter(Boolean).join(', ') || '—'}</Row>
+                <Row label="Qualification">{detail.qualification || '—'}</Row>
+                <Row label="Degree Group">{detail.degreeGroup}</Row>
+                <Row label="Imported">{new Date(detail.createdAt).toLocaleString()}</Row>
+                <Row label="Invite Status">{detail.emailStatus}{detail.subjectVariant ? ` (subject ${detail.subjectVariant})` : ''}</Row>
+                <Row label="Invite Link"><a href={inviteLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{inviteLink}</a></Row>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-gray-800 text-sm mb-1">Registration</h4>
+                {reg ? (
+                  <p className={`text-sm font-medium ${reg.status === 'registered' ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {reg.status === 'registered'
+                      ? `Registered — ${reg.preferredMode === 'in_person' ? 'In person' : 'Online'}`
+                      : 'Declined'}
+                    <span className="text-gray-400 font-normal"> &middot; {new Date(reg.registeredAt).toLocaleString()}</span>
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Not registered yet.</p>
+                )}
+              </div>
+
+              <div>
+                <h4 className="font-bold text-gray-800 text-sm mb-1">Questions ({qs.length})</h4>
+                {qs.length === 0 && <p className="text-sm text-gray-400 italic">No questions asked.</p>}
+                <div className="space-y-2">
+                  {qs.map(q => (
+                    <div key={q.id} className="bg-gray-50 rounded-lg p-2.5">
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{q.questionText}</p>
+                      {q.replyText
+                        ? <p className="text-sm text-emerald-700 mt-1 whitespace-pre-wrap">&#8618; {q.replyText}</p>
+                        : <p className="text-xs text-amber-600 mt-1 font-bold">Awaiting reply</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-gray-800 text-sm mb-1">Email History ({logs.length})</h4>
+                {logs.length === 0 && <p className="text-sm text-gray-400 italic">Nothing sent yet.</p>}
+                <div className="space-y-1">
+                  {logs.map(l => (
+                    <p key={l.id} className="text-xs text-gray-600">
+                      {new Date(l.sentAt).toLocaleString()} &middot; {l.channel.replace('email_', '')}
+                      {l.subjectVariant ? ` (subject ${l.subjectVariant})` : ''} &middot;{' '}
+                      {l.error ? <span className="text-red-600">failed: {l.error}</span> : <span className="text-emerald-700">sent</span>}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {isMaster && (
+                <div className="flex justify-end pt-2 border-t border-gray-100">
+                  <Button variant="danger" onClick={() => setDeleteTarget(detail)}>Delete Candidate</Button>
+                </div>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget); }}
+        title="Delete candidate?"
+        message={`This permanently deletes ${deleteTarget?.fullName || 'this candidate'} along with their registration, questions and email history. Their invite link stops working. This cannot be undone.`}
+      />
     </div>
   );
 };
