@@ -7,8 +7,12 @@
  *        Returns recent inbox messages as JSON.
  *
  *   POST ?secret=...
- *        Body: { to, cc, subject, body, isHtml, attachments: [{url,name,mimeType}] }
+ *        Body: { to, cc, subject, body, isHtml, attachments: [{url,name,mimeType}],
+ *                inlineImages: [{key,url,name,mimeType}] }
  *        Sends the email via MailApp (counts against Gmail's 100/day free quota).
+ *        inlineImages (optional, used by the seminar module): each entry is
+ *        fetched and embedded as a CID attachment; reference it in the HTML
+ *        body as <img src="cid:KEY">. Requires isHtml: true.
  *
  * Shared-secret check is the only auth — store the secret in Script Properties
  * (File > Project Settings > Script Properties) under the key SHARED_SECRET.
@@ -134,6 +138,30 @@ function doPost(e) {
         }
       }
       if (blobs.length) options.attachments = blobs;
+    }
+
+    // Inline (CID) images — e.g. the seminar banner. Additive: older clients
+    // that don't send inlineImages are unaffected.
+    if (data.inlineImages && data.inlineImages.length && data.isHtml) {
+      const inline = {};
+      var inlineCount = 0;
+      for (var j = 0; j < data.inlineImages.length; j++) {
+        const img = data.inlineImages[j];
+        if (!img.url || !img.key) continue;
+        try {
+          const resp2 = UrlFetchApp.fetch(img.url, { muteHttpExceptions: true });
+          if (resp2.getResponseCode() >= 400) continue;
+          const blob2 = resp2.getBlob();
+          if (blob2.getBytes().length > MAX_ATTACHMENT_BYTES) continue;
+          blob2.setName(img.name || img.key);
+          if (img.mimeType) blob2.setContentType(img.mimeType);
+          inline[img.key] = blob2;
+          inlineCount++;
+        } catch (inlineErr) {
+          // Non-fatal: the email still sends, the cid image just won't render.
+        }
+      }
+      if (inlineCount > 0) options.inlineImages = inline;
     }
 
     const to = Array.isArray(data.to) ? data.to.join(',') : data.to;

@@ -41,6 +41,16 @@ import { EmailPage } from './pages/spconnect/Email';
 import { CallRoom } from './pages/spconnect/CallRoom';
 import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
 import { isMasterUser } from './utils';
+import {
+  SeminarProvider,
+  SeminarDashboard,
+  SeminarImport,
+  SeminarSettingsPage,
+  SeminarCampaign,
+  SeminarQuestions,
+  SeminarCandidates,
+  SeminarRegistrationPage,
+} from './seminar';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -115,6 +125,15 @@ const AppRoutes = () => {
       <Route path="/training/interview-prep" element={<ProtectedRoute><Layout><InterviewPrepModule /></Layout></ProtectedRoute>} />
 
       <Route path="/web-leads" element={<AdminRoute><Layout><WebLeadsPage /></Layout></AdminRoute>} />
+
+      {/* Seminar module (self-contained in seminar/). Public token page + admin pages. */}
+      <Route path="/seminar/s/:token" element={<SeminarRegistrationPage />} />
+      <Route path="/seminar/dashboard" element={<AdminRoute><Layout><SeminarProvider><SeminarDashboard /></SeminarProvider></Layout></AdminRoute>} />
+      <Route path="/seminar/import" element={<AdminRoute><Layout><SeminarProvider><SeminarImport /></SeminarProvider></Layout></AdminRoute>} />
+      <Route path="/seminar/candidates" element={<AdminRoute><Layout><SeminarProvider><SeminarCandidates /></SeminarProvider></Layout></AdminRoute>} />
+      <Route path="/seminar/campaign" element={<AdminRoute><Layout><SeminarProvider><SeminarCampaign /></SeminarProvider></Layout></AdminRoute>} />
+      <Route path="/seminar/questions" element={<AdminRoute><Layout><SeminarProvider><SeminarQuestions /></SeminarProvider></Layout></AdminRoute>} />
+      <Route path="/seminar/settings" element={<AdminRoute><Layout><SeminarProvider><SeminarSettingsPage /></SeminarProvider></Layout></AdminRoute>} />
 
       {/* Chat */}
       <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
