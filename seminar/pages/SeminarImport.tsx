@@ -22,6 +22,39 @@ export const SeminarImport: React.FC = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
+  const downloadTemplate = async () => {
+    try {
+      const xlsx: any = await import('xlsx');
+      const wb = xlsx.utils.book_new();
+
+      // Data sheet: exactly the columns the importer auto-detects. The sheet
+      // name becomes the candidates' degreeGroup on import.
+      const dataSheet = xlsx.utils.aoa_to_sheet([
+        ['Full Name', 'Email', 'Phone', 'City', 'State', 'Qualification / Degree'],
+      ]);
+      dataSheet['!cols'] = [{ wch: 28 }, { wch: 32 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 24 }];
+      xlsx.utils.book_append_sheet(wb, dataSheet, 'Candidates');
+
+      // Instructions sheet: has no name/contact columns, so the importer
+      // auto-skips it — safe to leave in the file when importing.
+      const instructions = xlsx.utils.aoa_to_sheet([
+        ['How to use this template'],
+        [''],
+        ['1. Fill the "Candidates" sheet. Full Name plus Email or Phone is required per row; City, State and Qualification are optional.'],
+        ['2. Phone: 10-digit numbers are fine (9849123456) — +91 is added automatically. 91XXXXXXXXXX and +91XXXXXXXXXX also work.'],
+        ['3. The sheet name ("Candidates") is saved as each person\'s degree group. Rename it (e.g. "B.Tech-BE") or add more sheets — one per degree group.'],
+        ['4. Duplicates are matched by email (then phone), so importing the same file twice never creates duplicates.'],
+        ['5. Save and upload the file on Seminar → Import Candidates. This Instructions sheet is skipped automatically.'],
+      ]);
+      instructions['!cols'] = [{ wch: 130 }];
+      xlsx.utils.book_append_sheet(wb, instructions, 'Instructions');
+
+      xlsx.writeFile(wb, 'seminar-candidates-template.xlsx');
+    } catch (e: any) {
+      showToast(`Could not generate template: ${e.message || e}`, 'error');
+    }
+  };
+
   const handleFile = async (file: File) => {
     if (file.size > MAX_FILE_BYTES) {
       showToast('File exceeds the 20 MB limit', 'error');
@@ -104,9 +137,15 @@ export const SeminarImport: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seminar &middot; Import Candidates</h1>
-        <p className="text-gray-600">Upload an Excel/CSV contact list. Columns are auto-detected; you confirm the mapping before anything is written.</p>
+      <div className="flex justify-between items-start flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seminar &middot; Import Candidates</h1>
+          <p className="text-gray-600">Upload an Excel/CSV contact list. Columns are auto-detected; you confirm the mapping before anything is written.</p>
+        </div>
+        <Button variant="secondary" onClick={downloadTemplate}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Download Template
+        </Button>
       </div>
 
       {step === 'upload' && (
@@ -129,6 +168,9 @@ export const SeminarImport: React.FC = () => {
               {isParsing ? 'Parsing…' : 'Choose File'}
             </Button>
             <p className="text-xs text-gray-500 mt-3">.xlsx / .xls / .csv &middot; max 20 MB &middot; all sheets are scanned; summary sheets are skipped automatically</p>
+            <p className="text-xs text-gray-500 mt-1">
+              New list? <button onClick={downloadTemplate} className="text-blue-600 font-bold underline">Download the Excel template</button>, fill it in, and upload the same file here.
+            </p>
           </div>
         </Card>
       )}
