@@ -23,8 +23,7 @@ export interface SeminarCandidate {
   inviteToken: string; // unique URL token for the public registration page
   emailStatus: SeminarEmailStatus;
   subjectVariant?: SubjectVariant; // which A/B subject was used for the invite
-  whatsappStatus?: 'sent'; // marked by the one-by-one WhatsApp blast mode
-  smsStatus?: 'sent'; // marked by the one-by-one SMS blast mode
+  whatsappStatus?: 'sent'; // marked by the WhatsApp blast mode
   createdAt: string;
   updatedAt?: string;
 }

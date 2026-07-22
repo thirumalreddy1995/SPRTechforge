@@ -165,7 +165,7 @@ export const SeminarSettingsPage: React.FC = () => {
 
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 space-y-1 mb-4">
           <p><strong>From email address:</strong> always the Gmail account that owns the email bridge (Apps Script). To send from a different address, deploy the bridge under that account and update the build secrets — it cannot be typed here.</p>
-          <p><strong>WhatsApp / SMS sender number:</strong> messages go out from your own phone's WhatsApp/SIM via the one-by-one blast mode on the Candidates page — no number is configured here. Automatic bulk WhatsApp/SMS requires paid gateways and is deliberately not used.</p>
+          <p><strong>WhatsApp sender number:</strong> invites go out from whichever WhatsApp account you're logged into (WhatsApp Web / your phone) via "Send WhatsApp Invites" on the Candidates page — no number is configured here. Fully automatic bulk WhatsApp requires the paid Business API and is deliberately not used.</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
