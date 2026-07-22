@@ -108,6 +108,8 @@ export const defaultSeminarSettings = (): SeminarSettings => ({
   showSeatsRemaining: true,
   bannerPath: '',
   bannerUrl: '',
+  bannerInline: false,
+  fromName: '',
   publicBaseUrl: '',
   ...DEFAULT_SETTINGS_FIELDS,
 });

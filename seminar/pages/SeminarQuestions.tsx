@@ -48,7 +48,7 @@ export const SeminarQuestions: React.FC = () => {
         </div>`;
         const subject = renderTemplate('Re: your question about the {date} seminar', vars, false);
         try {
-          await sendSeminarEmail({ to: candidate.email, subject, html, bannerUrl: undefined });
+          await sendSeminarEmail({ to: candidate.email, subject, html, bannerUrl: undefined, fromName: settings.fromName });
           emailed = true;
           await addCampaignLog({ id: generateSeminarId('semlog'), candidateId: candidate.id, channel: 'email_reply', sentAt: now, error: null });
         } catch (e: any) {
