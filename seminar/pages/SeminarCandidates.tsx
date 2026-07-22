@@ -1,17 +1,30 @@
-import React, { useMemo, useState } from 'react';
-import { Button, Card, ConfirmationModal, Modal, Pagination, SearchInput, Select } from '../../components/Components';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Card, ConfirmationModal, Input, Modal, Pagination, SearchInput, Select } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
 import { isMasterUser } from '../../utils';
 import { useSeminar } from '../context/SeminarContext';
 import { SeminarCandidate } from '../types';
 import { buildTemplateVars, renderTemplate } from '../lib/template';
 
-// Candidates table with per-candidate WhatsApp / SMS deep links and a
-// WhatsApp CSV export. Deliberately NO bulk WhatsApp automation: unofficial
-// bulk senders get numbers banned. wa.me links + broadcast lists from your
-// own phone are free and ToS-safe (attach the banner image manually there).
+// Candidates table, WhatsApp blast mode and CSV export.
+//
+// The blast mode is the safe maximum of WhatsApp automation: it reuses ONE
+// WhatsApp window and auto-loads each candidate's chat with the message
+// pre-filled — the human presses Send/Enter per chat. The final Send press is
+// deliberately never automated: tools that fake it violate WhatsApp's ToS and
+// get numbers banned. Full one-click sending exists only via the paid
+// WhatsApp Business (Cloud) API.
 
 const PAGE_SIZE = 50;
+
+interface BlastState {
+  queue: SeminarCandidate[];
+  index: number;
+  sent: number;
+  auto: boolean;
+  paused: boolean;
+  delayMs: number;
+}
 
 export const SeminarCandidates: React.FC = () => {
   const { user, showToast } = useApp();
@@ -22,39 +35,74 @@ export const SeminarCandidates: React.FC = () => {
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<SeminarCandidate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SeminarCandidate | null>(null);
-  const [blast, setBlast] = useState<{ channel: 'whatsapp' | 'sms'; queue: SeminarCandidate[]; index: number; sent: number } | null>(null);
+  const [blast, setBlast] = useState<BlastState | null>(null);
+  const waWinRef = useRef<Window | null>(null);
 
   const isMaster = isMasterUser(user);
 
-  // One-by-one blast mode: iterates candidates with a phone number that
-  // haven't been contacted on this channel yet, opening the pre-filled
-  // WhatsApp/SMS composer for each. Progress is stored on the candidate
-  // (whatsappStatus / smsStatus), so stopping and resuming later is safe.
-  const startBlast = (channel: 'whatsapp' | 'sms') => {
-    const queue = filtered.filter(c => c.phone && (channel === 'whatsapp' ? c.whatsappStatus !== 'sent' : c.smsStatus !== 'sent'));
+  const startBlast = () => {
+    const queue = filtered.filter(c => c.phone && c.whatsappStatus !== 'sent');
     if (queue.length === 0) {
-      showToast('No one left to contact on this channel in the current filter', 'info');
+      showToast('Everyone in the current filter already has WA✓ (or no phone number)', 'info');
       return;
     }
-    setBlast({ channel, queue, index: 0, sent: 0 });
+    setBlast({ queue, index: 0, sent: 0, auto: false, paused: false, delayMs: 8000 });
+  };
+
+  /** Load a candidate's chat into the single reusable WhatsApp window. */
+  const openWa = (c: SeminarCandidate): boolean => {
+    const link = waLink(c);
+    if (!link) return false;
+    const w = waWinRef.current;
+    if (w && !w.closed) {
+      try {
+        w.location.href = link;
+        w.focus();
+        return true;
+      } catch { /* window went cross-origin weird — fall through to reopen */ }
+    }
+    const opened = window.open(link, 'seminar_wa');
+    if (opened) {
+      waWinRef.current = opened;
+      return true;
+    }
+    return false; // popup blocked (no user gesture) — caller pauses the run
   };
 
   const blastSendCurrent = async () => {
     if (!blast) return;
     const c = blast.queue[blast.index];
     if (!c) return;
-    const link = blast.channel === 'whatsapp' ? waLink(c) : smsLink(c);
-    if (link) {
-      if (blast.channel === 'whatsapp') window.open(link, '_blank', 'noopener');
-      else window.location.href = link;
+    if (!openWa(c)) {
+      setBlast(prev => (prev ? { ...prev, paused: true } : prev));
+      showToast('The WhatsApp window was closed and the browser blocked reopening it — click Resume to continue', 'error');
+      return;
     }
     try {
-      await updateCandidate(c.id, blast.channel === 'whatsapp' ? { whatsappStatus: 'sent' } : { smsStatus: 'sent' });
+      await updateCandidate(c.id, { whatsappStatus: 'sent' });
     } catch { /* status tracking is best-effort */ }
     setBlast(prev => (prev ? { ...prev, index: prev.index + 1, sent: prev.sent + 1 } : prev));
   };
 
   const blastSkip = () => setBlast(prev => (prev ? { ...prev, index: prev.index + 1 } : prev));
+
+  // Auto-advance: while running, load the next chat every delayMs. The
+  // effect re-arms after every state change, so Pause/Stop take effect
+  // immediately and closing the modal cancels the timer.
+  useEffect(() => {
+    if (!blast || !blast.auto || blast.paused) return;
+    if (blast.index >= blast.queue.length) return;
+    const t = setTimeout(() => { void blastSendCurrent(); }, blast.delayMs);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blast]);
+
+  const startAuto = () => {
+    // The click is the user gesture that legitimizes opening the WA window;
+    // subsequent navigations reuse it and need no gesture.
+    void blastSendCurrent();
+    setBlast(prev => (prev ? { ...prev, auto: true, paused: false } : prev));
+  };
 
   const regByCandidate = useMemo(() => {
     const m = new Map<string, string>();
@@ -95,13 +143,6 @@ export const SeminarCandidates: React.FC = () => {
     const vars = buildTemplateVars(c, settings);
     const msg = renderTemplate(settings.whatsappTemplate, vars, false);
     return `https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
-  };
-
-  const smsLink = (c: (typeof candidates)[number]): string | null => {
-    if (!c.phone) return null;
-    const vars = buildTemplateVars(c, settings);
-    const msg = renderTemplate(settings.whatsappTemplate, vars, false);
-    return `sms:${c.phone}?body=${encodeURIComponent(msg)}`;
   };
 
   const copyInviteLink = async (c: (typeof candidates)[number]) => {
@@ -146,16 +187,16 @@ export const SeminarCandidates: React.FC = () => {
           <p className="text-gray-600">{candidates.length} imported &middot; {filtered.length} matching filters</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="success" onClick={() => startBlast('whatsapp')}>WhatsApp One-by-One</Button>
-          <Button variant="secondary" onClick={() => startBlast('sms')}>SMS One-by-One</Button>
+          <Button variant="success" onClick={startBlast}>Send WhatsApp Invites</Button>
           <Button variant="secondary" onClick={exportWhatsAppCsv}>Export WhatsApp CSV</Button>
         </div>
       </div>
 
       <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 rounded text-emerald-800 text-xs">
-        <strong>WhatsApp flow:</strong> use the per-row buttons for one-at-a-time sends, or the CSV with broadcast lists
-        on your phone. <strong>Attach the seminar banner image manually</strong> in WhatsApp — wa.me links can't carry images.
-        Bulk WhatsApp automation is deliberately not built: it gets numbers banned without the paid Business API.
+        <strong>How WhatsApp sending works:</strong> click <strong>Send WhatsApp Invites</strong> and turn on auto-advance —
+        one WhatsApp Web window loads each student's chat pre-filled, and you just press <strong>Enter</strong> per student.
+        Fully hands-off sending is impossible without the paid WhatsApp Business API; tools that fake it get numbers banned.
+        <strong> Attach the banner image manually</strong> in WhatsApp if you want it included (links can't carry images).
       </div>
 
       <Card>
@@ -198,7 +239,6 @@ export const SeminarCandidates: React.FC = () => {
               {pageItems.map(c => {
                 const reg = regByCandidate.get(c.id);
                 const wa = waLink(c);
-                const sms = smsLink(c);
                 return (
                   <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-2 whitespace-nowrap">
@@ -212,7 +252,6 @@ export const SeminarCandidates: React.FC = () => {
                       <span className="block text-[11px] text-gray-400">
                         {c.phone || 'no phone'}
                         {c.whatsappStatus === 'sent' && <span className="ml-1.5 text-emerald-600 font-bold">WA✓</span>}
-                        {c.smsStatus === 'sent' && <span className="ml-1.5 text-blue-600 font-bold">SMS✓</span>}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.degreeGroup}</td>
@@ -230,7 +269,6 @@ export const SeminarCandidates: React.FC = () => {
                       <div className="flex gap-2 items-center">
                         <button onClick={() => setDetail(c)} className="text-blue-600 hover:text-blue-800 text-xs font-bold" title="View full details">View</button>
                         {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-800 text-xs font-bold" title="Open WhatsApp with a personalized message">WhatsApp</a>}
-                        {sms && <a href={sms} className="text-blue-600 hover:text-blue-800 text-xs font-bold" title="Open SMS with a personalized message">SMS</a>}
                         <button onClick={() => copyInviteLink(c)} className="text-gray-500 hover:text-gray-800 text-xs font-bold" title="Copy this candidate's invite link">Copy link</button>
                         {isMaster && <button onClick={() => setDeleteTarget(c)} className="text-red-500 hover:text-red-700 text-xs font-bold" title="Delete this candidate (master only)">Delete</button>}
                       </div>
@@ -340,15 +378,15 @@ export const SeminarCandidates: React.FC = () => {
         const c = blast.queue[blast.index];
         const vars = c ? buildTemplateVars(c, settings) : null;
         const msg = vars ? renderTemplate(settings.whatsappTemplate, vars, false) : '';
-        const channelName = blast.channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
         const pct = Math.round((blast.index / blast.queue.length) * 100);
+        const running = blast.auto && !blast.paused;
         return (
-          <Modal isOpen={true} onClose={() => setBlast(null)} title={`${channelName} — one by one`} size="lg">
+          <Modal isOpen={true} onClose={() => setBlast(null)} title="Send WhatsApp Invites" size="lg">
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>{done ? 'Finished' : `${blast.index + 1} of ${blast.queue.length}`}</span>
-                  <span>{blast.sent} sent &middot; {blast.index - blast.sent} skipped</span>
+                  <span>{done ? 'Finished' : `${blast.index + 1} of ${blast.queue.length}${running ? ' — auto-advancing' : blast.paused ? ' — paused' : ''}`}</span>
+                  <span>{blast.sent} opened &middot; {blast.index - blast.sent} skipped</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div className="bg-emerald-500 h-2.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -358,8 +396,8 @@ export const SeminarCandidates: React.FC = () => {
               {done ? (
                 <div className="text-center py-6">
                   <div className="text-4xl mb-2">&#127881;</div>
-                  <p className="font-bold text-gray-900">All done — {blast.sent} of {blast.queue.length} opened for sending.</p>
-                  <p className="text-sm text-gray-500 mt-1">Anyone you skipped stays unmarked, so restarting the blast picks them up again.</p>
+                  <p className="font-bold text-gray-900">All done — {blast.sent} of {blast.queue.length} chats opened for sending.</p>
+                  <p className="text-sm text-gray-500 mt-1">Anyone you skipped stays unmarked (no WA✓), so restarting picks them up again.</p>
                   <Button className="mt-4" onClick={() => setBlast(null)}>Close</Button>
                 </div>
               ) : (
@@ -369,18 +407,47 @@ export const SeminarCandidates: React.FC = () => {
                     <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap border-l-2 border-emerald-300 pl-3">{msg}</p>
                   </div>
 
+                  {!blast.auto ? (
+                    <div className="bg-emerald-50 rounded-xl p-4 flex items-end gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[220px]">
+                        <p className="text-sm font-bold text-emerald-900 mb-1">Auto-advance (recommended)</p>
+                        <p className="text-xs text-emerald-800">Opens the next chat automatically every few seconds — you only press <strong>Enter</strong> in WhatsApp per student. Log in to WhatsApp Web first.</p>
+                      </div>
+                      <div className="w-28">
+                        <Input
+                          label="Every (sec)"
+                          type="number" min={3} max={60}
+                          value={String(Math.round(blast.delayMs / 1000))}
+                          onChange={e => setBlast(prev => (prev ? { ...prev, delayMs: Math.min(60, Math.max(3, parseInt(e.target.value, 10) || 8)) * 1000 } : prev))}
+                        />
+                      </div>
+                      <Button variant="success" onClick={startAuto}>&#9654; Start Auto</Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 flex-wrap items-center">
+                      {blast.paused ? (
+                        <Button variant="success" onClick={() => { void blastSendCurrent(); setBlast(prev => (prev ? { ...prev, paused: false } : prev)); }}>&#9654; Resume</Button>
+                      ) : (
+                        <Button variant="secondary" onClick={() => setBlast(prev => (prev ? { ...prev, paused: true } : prev))}>&#10074;&#10074; Pause</Button>
+                      )}
+                      <span className="text-xs text-gray-500">Next chat loads every {Math.round(blast.delayMs / 1000)}s — press Enter in the WhatsApp window for each.</span>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="success" onClick={blastSendCurrent}>
-                      Open {channelName} &rarr; then Next
-                    </Button>
-                    <Button variant="secondary" onClick={blastSkip}>Skip</Button>
-                    <Button variant="outline" onClick={() => setBlast(null)}>Stop (resume later)</Button>
+                    {!running && (
+                      <>
+                        <Button variant="secondary" onClick={blastSendCurrent}>Open This Chat &rarr; Next</Button>
+                        <Button variant="outline" onClick={blastSkip}>Skip</Button>
+                      </>
+                    )}
+                    <Button variant="outline" onClick={() => setBlast(null)}>Stop (resume anytime)</Button>
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    {blast.channel === 'whatsapp'
-                      ? <>A WhatsApp tab opens with the message pre-filled — press Send there, then come back. Works best with WhatsApp Web logged in, or run this from your phone. <strong>Attach the banner image manually</strong> if you want it included (links can't carry images).</>
-                      : <>Your SMS app opens with the message pre-filled — press Send there, then come back. Run this from your phone; desktop browsers usually can't open SMS links.</>}
+                    Everything happens in <strong>one</strong> WhatsApp window — keep it side by side with this tab.
+                    If a chat advances before you pressed Enter, its row keeps the per-row WhatsApp button for a retry.
+                    The final Send press stays manual on purpose: auto-senders violate WhatsApp's terms and get numbers banned.
                   </p>
                 </>
               )}
