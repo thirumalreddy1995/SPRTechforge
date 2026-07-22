@@ -23,6 +23,8 @@ export interface SeminarCandidate {
   inviteToken: string; // unique URL token for the public registration page
   emailStatus: SeminarEmailStatus;
   subjectVariant?: SubjectVariant; // which A/B subject was used for the invite
+  whatsappStatus?: 'sent'; // marked by the one-by-one WhatsApp blast mode
+  smsStatus?: 'sent'; // marked by the one-by-one SMS blast mode
   createdAt: string;
   updatedAt?: string;
 }
@@ -70,6 +72,13 @@ export interface SeminarSettings {
   showSeatsRemaining: boolean;
   bannerPath: string; // Firebase Storage path (for delete/replace)
   bannerUrl: string; // public download URL
+  // false (default) = banner embedded via its hosted URL — works with any
+  // deployed bridge version. true = true CID inline attachment — requires the
+  // bridge to be redeployed with the updated apps-script/Code.gs.
+  bannerInline: boolean;
+  // Sender display name on outgoing emails (the address itself is always the
+  // Gmail account that owns the bridge script).
+  fromName: string;
   // Base URL used to build invite links in emails/WhatsApp. Defaults to the
   // current origin when empty (useful when composing from the deployed site).
   publicBaseUrl: string;

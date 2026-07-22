@@ -15,15 +15,46 @@ const PAGE_SIZE = 50;
 
 export const SeminarCandidates: React.FC = () => {
   const { user, showToast } = useApp();
-  const { candidates, registrations, questions, campaignLog, settings, deleteCandidate, isLoading } = useSeminar();
+  const { candidates, registrations, questions, campaignLog, settings, deleteCandidate, updateCandidate, isLoading } = useSeminar();
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<SeminarCandidate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SeminarCandidate | null>(null);
+  const [blast, setBlast] = useState<{ channel: 'whatsapp' | 'sms'; queue: SeminarCandidate[]; index: number; sent: number } | null>(null);
 
   const isMaster = isMasterUser(user);
+
+  // One-by-one blast mode: iterates candidates with a phone number that
+  // haven't been contacted on this channel yet, opening the pre-filled
+  // WhatsApp/SMS composer for each. Progress is stored on the candidate
+  // (whatsappStatus / smsStatus), so stopping and resuming later is safe.
+  const startBlast = (channel: 'whatsapp' | 'sms') => {
+    const queue = filtered.filter(c => c.phone && (channel === 'whatsapp' ? c.whatsappStatus !== 'sent' : c.smsStatus !== 'sent'));
+    if (queue.length === 0) {
+      showToast('No one left to contact on this channel in the current filter', 'info');
+      return;
+    }
+    setBlast({ channel, queue, index: 0, sent: 0 });
+  };
+
+  const blastSendCurrent = async () => {
+    if (!blast) return;
+    const c = blast.queue[blast.index];
+    if (!c) return;
+    const link = blast.channel === 'whatsapp' ? waLink(c) : smsLink(c);
+    if (link) {
+      if (blast.channel === 'whatsapp') window.open(link, '_blank', 'noopener');
+      else window.location.href = link;
+    }
+    try {
+      await updateCandidate(c.id, blast.channel === 'whatsapp' ? { whatsappStatus: 'sent' } : { smsStatus: 'sent' });
+    } catch { /* status tracking is best-effort */ }
+    setBlast(prev => (prev ? { ...prev, index: prev.index + 1, sent: prev.sent + 1 } : prev));
+  };
+
+  const blastSkip = () => setBlast(prev => (prev ? { ...prev, index: prev.index + 1 } : prev));
 
   const regByCandidate = useMemo(() => {
     const m = new Map<string, string>();
@@ -114,7 +145,11 @@ export const SeminarCandidates: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seminar &middot; Candidates</h1>
           <p className="text-gray-600">{candidates.length} imported &middot; {filtered.length} matching filters</p>
         </div>
-        <Button variant="secondary" onClick={exportWhatsAppCsv}>Export WhatsApp CSV</Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="success" onClick={() => startBlast('whatsapp')}>WhatsApp One-by-One</Button>
+          <Button variant="secondary" onClick={() => startBlast('sms')}>SMS One-by-One</Button>
+          <Button variant="secondary" onClick={exportWhatsAppCsv}>Export WhatsApp CSV</Button>
+        </div>
       </div>
 
       <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 rounded text-emerald-800 text-xs">
@@ -172,7 +207,14 @@ export const SeminarCandidates: React.FC = () => {
                       </button>
                       <span className="block text-[11px] text-gray-400 font-normal">{c.city || ''}</span>
                     </td>
-                    <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.email || '—'}<span className="block text-[11px] text-gray-400">{c.phone || 'no phone'}</span></td>
+                    <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                      {c.email || '—'}
+                      <span className="block text-[11px] text-gray-400">
+                        {c.phone || 'no phone'}
+                        {c.whatsappStatus === 'sent' && <span className="ml-1.5 text-emerald-600 font-bold">WA✓</span>}
+                        {c.smsStatus === 'sent' && <span className="ml-1.5 text-blue-600 font-bold">SMS✓</span>}
+                      </span>
+                    </td>
                     <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.degreeGroup}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.emailStatus === 'sent' ? 'bg-emerald-100 text-emerald-700' : c.emailStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -287,6 +329,60 @@ export const SeminarCandidates: React.FC = () => {
                 <div className="flex justify-end pt-2 border-t border-gray-100">
                   <Button variant="danger" onClick={() => setDeleteTarget(detail)}>Delete Candidate</Button>
                 </div>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {blast && (() => {
+        const done = blast.index >= blast.queue.length;
+        const c = blast.queue[blast.index];
+        const vars = c ? buildTemplateVars(c, settings) : null;
+        const msg = vars ? renderTemplate(settings.whatsappTemplate, vars, false) : '';
+        const channelName = blast.channel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+        const pct = Math.round((blast.index / blast.queue.length) * 100);
+        return (
+          <Modal isOpen={true} onClose={() => setBlast(null)} title={`${channelName} — one by one`} size="lg">
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>{done ? 'Finished' : `${blast.index + 1} of ${blast.queue.length}`}</span>
+                  <span>{blast.sent} sent &middot; {blast.index - blast.sent} skipped</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-emerald-500 h-2.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+
+              {done ? (
+                <div className="text-center py-6">
+                  <div className="text-4xl mb-2">&#127881;</div>
+                  <p className="font-bold text-gray-900">All done — {blast.sent} of {blast.queue.length} opened for sending.</p>
+                  <p className="text-sm text-gray-500 mt-1">Anyone you skipped stays unmarked, so restarting the blast picks them up again.</p>
+                  <Button className="mt-4" onClick={() => setBlast(null)}>Close</Button>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="font-bold text-gray-900">{c.fullName} <span className="text-gray-400 font-normal">&middot; {c.phone} &middot; {c.degreeGroup}</span></p>
+                    <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap border-l-2 border-emerald-300 pl-3">{msg}</p>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="success" onClick={blastSendCurrent}>
+                      Open {channelName} &rarr; then Next
+                    </Button>
+                    <Button variant="secondary" onClick={blastSkip}>Skip</Button>
+                    <Button variant="outline" onClick={() => setBlast(null)}>Stop (resume later)</Button>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    {blast.channel === 'whatsapp'
+                      ? <>A WhatsApp tab opens with the message pre-filled — press Send there, then come back. Works best with WhatsApp Web logged in, or run this from your phone. <strong>Attach the banner image manually</strong> if you want it included (links can't carry images).</>
+                      : <>Your SMS app opens with the message pre-filled — press Send there, then come back. Run this from your phone; desktop browsers usually can't open SMS links.</>}
+                  </p>
+                </>
               )}
             </div>
           </Modal>

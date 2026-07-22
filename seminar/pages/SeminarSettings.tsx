@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, Input } from '../../components/Components';
+import { Button, Card, Input, Select } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
 import { cloudService } from '../../services/cloud';
 import { useSeminar } from '../context/SeminarContext';
+import { isSeminarMailerConfigured, testSeminarConnection } from '../services/seminarMailer';
 import { SeminarSettings as SeminarSettingsType } from '../types';
 
 const MAX_BANNER_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -15,7 +16,14 @@ export const SeminarSettingsPage: React.FC = () => {
   const [form, setForm] = useState<SeminarSettingsType>(settings);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [connTest, setConnTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string } }>({ running: false });
   const bannerRef = useRef<HTMLInputElement>(null);
+
+  const runConnectionTest = async () => {
+    setConnTest({ running: true });
+    const result = await testSeminarConnection();
+    setConnTest({ running: false, result });
+  };
 
   // Sync local form when the Firestore snapshot arrives/changes.
   useEffect(() => { setForm(settings); }, [settings]);
@@ -135,6 +143,44 @@ export const SeminarSettingsPage: React.FC = () => {
           <input type="checkbox" checked={form.showSeatsRemaining} onChange={e => set({ showSeatsRemaining: e.target.checked })} className="w-4 h-4" />
           Show "seats remaining" on the registration page
         </label>
+      </Card>
+
+      <Card title="Sender & Delivery">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label='Sender Name (shown as "From" in the candidate’s inbox)'
+            value={form.fromName}
+            onChange={e => set({ fromName: e.target.value })}
+            placeholder="e.g. Thirumal Reddy — SPR Techforge"
+          />
+          <Select
+            label="Banner delivery in emails"
+            value={form.bannerInline ? 'inline' : 'hosted'}
+            onChange={e => set({ bannerInline: e.target.value === 'inline' })}
+          >
+            <option value="hosted">Hosted image (works with the current bridge — recommended)</option>
+            <option value="inline">Inline CID attachment (requires re-deployed bridge)</option>
+          </Select>
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 space-y-1 mb-4">
+          <p><strong>From email address:</strong> always the Gmail account that owns the email bridge (Apps Script). To send from a different address, deploy the bridge under that account and update the build secrets — it cannot be typed here.</p>
+          <p><strong>WhatsApp / SMS sender number:</strong> messages go out from your own phone's WhatsApp/SIM via the one-by-one blast mode on the Candidates page — no number is configured here. Automatic bulk WhatsApp/SMS requires paid gateways and is deliberately not used.</p>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button variant="secondary" onClick={runConnectionTest} disabled={connTest.running}>
+            {connTest.running ? 'Testing…' : 'Test Email Connection'}
+          </Button>
+          {!isSeminarMailerConfigured() && !connTest.result && (
+            <span className="text-xs font-bold text-red-600">Bridge not configured in this build</span>
+          )}
+          {connTest.result && (
+            connTest.result.ok
+              ? <span className="text-xs font-bold text-emerald-700">✓ Connected — the bridge is reachable and the secret matches. Emails will send.</span>
+              : <span className="text-xs font-bold text-red-600">✗ {connTest.result.error}</span>
+          )}
+        </div>
       </Card>
 
       <Card title="Sending & Links">

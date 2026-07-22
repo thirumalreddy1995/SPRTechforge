@@ -117,6 +117,9 @@ function doPost(e) {
     const options = {};
     if (data.isHtml) options.htmlBody = data.body;
     if (data.cc) options.cc = Array.isArray(data.cc) ? data.cc.join(',') : data.cc;
+    // Optional sender display name (the From address stays this script's
+    // Gmail account). Additive — older clients simply don't send it.
+    if (data.fromName) options.name = String(data.fromName);
 
     if (data.attachments && data.attachments.length) {
       const blobs = [];

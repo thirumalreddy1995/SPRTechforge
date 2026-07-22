@@ -127,7 +127,7 @@ export const SeminarCampaign: React.FC = () => {
     try {
       const subject = `[TEST] ${renderTemplate(form.emailSubjectA, previewVars, false)}`;
       const html = renderTemplate(form.emailBodyHtml, previewVars, true);
-      await sendSeminarEmail({ to: testEmail, subject, html, bannerUrl: form.bannerUrl, bannerAlt: form.title });
+      await sendSeminarEmail({ to: testEmail, subject, html, bannerUrl: form.bannerUrl, bannerAlt: form.title, bannerInline: form.bannerInline, fromName: form.fromName });
       await addCampaignLog({ id: generateSeminarId('semlog'), candidateId: '', channel: 'email_test', sentAt: new Date().toISOString(), error: null });
       showToast(`Test email sent to ${testEmail}`, 'success');
     } catch (e: any) {
@@ -179,7 +179,7 @@ export const SeminarCampaign: React.FC = () => {
         sent++;
       } else {
         try {
-          await sendSeminarEmail({ to: c.email, subject, html, bannerUrl: form.bannerUrl, bannerAlt: form.title });
+          await sendSeminarEmail({ to: c.email, subject, html, bannerUrl: form.bannerUrl, bannerAlt: form.title, bannerInline: form.bannerInline, fromName: form.fromName });
           await addCampaignLog({
             id: generateSeminarId('semlog'), candidateId: c.id,
             channel: kind === 'invite' ? 'email_invite' : 'email_reminder',
@@ -226,7 +226,8 @@ export const SeminarCampaign: React.FC = () => {
 
       {!mailerReady && (
         <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded text-amber-800 text-sm">
-          Email bridge is not configured (VITE_EMAIL_ENDPOINT / VITE_EMAIL_SHARED_SECRET). See SETUP-EMAIL.md and seminar/README.md.
+          Email bridge is not configured in this build (VITE_EMAIL_ENDPOINT / VITE_EMAIL_SHARED_SECRET) — no email can send.
+          Run "Test Email Connection" on Seminar &rarr; Settings for the exact reason, and see SETUP-EMAIL.md.
           You can still edit templates and use Dry Run.
         </div>
       )}
