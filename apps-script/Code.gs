@@ -6,13 +6,20 @@
  *   GET  ?action=list&secret=...&limit=50
  *        Returns recent inbox messages as JSON.
  *
+ *   GET  ?action=ping&secret=...
+ *        Health check: returns { ok: true, quotaRemaining } without touching
+ *        the inbox. Used by the app's Communication Settings diagnostics.
+ *
  *   POST ?secret=...
- *        Body: { to, cc, subject, body, isHtml, attachments: [{url,name,mimeType}],
- *                inlineImages: [{key,url,name,mimeType}] }
+ *        Body: { to, cc, subject, body, isHtml, attachments: [{url|data,name,mimeType}],
+ *                inlineImages: [{key,url|data,name,mimeType}] }
  *        Sends the email via MailApp (counts against Gmail's 100/day free quota).
+ *        Attachments and inline images may carry either a fetchable `url` or a
+ *        base64 `data` payload (the app's inline-upload fallback for when
+ *        Firebase Storage is unavailable).
  *        inlineImages (optional, used by the seminar module): each entry is
- *        fetched and embedded as a CID attachment; reference it in the HTML
- *        body as <img src="cid:KEY">. Requires isHtml: true.
+ *        embedded as a CID attachment; reference it in the HTML body as
+ *        <img src="cid:KEY">. Requires isHtml: true.
  *
  * Shared-secret check is the only auth — store the secret in Script Properties
  * (File > Project Settings > Script Properties) under the key SHARED_SECRET.
@@ -58,6 +65,9 @@ function doGet(e) {
     if (!auth.ok) return jsonResponse_({ ok: false, error: auth.msg });
 
     const action = params.action || 'list';
+    if (action === 'ping') {
+      return jsonResponse_({ ok: true, quotaRemaining: MailApp.getRemainingDailyQuota() });
+    }
     if (action !== 'list') return jsonResponse_({ ok: false, error: 'Unknown action' });
 
     const limit = Math.min(parseInt(params.limit, 10) || MAX_LIST, MAX_LIST);
@@ -95,9 +105,32 @@ function doGet(e) {
 }
 
 /**
+ * Build a Blob from an attachment/inline-image reference that carries either
+ * a fetchable `url` or a base64 `data` payload. Returns null when the ref is
+ * unusable (missing source, fetch failed).
+ */
+function blobFromRef_(ref, fallbackName) {
+  if (ref && ref.data) {
+    const bytes = Utilities.base64Decode(String(ref.data));
+    return Utilities.newBlob(bytes, ref.mimeType || 'application/octet-stream', ref.name || fallbackName);
+  }
+  if (ref && ref.url) {
+    const resp = UrlFetchApp.fetch(ref.url, { muteHttpExceptions: true });
+    if (resp.getResponseCode() >= 400) return null;
+    const blob = resp.getBlob();
+    blob.setName(ref.name || fallbackName);
+    if (ref.mimeType) blob.setContentType(ref.mimeType);
+    return blob;
+  }
+  return null;
+}
+
+/**
  * POST — send an email.
  * Query: secret
- * Body (JSON): { to, cc?, subject, body, isHtml?, attachments?: [{url,name,mimeType}] }
+ * Body (JSON): { to, cc?, subject, body, isHtml?, fromName?,
+ *                attachments?: [{url|data,name,mimeType}],
+ *                inlineImages?: [{key,url|data,name,mimeType}] }
  */
 function doPost(e) {
   try {
@@ -125,16 +158,13 @@ function doPost(e) {
       const blobs = [];
       for (var i = 0; i < data.attachments.length; i++) {
         const att = data.attachments[i];
-        if (!att.url) continue;
+        if (!att.url && !att.data) continue;
         try {
-          const resp = UrlFetchApp.fetch(att.url, { muteHttpExceptions: true });
-          if (resp.getResponseCode() >= 400) continue;
-          const blob = resp.getBlob();
+          const blob = blobFromRef_(att, 'attachment-' + (i + 1));
+          if (!blob) continue;
           if (blob.getBytes().length > MAX_ATTACHMENT_BYTES) {
             return jsonResponse_({ ok: false, error: 'Attachment ' + att.name + ' exceeds 24MB' });
           }
-          blob.setName(att.name || ('attachment-' + (i + 1)));
-          if (att.mimeType) blob.setContentType(att.mimeType);
           blobs.push(blob);
         } catch (downloadErr) {
           return jsonResponse_({ ok: false, error: 'Failed to fetch attachment: ' + att.name });
@@ -150,14 +180,11 @@ function doPost(e) {
       var inlineCount = 0;
       for (var j = 0; j < data.inlineImages.length; j++) {
         const img = data.inlineImages[j];
-        if (!img.url || !img.key) continue;
+        if ((!img.url && !img.data) || !img.key) continue;
         try {
-          const resp2 = UrlFetchApp.fetch(img.url, { muteHttpExceptions: true });
-          if (resp2.getResponseCode() >= 400) continue;
-          const blob2 = resp2.getBlob();
+          const blob2 = blobFromRef_(img, img.key);
+          if (!blob2) continue;
           if (blob2.getBytes().length > MAX_ATTACHMENT_BYTES) continue;
-          blob2.setName(img.name || img.key);
-          if (img.mimeType) blob2.setContentType(img.mimeType);
           inline[img.key] = blob2;
           inlineCount++;
         } catch (inlineErr) {

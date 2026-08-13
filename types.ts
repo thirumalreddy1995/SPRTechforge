@@ -391,6 +391,27 @@ export interface EmailMessage {
   sentByUserName?: string;
 }
 
+export type NotificationType = 'chat' | 'announcement' | 'meeting' | 'email' | 'system';
+
+// In-app notification event. Written to the `notifications` collection by the
+// action that triggers it (chat send, meeting create, ...), delivered to every
+// client through the existing real-time Firestore subscription, surfaced in
+// the header bell (components/NotificationBell.tsx).
+export interface AppNotification {
+  id: string;
+  /** Target user id, or 'all' for a broadcast visible to everyone. */
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  body?: string;
+  /** In-app route to open when the notification is clicked. */
+  link?: string;
+  /** Who triggered it — actors never see their own notifications as unread. */
+  actorId?: string;
+  createdAt: string; // ISO
+  readBy: string[];
+}
+
 export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';
 
 export interface CallInvitation {

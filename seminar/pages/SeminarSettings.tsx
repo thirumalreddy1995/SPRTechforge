@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button, Card, Input, Select } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
 import { cloudService } from '../../services/cloud';
+import { uploadService } from '../../services/uploadService';
 import { useSeminar } from '../context/SeminarContext';
 import { isSeminarMailerConfigured, testSeminarConnection } from '../services/seminarMailer';
 import { SeminarSettings as SeminarSettingsType } from '../types';
@@ -74,11 +75,24 @@ export const SeminarSettingsPage: React.FC = () => {
       if (form.bannerPath) await cloudService.deleteFile(form.bannerPath);
       const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
       const path = `seminar/banner-${Date.now()}.${ext}`;
-      const uploaded = await cloudService.uploadFile(path, file);
-      const next = { ...form, bannerPath: path, bannerUrl: uploaded.url };
+      // Storage-first with compressed-inline fallback: the banner keeps working
+      // (registration page + CID-embedded emails) even when Firebase Storage
+      // is unavailable. bannerPath stays empty for inline banners.
+      const uploaded = await uploadService.uploadImage(path, file, { maxWidth: RECOMMENDED.w });
+      const next = {
+        ...form,
+        bannerPath: uploaded.storage === 'firebase' ? path : '',
+        bannerUrl: uploaded.url,
+        // Inline (data:) banners must be CID-embedded — Gmail strips data: images.
+        bannerInline: uploaded.storage === 'inline' ? true : form.bannerInline,
+      };
       setForm(next);
       await saveSettings(next);
-      showToast('Banner uploaded', 'success');
+      if (uploaded.storage === 'inline') {
+        showToast('Banner saved (inline mode — cloud Storage is unavailable, so the image was compressed and stored with the settings; emails will embed it as an attachment)', 'info');
+      } else {
+        showToast('Banner uploaded', 'success');
+      }
     } catch (e: any) {
       showToast(`Banner upload failed: ${e.message || e}`, 'error');
     } finally {
