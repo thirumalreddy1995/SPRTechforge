@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, SearchInput } from '../../components/Components';
 import { EmailAttachment, EmailMessage } from '../../types';
 import { emailService } from '../../services/emailService';
-import { cloudService } from '../../services/cloud';
+import { uploadService } from '../../services/uploadService';
 
 const formatTime = (iso: string) => {
   const d = new Date(iso);
@@ -63,10 +63,12 @@ const ComposeModal: React.FC<{ isOpen: boolean; onClose: () => void; defaultTo?:
     }
     setSending(true);
     try {
+      // Storage-first with inline base64 fallback — the bridge decodes data:
+      // URLs server-side, so attachments send even when Storage is down.
       const attachments: EmailAttachment[] = [...uploadedAttachments];
       for (const f of files) {
         const path = `emails/outbound/${Date.now()}-${Math.random().toString(36).slice(2)}-${f.name}`;
-        const up = await cloudService.uploadFile(path, f);
+        const up = await uploadService.uploadFile(path, f);
         attachments.push({ url: up.url, name: up.name, mimeType: up.type || 'application/octet-stream', size: up.size });
       }
 
@@ -216,7 +218,8 @@ export const EmailPage: React.FC = () => {
       <Card className="p-8 text-center">
         <h2 className="text-lg font-semibold text-slate-900 mb-2">Email isn't configured yet</h2>
         <p className="text-sm text-slate-600 mb-1">Set up the Google Apps Script email bridge to enable sending and receiving.</p>
-        <p className="text-xs text-slate-500 mt-2">See SETUP-EMAIL.md in the repo for step-by-step instructions.</p>
+        <p className="text-sm text-slate-600 mb-1">A master user can enter the bridge URL and secret on <strong>Admin → Communication Settings</strong> — it applies immediately, no rebuild needed.</p>
+        <p className="text-xs text-slate-500 mt-2">See SETUP-EMAIL.md in the repo for the one-time Google-side setup.</p>
       </Card>
     );
   }

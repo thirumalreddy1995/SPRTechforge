@@ -234,6 +234,13 @@ class CloudService {
     await setDoc(doc(this.db, tableName, item.id), safeItem);
   }
 
+  public async getItem(tableName: string, id: string): Promise<any | null> {
+    if (!this.db) return null;
+    const snap = await getDoc(doc(this.db, tableName, id));
+    if (!snap.exists()) return null;
+    return { ...this.sanitizeData(snap.data()), id: snap.id };
+  }
+
   public async updateItem(tableName: string, id: string, data: any) {
     if (!this.db) throw new Error("DB not configured");
     if (!id) throw new Error("ID required for update");
