@@ -25,6 +25,7 @@ import { AddUser } from './pages/admin/AddUser';
 import { ActivityLogs } from './pages/admin/ActivityLogs';
 import { TestRunner } from './pages/admin/TestRunner';
 import { CloudSetup } from './pages/admin/CloudSetup';
+import { CommSettings } from './pages/admin/CommSettings';
 import { PortalAgreement } from './pages/public/PortalAgreement';
 import { Curriculum } from './pages/training/Curriculum';
 import { CandidateDashboard } from './pages/training/CandidateDashboard';
@@ -41,6 +42,13 @@ import { EmailPage } from './pages/spconnect/Email';
 import { CallRoom } from './pages/spconnect/CallRoom';
 import { IncomingCallOverlay } from './pages/spconnect/IncomingCallOverlay';
 import { isMasterUser } from './utils';
+import {
+  EventsAdminList,
+  EventEditor,
+  EventAdminDetail,
+  PublicEventsList,
+  PublicEventPage,
+} from './events';
 import {
   SeminarProvider,
   SeminarDashboard,
@@ -135,6 +143,15 @@ const AppRoutes = () => {
       <Route path="/seminar/questions" element={<AdminRoute><Layout><SeminarProvider><SeminarQuestions /></SeminarProvider></Layout></AdminRoute>} />
       <Route path="/seminar/settings" element={<AdminRoute><Layout><SeminarProvider><SeminarSettingsPage /></SeminarProvider></Layout></AdminRoute>} />
 
+      {/* Events module (self-contained in events/). Admin management + public pages. */}
+      <Route path="/events/manage" element={<AdminRoute><Layout><EventsAdminList /></Layout></AdminRoute>} />
+      <Route path="/events/manage/new" element={<AdminRoute><Layout><EventEditor /></Layout></AdminRoute>} />
+      <Route path="/events/manage/edit/:id" element={<AdminRoute><Layout><EventEditor /></Layout></AdminRoute>} />
+      <Route path="/events/manage/view/:id" element={<AdminRoute><Layout><EventAdminDetail /></Layout></AdminRoute>} />
+      {/* Public — anyone with the link, no login */}
+      <Route path="/events" element={<PublicEventsList />} />
+      <Route path="/events/:slug" element={<PublicEventPage />} />
+
       {/* Chat */}
       <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
 
@@ -151,6 +168,7 @@ const AppRoutes = () => {
       <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />
       <Route path="/admin/test-runner" element={<MasterRoute><Layout><TestRunner /></Layout></MasterRoute>} />
       <Route path="/admin/cloud" element={<MasterRoute><Layout><CloudSetup /></Layout></MasterRoute>} />
+      <Route path="/admin/communication" element={<MasterRoute><Layout><CommSettings /></Layout></MasterRoute>} />
     </Routes>
   );
 };
