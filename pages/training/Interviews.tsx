@@ -119,6 +119,9 @@ export const Interviews: React.FC = () => {
   // ── status update ──────────────────────────────────────────────────────────
   const [statusUpdateId, setStatusUpdateId] = useState<string | null>(null);
   const [statusUpdateValue, setStatusUpdateValue] = useState<string>('Scheduled');
+  const [statusUpdateFeedback, setStatusUpdateFeedback] = useState('');
+  const [statusUpdateInterviewer, setStatusUpdateInterviewer] = useState('');
+  const [statusUpdateSupport, setStatusUpdateSupport] = useState('');
 
   // ── self-schedule (candidate) ──────────────────────────────────────────────
   const [selfForm, setSelfForm] = useState<Partial<InterviewSchedule>>({});
@@ -303,9 +306,12 @@ export const Interviews: React.FC = () => {
 
   const handleStatusUpdate = () => {
     if (!statusUpdateId || !user) return;
-    changeInterviewStatus(statusUpdateId, statusUpdateValue, user.id, user.name);
+    changeInterviewStatus(statusUpdateId, statusUpdateValue, user.id, user.name, statusUpdateFeedback, {
+      interviewerName: statusUpdateInterviewer,
+      supportPerson: statusUpdateSupport,
+    });
     setStatusUpdateId(null);
-    showToast('Status updated');
+    showToast(statusUpdateFeedback.trim() ? 'Status and feedback saved' : 'Status updated');
   };
 
   const handleConfirmPending = () => {
@@ -360,6 +366,7 @@ export const Interviews: React.FC = () => {
             {i.interviewerName && <p className="text-xs text-gray-500 mt-0.5">Interviewer: {i.interviewerName}</p>}
             {i.supportPerson   && <p className="text-xs text-amber-700 mt-0.5">Support: {i.supportPerson}</p>}
             {i.notes           && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{i.notes}</p>}
+            {i.feedback        && <p className="text-xs text-emerald-700 mt-0.5 truncate" title={i.feedback}>&#128172; Feedback: {i.feedback}</p>}
             {opts.showDate && (
               <p className="text-xs text-gray-400 mt-0.5">
                 {new Date(i.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
@@ -396,7 +403,13 @@ export const Interviews: React.FC = () => {
             {/* Regular status update */}
             {!isPending && (isAdmin || isStaff) && (
               <button
-                onClick={() => { setStatusUpdateId(i.id); setStatusUpdateValue(i.status); }}
+                onClick={() => {
+                  setStatusUpdateId(i.id);
+                  setStatusUpdateValue(i.status);
+                  setStatusUpdateFeedback(i.feedback || '');
+                  setStatusUpdateInterviewer(i.interviewerName || '');
+                  setStatusUpdateSupport(i.supportPerson || '');
+                }}
                 className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded-lg font-medium transition-colors"
               >Update</button>
             )}
@@ -991,7 +1004,7 @@ export const Interviews: React.FC = () => {
       {/* ════════════════════════════════════════════════════════════════════
           MODAL: Status Update (admin / staff)
       ════════════════════════════════════════════════════════════════════ */}
-      <Modal isOpen={!!statusUpdateId} onClose={() => setStatusUpdateId(null)} title="Update Interview Status">
+      <Modal isOpen={!!statusUpdateId} onClose={() => setStatusUpdateId(null)} title="Update Interview Result & Feedback" size="lg">
         <div className="space-y-4">
           {/* Status lifecycle guide */}
           <div className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2 leading-relaxed">
@@ -1011,9 +1024,46 @@ export const Interviews: React.FC = () => {
             </select>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Interviewer</label>
+              <input
+                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-1 focus:ring-spr-accent outline-none"
+                value={statusUpdateInterviewer}
+                onChange={e => setStatusUpdateInterviewer(e.target.value)}
+                placeholder="Who actually took the interview"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Support Person</label>
+              <input
+                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-1 focus:ring-spr-accent outline-none"
+                value={statusUpdateSupport}
+                onChange={e => setStatusUpdateSupport(e.target.value)}
+                placeholder="Who supported the candidate"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Feedback for the candidate <span className="text-gray-400 font-normal">(saved to their record; the candidate sees it on their schedule)</span>
+            </label>
+            <textarea
+              rows={4}
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-1 focus:ring-spr-accent outline-none"
+              value={statusUpdateFeedback}
+              onChange={e => setStatusUpdateFeedback(e.target.value)}
+              placeholder="What went well, what to improve — e.g. Good SQL basics and communication; struggled to explain test scenarios for the login flow. Practice writing test cases aloud and revise Selenium waits before the next round."
+            />
+            {['Cleared', 'Rejected', 'No-show', 'Attended'].includes(statusUpdateValue) && !statusUpdateFeedback.trim() && (
+              <p className="text-xs text-amber-600 mt-1">Tip: add feedback while it's fresh — it becomes the candidate's improvement record.</p>
+            )}
+          </div>
+
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
             <Button variant="secondary" onClick={() => setStatusUpdateId(null)}>Cancel</Button>
-            <Button onClick={handleStatusUpdate}>Save Status</Button>
+            <Button onClick={handleStatusUpdate}>Save</Button>
           </div>
         </div>
       </Modal>
@@ -1078,6 +1128,19 @@ export const Interviews: React.FC = () => {
                 </div>
               )}
 
+              {detailInterview.feedback && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-sm">
+                  <p className="text-xs text-emerald-700 font-medium uppercase tracking-wide mb-1">Feedback for Candidate</p>
+                  <p className="text-gray-800 whitespace-pre-wrap">{detailInterview.feedback}</p>
+                  {detailInterview.feedbackByName && (
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      — {detailInterview.feedbackByName}
+                      {detailInterview.feedbackAt && `, ${new Date(detailInterview.feedbackAt).toLocaleString()}`}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Scheduled by */}
               <div className="text-xs text-gray-400">
                 Scheduled by: <span className="font-medium text-gray-600 capitalize">{detailInterview.scheduledByRole || 'admin'}</span>
@@ -1090,14 +1153,19 @@ export const Interviews: React.FC = () => {
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status History</p>
                   <div className="space-y-1.5">
                     {detailInterview.statusHistory.map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-gray-600">
-                        <StatusBadge status={h.status} />
-                        <span className="text-gray-400">←</span>
-                        <span className="text-gray-400">{h.previousStatus}</span>
-                        <span className="text-gray-300">·</span>
-                        <span>{h.changedByName}</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="text-gray-400">{new Date(h.changedAt).toLocaleString()}</span>
+                      <div key={idx}>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <StatusBadge status={h.status} />
+                          <span className="text-gray-400">←</span>
+                          <span className="text-gray-400">{h.previousStatus}</span>
+                          <span className="text-gray-300">·</span>
+                          <span>{h.changedByName}</span>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-400">{new Date(h.changedAt).toLocaleString()}</span>
+                        </div>
+                        {h.feedback && (
+                          <p className="text-xs text-emerald-700 mt-0.5 ml-1 pl-2 border-l-2 border-emerald-200 whitespace-pre-wrap">{h.feedback}</p>
+                        )}
                       </div>
                     ))}
                   </div>

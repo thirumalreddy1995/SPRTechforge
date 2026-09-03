@@ -160,6 +160,7 @@ export interface InterviewStatusChange {
   changedByName: string;
   changedAt: string;       // ISO timestamp
   previousStatus: string;
+  feedback?: string;       // feedback recorded together with this status change
 }
 
 export interface InterviewSchedule {
@@ -176,6 +177,13 @@ export interface InterviewSchedule {
   status: InterviewStatus;
   outcome?: 'Selected' | 'Rejected' | 'Pending';
   notes?: string;
+  // Feedback for the candidate (what went well / what to improve), recorded
+  // by admin or staff when the interview outcome is updated. Visible to the
+  // candidate on their own schedule.
+  feedback?: string;
+  feedbackBy?: string;                           // userId
+  feedbackByName?: string;
+  feedbackAt?: string;                           // ISO timestamp
   scheduledBy?: string;                          // userId of who created it
   scheduledByRole?: 'admin' | 'staff' | 'candidate';
   scheduledAt?: string;                          // ISO creation timestamp
