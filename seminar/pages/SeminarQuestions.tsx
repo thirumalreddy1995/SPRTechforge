@@ -5,6 +5,7 @@ import { useSeminar } from '../context/SeminarContext';
 import { buildTemplateVars, escapeHtml, renderTemplate } from '../lib/template';
 import { isSeminarMailerConfigured, sendSeminarEmail } from '../services/seminarMailer';
 import { generateSeminarId } from '../lib/token';
+import * as utils from '../../utils';
 
 // Question inbox: newest first, unanswered highlighted. A reply saves to the
 // thread (visible on the candidate's public page) AND is emailed to them.
@@ -76,9 +77,31 @@ export const SeminarQuestions: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Seminar &middot; Questions</h1>
           <p className="text-gray-600">{unansweredCount} unanswered. Replies appear on the candidate's page and are emailed to them.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant={filter === 'all' ? 'primary' : 'outline'} onClick={() => setFilter('all')}>All ({questions.length})</Button>
           <Button variant={filter === 'unanswered' ? 'primary' : 'outline'} onClick={() => setFilter('unanswered')}>Unanswered ({unansweredCount})</Button>
+          <Button
+            variant="outline"
+            disabled={sorted.length === 0}
+            onClick={() => {
+              utils.downloadCSV(
+                sorted.map(q => {
+                  const c = candidateById.get(q.candidateId);
+                  return {
+                    Candidate: c?.fullName || 'Unknown', Email: c?.email || '', Phone: c?.phone || '',
+                    'Degree Group': c?.degreeGroup || '',
+                    Question: q.questionText, 'Asked At': new Date(q.createdAt).toLocaleString(),
+                    Reply: q.replyText || '', 'Replied At': q.repliedAt ? new Date(q.repliedAt).toLocaleString() : '',
+                    'Reply Emailed': q.replyEmailed ? 'Yes' : 'No',
+                  };
+                }),
+                utils.csvFilename('seminar-questions'),
+              );
+              showToast(`Exported ${sorted.length} questions`, 'success');
+            }}
+          >
+            &#11015; Export CSV
+          </Button>
         </div>
       </div>
 

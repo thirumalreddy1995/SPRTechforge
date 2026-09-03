@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Card, BackButton, SearchInput } from '../../components/Components';
+import { Card, BackButton, Button, SearchInput } from '../../components/Components';
+import { downloadCSV, csvFilename } from '../../utils';
 
 export const ProgressMonitor: React.FC = () => {
   const { candidates, trainingLogs, trainingTopics } = useApp();
@@ -10,6 +11,35 @@ export const ProgressMonitor: React.FC = () => {
   const allCandidates = candidates.filter(c => c.isActive && c.name.toLowerCase().includes(filter.toLowerCase()));
   const totalTopics = trainingTopics.length;
 
+  // One row of stats per candidate — shared by the table and the CSV export.
+  const statsFor = (candidateId: string) => {
+    const logs = trainingLogs.filter(l => l.candidateId === candidateId);
+    const present = logs.filter(l => l.attendanceStatus === 'Present').length;
+    const totalDays = logs.length; // Or unique dates
+    const uniqueTopics = new Set(logs.map(l => l.topicId)).size;
+    const progress = totalTopics > 0 ? Math.round((uniqueTopics / totalTopics) * 100) : 0;
+    const lastLog = [...logs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    return { present, totalDays, uniqueTopics, progress, lastLog };
+  };
+
+  const exportCsv = () => downloadCSV(
+    allCandidates.map(c => {
+      const s = statsFor(c.id);
+      return {
+        Candidate: c.name,
+        Batch: c.batchId,
+        Status: c.status,
+        'Topics Covered': s.uniqueTopics,
+        'Total Topics': totalTopics,
+        'Progress %': s.progress,
+        'Days Present': s.present,
+        'Total Days': s.totalDays,
+        'Last Active': s.lastLog ? new Date(s.lastLog.date).toLocaleDateString() : '',
+      };
+    }),
+    csvFilename('training-progress'),
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -17,13 +47,16 @@ export const ProgressMonitor: React.FC = () => {
            <BackButton />
            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Progress Monitor</h1>
         </div>
+        <Button variant="outline" onClick={exportCsv} disabled={allCandidates.length === 0}>
+          &#11015; Export CSV
+        </Button>
       </div>
 
       <Card>
          <div className="mb-4">
-            <SearchInput 
-              placeholder="Search candidate..." 
-              value={filter} 
+            <SearchInput
+              placeholder="Search candidate..."
+              value={filter}
               onChange={e => setFilter(e.target.value)}
               onClear={() => setFilter('')}
               containerClassName="max-w-md"
@@ -42,12 +75,7 @@ export const ProgressMonitor: React.FC = () => {
                </thead>
                <tbody className="divide-y">
                   {allCandidates.map(c => {
-                     const logs = trainingLogs.filter(l => l.candidateId === c.id);
-                     const present = logs.filter(l => l.attendanceStatus === 'Present').length;
-                     const totalDays = logs.length; // Or unique dates
-                     const uniqueTopics = new Set(logs.map(l => l.topicId)).size;
-                     const progress = totalTopics > 0 ? Math.round((uniqueTopics / totalTopics) * 100) : 0;
-                     const lastLog = logs.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                     const { present, totalDays, uniqueTopics, progress, lastLog } = statsFor(c.id);
 
                      return (
                         <tr key={c.id} className="hover:bg-gray-50">

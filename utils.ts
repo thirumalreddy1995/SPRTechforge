@@ -29,15 +29,24 @@ export const downloadJSON = (data: any, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
+// RFC-4180-safe CSV export: every cell is quoted with inner quotes doubled,
+// so names with commas, feedback with newlines, etc. can't break columns.
+// Columns are the union of keys across all rows (in first-seen order), and a
+// UTF-8 BOM makes Excel open it with correct encoding.
 export const downloadCSV = (data: any[], filename: string) => {
   if (data.length === 0) return;
-  const headers = Object.keys(data[0]).join(',');
-  const rows = data.map(obj => 
-    Object.values(obj).map(val => `"${val}"`).join(',')
-  ).join('\n');
-  const csvContent = `${headers}\n${rows}`;
-  
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const headers: string[] = [];
+  data.forEach(row => Object.keys(row).forEach(k => { if (!headers.includes(k)) headers.push(k); }));
+  const cell = (val: any): string => {
+    if (val === null || val === undefined) return '""';
+    const s = typeof val === 'object' ? JSON.stringify(val) : String(val);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const lines = [
+    headers.map(cell).join(','),
+    ...data.map(row => headers.map(h => cell((row as any)[h])).join(',')),
+  ];
+  const blob = new Blob([String.fromCharCode(0xfeff) + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -45,7 +54,12 @@ export const downloadCSV = (data: any[], filename: string) => {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
+
+/** Stamped filename for exports: "interviews-2026-08-04.csv". */
+export const csvFilename = (base: string): string =>
+  `${base}-${new Date().toISOString().slice(0, 10)}.csv`;
 
 /**
  * Generates a multi-sheet Excel file using XML Spreadsheet 2003 format.
