@@ -1,10 +1,11 @@
 // Admin → SPRConnect → Events: the event list. Create, duplicate, delete
-// (drafts only), and jump into any event's control room.
+// (master admin only), and jump into any event's control room.
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Select, SearchInput } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
+import { isMasterUser } from '../../utils';
 import { EventRegistration, SprEvent } from '../types';
 import { subscribeEvents, subscribeRegistrations, saveEvent, deleteEvent, fetchPrivateDetails, savePrivateDetails, emptyCounters } from '../services/eventsDb';
 import { formatISTRange, relativeToNow } from '../lib/datetime';
@@ -101,16 +102,24 @@ export const EventsAdminList: React.FC = () => {
     }
   };
 
+  // Deleting an event is reserved for the master admin (isMaster flag — the
+  // same gate as Finance). Everyone else uses "Cancel event", which keeps
+  // records and can notify registrants.
+  const isMaster = isMasterUser(user);
+
   const handleDelete = async (ev: SprEvent) => {
-    const regs = regCountByEvent[ev.id] || 0;
-    if (ev.status !== 'draft' || regs > 0) {
-      showToast('Only drafts with zero registrations can be deleted. Cancel the event instead.', 'error');
+    if (!isMaster) {
+      showToast('Only the master admin can delete events. Use "Cancel event" instead.', 'error');
       return;
     }
-    if (!window.confirm(`Delete draft "${ev.title}"? This cannot be undone.`)) return;
+    const regs = regCountByEvent[ev.id] || 0;
+    const message = ev.status === 'draft' && regs === 0
+      ? `Delete draft "${ev.title}"? This cannot be undone.`
+      : `Permanently delete "${ev.title}"?\n\nThis erases the event, its public page and link, and ALL ${regs} registration record(s). Registrants are NOT notified — use "Cancel event" on the event page if people should be told.\n\nThis cannot be undone.`;
+    if (!window.confirm(message)) return;
     try {
       await deleteEvent(ev.id);
-      showToast('Draft deleted', 'success');
+      showToast('Event deleted permanently', 'success');
     } catch (e: any) {
       showToast(`Delete failed: ${e.message || e}`, 'error');
     }
@@ -202,8 +211,8 @@ export const EventsAdminList: React.FC = () => {
                   </div>
                   <div className="shrink-0 flex flex-col gap-1.5 items-stretch" onClick={e => e.stopPropagation()}>
                     <button onClick={() => handleDuplicate(ev)} className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">Duplicate</button>
-                    {ev.status === 'draft' && regs === 0 && (
-                      <button onClick={() => handleDelete(ev)} className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    {isMaster && (
+                      <button onClick={() => handleDelete(ev)} title="Delete permanently (master only)" className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                     )}
                   </div>
                 </div>

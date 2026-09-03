@@ -22,6 +22,7 @@ import {
   doc,
   onSnapshot,
   runTransaction,
+  writeBatch,
 } from 'firebase/firestore';
 import {
   EventCounters,
@@ -79,9 +80,25 @@ export const updateEvent = async (id: string, data: Partial<SprEvent>): Promise<
   await updateDoc(doc(db(), EVENT_COLLECTIONS.events, id), stripUndefined(data));
 };
 
+/**
+ * Permanent, cascading delete: the event, its private details, and EVERY
+ * registration record for it. Master-only in the UI (see isMasterUser gates
+ * in EventsAdminList / EventAdminDetail) — everyone else gets "Cancel event",
+ * which keeps records and can notify registrants.
+ */
 export const deleteEvent = async (id: string): Promise<void> => {
-  await deleteDoc(doc(db(), EVENT_COLLECTIONS.events, id));
+  // Registrations first, so a failure midway can't leave orphaned records
+  // pointing at a deleted event.
+  const regs = await getDocs(query(collection(db(), EVENT_COLLECTIONS.registrations), where('eventId', '==', id)));
+  const refs = regs.docs.map(d => d.ref);
+  const CHUNK = 450; // Firestore caps a write batch at 500 ops
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = writeBatch(db());
+    refs.slice(i, i + CHUNK).forEach(r => batch.delete(r));
+    await batch.commit();
+  }
   await deleteDoc(doc(db(), EVENT_COLLECTIONS.private, id)).catch(() => { /* may not exist */ });
+  await deleteDoc(doc(db(), EVENT_COLLECTIONS.events, id));
 };
 
 export const savePrivateDetails = async (priv: EventPrivateDetails): Promise<void> => {
