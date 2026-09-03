@@ -36,7 +36,7 @@ interface AppContextType {
   addInterview: (i: InterviewSchedule) => void;
   updateInterview: (i: InterviewSchedule) => void;
   deleteInterview: (id: string) => void;
-  changeInterviewStatus: (id: string, newStatus: string, changedBy: string, changedByName: string) => void;
+  changeInterviewStatus: (id: string, newStatus: string, changedBy: string, changedByName: string, feedback?: string, extras?: Partial<Pick<InterviewSchedule, 'interviewerName' | 'supportPerson'>>) => void;
 
   markAgreementSent: (candidateId: string) => void;
   markAgreementAccepted: (candidateId: string) => void;
@@ -501,11 +501,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addInterview = (i: InterviewSchedule) => { setInterviews(p => [...p, i]); if (isCloudEnabled) cloudService.saveItem('interviews', i); };
   const updateInterview = (i: InterviewSchedule) => { setInterviews(p => p.map(x => x.id === i.id ? i : x)); if (isCloudEnabled) cloudService.updateItem('interviews', i.id, i); };
   const deleteInterview = (id: string) => { setInterviews(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviews', id); };
-  const changeInterviewStatus = (id: string, newStatus: string, changedBy: string, changedByName: string) => {
+  const changeInterviewStatus = (id: string, newStatus: string, changedBy: string, changedByName: string, feedback?: string, extras?: Partial<Pick<InterviewSchedule, 'interviewerName' | 'supportPerson'>>) => {
     setInterviews(p => p.map(x => {
       if (x.id !== id) return x;
-      const entry = { status: newStatus, changedBy, changedByName, changedAt: new Date().toISOString(), previousStatus: x.status };
-      const updated = { ...x, status: newStatus as InterviewSchedule['status'], statusHistory: [...(x.statusHistory || []), entry] };
+      // Non-empty, changed feedback updates the interview's candidate-facing
+      // feedback record (and is captured in the history entry); empty or
+      // unchanged feedback leaves the existing record and its author intact.
+      const trimmedFeedback = feedback?.trim() || '';
+      const feedbackChanged = !!trimmedFeedback && trimmedFeedback !== x.feedback;
+      const changedAt = new Date().toISOString();
+      const entry = {
+        status: newStatus, changedBy, changedByName, changedAt, previousStatus: x.status,
+        ...(feedbackChanged ? { feedback: trimmedFeedback } : {}),
+      };
+      const updated = {
+        ...x,
+        status: newStatus as InterviewSchedule['status'],
+        statusHistory: [...(x.statusHistory || []), entry],
+        ...(feedbackChanged ? { feedback: trimmedFeedback, feedbackBy: changedBy, feedbackByName: changedByName, feedbackAt: changedAt } : {}),
+        // Who actually interviewed / supported can be corrected after the fact.
+        ...(extras?.interviewerName !== undefined ? { interviewerName: extras.interviewerName.trim() } : {}),
+        ...(extras?.supportPerson !== undefined ? { supportPerson: extras.supportPerson.trim() } : {}),
+      };
       if (isCloudEnabled) cloudService.updateItem('interviews', id, updated);
       return updated;
     }));
