@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Select, SearchInput } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
-import { isMasterUser } from '../../utils';
+import { isMasterUser, downloadCSV, csvFilename } from '../../utils';
 import { EventRegistration, SprEvent } from '../types';
 import { subscribeEvents, subscribeRegistrations, saveEvent, deleteEvent, fetchPrivateDetails, savePrivateDetails, emptyCounters } from '../services/eventsDb';
 import { formatISTRange, relativeToNow } from '../lib/datetime';
@@ -132,7 +132,29 @@ export const EventsAdminList: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Events</h1>
           <p className="text-gray-600">Create free webinars & demo classes, share the link anywhere, and watch registrations come in.</p>
         </div>
-        <Button onClick={() => navigate('/events/manage/new')}>+ Create Event</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={visible.length === 0}
+            onClick={() => downloadCSV(
+              visible.map(ev => ({
+                Title: ev.title,
+                Type: EVENT_TYPE_LABELS[ev.type],
+                Status: ev.status === 'published' ? `Published (${lifecycleOf(ev)})` : ev.status,
+                Starts: ev.startAt ? formatISTRange(ev.startAt, ev.endAt) : '',
+                Mode: ev.mode === 'online' ? 'Online' : ev.mode === 'offline' ? 'In person' : 'Hybrid',
+                Registered: regCountByEvent[ev.id] || 0,
+                Capacity: ev.capacity > 0 ? ev.capacity : 'Unlimited',
+                'Public Link Slug': ev.slug || '',
+                Created: new Date(ev.createdAt).toLocaleDateString(),
+              })),
+              csvFilename('events'),
+            )}
+          >
+            &#11015; Export CSV
+          </Button>
+          <Button onClick={() => navigate('/events/manage/new')}>+ Create Event</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { WebLead, WebLeadStatus } from '../types';
 import { Button, Modal, ConfirmationModal, SearchInput } from '../components/Components';
+import { downloadCSV, csvFilename } from '../utils';
 
 const STATUS_COLORS: Record<WebLeadStatus, string> = {
   'New': 'bg-blue-50 text-blue-700 border-blue-100',
@@ -99,6 +100,20 @@ export const WebLeadsPage: React.FC = () => {
             <option value="Responded">Responded</option>
             <option value="Closed">Closed</option>
           </select>
+          <Button
+            variant="outline"
+            disabled={filtered.length === 0}
+            onClick={() => downloadCSV(
+              filtered.map(l => ({
+                Name: l.name, Email: l.email || '', Phone: l.phone, Company: l.company || '',
+                Service: l.service || '', Message: l.message || '', Status: l.status,
+                'Submitted At': formatDate(l.submittedAt), 'Internal Note': l.internalNote || '',
+              })),
+              csvFilename('web-enquiries'),
+            )}
+          >
+            &#11015; Export CSV
+          </Button>
         </div>
       </div>
 

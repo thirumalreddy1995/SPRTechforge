@@ -410,6 +410,22 @@ export const InterviewQuestions: React.FC = () => {
         <div className="flex items-center gap-3">
             {isAdmin && (
                <>
+                  <Button
+                    variant="outline"
+                    disabled={interviewQuestions.length === 0}
+                    title="Download the whole question bank as CSV"
+                    onClick={() => utils.downloadCSV(
+                      [...interviewQuestions]
+                        .sort((a, b) => (a.moduleId || '').localeCompare(b.moduleId || '') || a.question.localeCompare(b.question))
+                        .map(q => ({
+                          Module: interviewModules.find(m => m.id === q.moduleId)?.title || '',
+                          Question: q.question,
+                        })),
+                      utils.csvFilename('interview-question-bank'),
+                    )}
+                  >
+                    &#11015; Export CSV
+                  </Button>
                   <Button variant="secondary" onClick={() => setShowBulkUpload(true)} title="Import many questions from Excel, CSV, or pasted text">
                      <span className="inline-flex items-center gap-1.5">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>

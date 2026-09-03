@@ -202,6 +202,36 @@ export const Interviews: React.FC = () => {
     };
   }, [filterCandidateInterviews]);
 
+  // ── CSV export ────────────────────────────────────────────────────────────
+  const exportInterviewsCsv = (list: InterviewSchedule[], base: string) => {
+    if (list.length === 0) { showToast('Nothing to export', 'info'); return; }
+    const rows = list.map(i => {
+      const c = candidates.find(x => x.id === i.candidateId);
+      return {
+        Candidate: c?.name || 'Unknown',
+        Batch: c?.batchId || '',
+        Email: c?.email || '',
+        Phone: c?.phone || '',
+        Date: i.date,
+        Time: i.time,
+        'End Time': i.endTime || '',
+        Company: i.companyName,
+        Round: i.round,
+        Type: i.interviewType,
+        Status: STATUS_LABEL[i.status] || i.status,
+        Interviewer: i.interviewerName || '',
+        'Support Person': i.supportPerson || '',
+        Feedback: i.feedback || '',
+        'Feedback By': i.feedbackByName || '',
+        'Feedback At': i.feedbackAt ? new Date(i.feedbackAt).toLocaleString() : '',
+        Notes: i.notes || '',
+        'Scheduled By': i.scheduledByRole || 'admin',
+      };
+    });
+    utils.downloadCSV(rows, utils.csvFilename(base));
+    showToast(`Exported ${rows.length} interview(s) to CSV`);
+  };
+
   // ── navigation ────────────────────────────────────────────────────────────
   const navigateDay = useCallback((delta: number) => {
     const d = new Date(dashDate);
@@ -480,9 +510,14 @@ export const Interviews: React.FC = () => {
             </Button>
           )}
           {(isAdmin || isStaff) && (
-            <Button onClick={() => { setScheduleForm({}); setIsModalOpen(true); }}>
-              + Schedule Interview
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => exportInterviewsCsv(interviews, 'interviews-all')}>
+                &#11015; Export CSV
+              </Button>
+              <Button onClick={() => { setScheduleForm({}); setIsModalOpen(true); }}>
+                + Schedule Interview
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -675,6 +710,22 @@ export const Interviews: React.FC = () => {
                       ) : (
                         <p className="text-xs text-gray-400 text-center py-4">No interviews found</p>
                       )}
+
+                      {filterCandidateInterviews.length > 0 && (
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const c = candidates.find(x => x.id === candidateFilter);
+                            exportInterviewsCsv(
+                              filterCandidateInterviews,
+                              `interviews-${(c?.name || 'candidate').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+                            );
+                          }}
+                        >
+                          &#11015; Export This Candidate (CSV)
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <p className="text-xs text-gray-400 text-center py-6">Select a candidate to see their interview history and stats</p>
@@ -802,6 +853,13 @@ export const Interviews: React.FC = () => {
       ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'History' && (
         <div className="space-y-2">
+          {historyInterviews.length > 0 && (isAdmin || isStaff) && (
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => exportInterviewsCsv(historyInterviews, 'interview-history')}>
+                &#11015; Export History (CSV)
+              </Button>
+            </div>
+          )}
           {historyInterviews.length > 0 ? (
             historyInterviews.map(i => renderInterviewCard(i, { showDate: true }))
           ) : (

@@ -62,6 +62,28 @@ export const Payroll: React.FC = () => {
           <p className="text-sm text-gray-500 mt-0.5">Monthly recurring salaries, rent, and fixed obligations</p>
         </div>
         <div className="flex gap-2">
+          <button
+            className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+            disabled={summaryRows.length === 0}
+            onClick={() => utils.downloadCSV(
+              summaryRows.map(({ acc, months, totalPayable: tp, totalPaid: pd, pending }) => ({
+                'Ledger / Employee': acc.name,
+                'Sub Type': acc.subType || '',
+                'Due Day': acc.recurringDueDay === 31 ? 'End of month' : (acc.recurringDueDay || 1),
+                'Since': acc.recurringStartDate || '',
+                'Ends': acc.recurringEndDate || '',
+                'Months Due': months,
+                'Monthly Amount': acc.recurringAmount || 0,
+                'Total Payable': tp,
+                'Total Paid': pd,
+                'Balance Pending': Math.max(0, pending),
+                Status: pending <= 0 ? 'Cleared' : 'Arrears',
+              })),
+              utils.csvFilename('payroll'),
+            )}
+          >
+            &#11015; Export CSV
+          </button>
           <Link to="/finance/accounts/new">
             <button className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg border border-gray-200 transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>

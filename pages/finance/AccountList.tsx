@@ -162,12 +162,33 @@ export const AccountList: React.FC = () => {
             {accounts.length} ledger accounts · Organized by accounting classification
           </p>
         </div>
-        <Link to="/finance/accounts/new">
-          <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            New Account
-          </button>
-        </Link>
+        <div className="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            disabled={filtered.length === 0}
+            onClick={() => utils.downloadCSV(
+              filtered.map(a => ({
+                Name: a.name,
+                Type: a.type,
+                'Sub Type': a.subType || '',
+                Category: CATEGORY_MAP[a.type] || 'Assets',
+                'Opening Balance': a.openingBalance,
+                'Current Balance': getEntityBalance(a.id, 'Account'),
+                Description: a.description || '',
+                'System Account': a.isSystem ? 'Yes' : 'No',
+              })),
+              utils.csvFilename('chart-of-accounts'),
+            )}
+          >
+            &#11015; Export CSV
+          </Button>
+          <Link to="/finance/accounts/new">
+            <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              New Account
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* ── KPI Summary Row ──────────────────────────────────────────────────── */}

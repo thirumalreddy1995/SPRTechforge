@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card, ConfirmationModal, Input, Modal, Pagination, SearchInput, Select } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
 import { isMasterUser } from '../../utils';
+import * as utils from '../../utils';
 import { useSeminar } from '../context/SeminarContext';
 import { SeminarCandidate } from '../types';
 import { buildTemplateVars, renderTemplate } from '../lib/template';
@@ -177,6 +178,28 @@ export const SeminarCandidates: React.FC = () => {
     showToast(`Exported ${rows.length} contacts`, 'success');
   };
 
+  const exportAllCsv = () => {
+    if (filtered.length === 0) { showToast('No candidates in the current filter', 'error'); return; }
+    const rows = filtered.map(c => {
+      const reg = registrations.find(r => r.candidateId === c.id);
+      return {
+        Name: c.fullName, Email: c.email, Phone: c.phone, Gender: c.gender || '',
+        City: c.city || '', State: c.state || '', Qualification: c.qualification || '',
+        'Course / Stream': c.courseStream || '', Institution: c.institution || '',
+        'Year of Passing': c.yearOfPassing || '', 'Experience (Years)': c.totalExperience || '',
+        'Degree Group': c.degreeGroup,
+        'Invite Status': c.emailStatus, 'Subject Variant': c.subjectVariant || '',
+        'WhatsApp Sent': c.whatsappStatus === 'sent' ? 'Yes' : 'No',
+        Registration: reg ? (reg.status === 'registered' ? `Registered (${reg.preferredMode === 'in_person' ? 'in person' : 'online'})` : 'Declined') : '',
+        'Registered At': reg?.registeredAt ? new Date(reg.registeredAt).toLocaleString() : '',
+        'Invite Link': buildTemplateVars(c, settings).link,
+        Imported: new Date(c.createdAt).toLocaleString(),
+      };
+    });
+    utils.downloadCSV(rows, utils.csvFilename('seminar-candidates'));
+    showToast(`Exported ${rows.length} candidates`, 'success');
+  };
+
   if (isLoading) return <div className="text-gray-500 p-8 text-center">Loading candidates…</div>;
 
   return (
@@ -189,6 +212,7 @@ export const SeminarCandidates: React.FC = () => {
         <div className="flex gap-2 flex-wrap">
           <Button variant="success" onClick={startBlast}>Send WhatsApp Invites</Button>
           <Button variant="secondary" onClick={exportWhatsAppCsv}>Export WhatsApp CSV</Button>
+          <Button variant="outline" onClick={exportAllCsv}>&#11015; Export All Data (CSV)</Button>
         </div>
       </div>
 

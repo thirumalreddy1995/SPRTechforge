@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, ConfirmationModal, BackButton } from '../../components/Components';
 import { Link, useNavigate } from 'react-router-dom';
-import { isMasterUser } from '../../utils';
+import { isMasterUser, downloadCSV, csvFilename } from '../../utils';
 
 export const UserList: React.FC = () => {
   const { users, deleteUser, user: currentUser, passwordResetRequests, resolvePasswordResetRequest } = useApp();
@@ -53,9 +53,28 @@ export const UserList: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
         </div>
         {isAdmin && (
-            <Link to="/admin/users/new">
-                <Button>+ Add User</Button>
-            </Link>
+            <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => downloadCSV(
+                    // Deliberately excludes passwords and other secrets.
+                    users.map(u => ({
+                      Name: u.name,
+                      Username: u.username,
+                      Role: u.role,
+                      Modules: (u.modules || []).join(' | '),
+                      'Master User': isMasterUser(u) ? 'Yes' : 'No',
+                      'Auth Provider': u.authProvider || 'local',
+                    })),
+                    csvFilename('users'),
+                  )}
+                >
+                  &#11015; Export CSV
+                </Button>
+                <Link to="/admin/users/new">
+                    <Button>+ Add User</Button>
+                </Link>
+            </div>
         )}
       </div>
 

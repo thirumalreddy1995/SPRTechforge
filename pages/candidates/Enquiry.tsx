@@ -133,7 +133,28 @@ export const EnquiryPage: React.FC = () => {
             <p className="text-sm text-gray-500 mt-0.5">{enquiries.length} total enquiries · {counts['Follow-Up']} follow-ups pending</p>
           </div>
         </div>
-        <Button onClick={openAdd}>+ New Enquiry</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={filtered.length === 0}
+            onClick={() => {
+              utils.downloadCSV(
+                filtered.map(e => ({
+                  Name: e.name, Phone: e.phone, 'Alternate Phone': e.alternatePhone || '', Email: e.email || '',
+                  Address: e.address || '', Status: e.status, 'Enquiry Date': e.enquiryDate,
+                  'Committed Amount': e.committedAmount ?? '', 'Expected Joining': e.expectedJoiningDate || '',
+                  Batch: e.batch || '', 'Merged to Candidate': e.isMerged ? 'Yes' : 'No',
+                  Notes: (e.notes || []).map(n => `${new Date(n.date).toLocaleDateString()}: ${n.note}`).join(' | '),
+                })),
+                utils.csvFilename('enquiries'),
+              );
+              showToast(`Exported ${filtered.length} enquiries`);
+            }}
+          >
+            &#11015; Export CSV
+          </Button>
+          <Button onClick={openAdd}>+ New Enquiry</Button>
+        </div>
       </div>
 
       {/* Summary KPIs */}
