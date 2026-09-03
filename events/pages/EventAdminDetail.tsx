@@ -12,7 +12,7 @@ import * as utils from '../../utils';
 import { EventPrivateDetails, EventRegistration, FollowUpStatus, RegistrationStatus, SprEvent } from '../types';
 import {
   subscribeEvents, subscribeRegistrations, fetchPrivateDetails, updateEvent, updateRegistration,
-  changeRegistrationStatus,
+  changeRegistrationStatus, deleteEvent,
 } from '../services/eventsDb';
 import { formatISTDateTime, formatISTRange, relativeToNow } from '../lib/datetime';
 import { lifecycleOf, registrationWindow, seatsRemaining } from '../lib/validate';
@@ -69,6 +69,9 @@ export const EventAdminDetail: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelNotify, setCancelNotify] = useState(true);
   const [cancelBusy, setCancelBusy] = useState(false);
+
+  // Permanent delete (master admin only)
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   // Recap tab
   const [recapForm, setRecapForm] = useState<SprEvent['recap'] | null>(null);
@@ -156,6 +159,21 @@ export const EventAdminDetail: React.FC = () => {
       await updateEvent(ev.id, { status: 'draft', updatedAt: new Date().toISOString(), updatedBy: user?.id });
       showToast('Event unpublished — it is a draft again', 'success');
     } catch (e: any) { showToast(`Failed: ${e.message || e}`, 'error'); }
+  };
+
+  const deletePermanently = async () => {
+    if (!utils.isMasterUser(user)) { showToast('Only the master admin can delete events', 'error'); return; }
+    const msg = `Permanently delete "${ev.title}"?\n\nThis erases the event, its public page and link, and all ${regs.length} registration record(s). Registrants are NOT notified — use "Cancel event…" if people should be told.\n\nThis cannot be undone.`;
+    if (!window.confirm(msg)) return;
+    setDeleteBusy(true);
+    try {
+      await deleteEvent(ev.id);
+      showToast('Event deleted permanently', 'success');
+      navigate('/events/manage');
+    } catch (e: any) {
+      showToast(`Delete failed: ${e.message || e}`, 'error');
+      setDeleteBusy(false);
+    }
   };
 
   const cancelEvent = async () => {
@@ -441,8 +459,14 @@ export const EventAdminDetail: React.FC = () => {
                 {ev.status === 'published' && lifecycleOf(ev) !== 'past' && (
                   <Button variant="danger" onClick={() => setCancelOpen(true)}>Cancel event…</Button>
                 )}
+                {utils.isMasterUser(user) && (
+                  <Button variant="danger" onClick={deletePermanently} disabled={deleteBusy}>
+                    {deleteBusy ? 'Deleting…' : 'Delete permanently…'}
+                  </Button>
+                )}
                 <p className="text-xs text-gray-500 mt-2">
                   Unpublish is only possible with zero registrations. Cancelling keeps all records and can notify everyone by email.
+                  {utils.isMasterUser(user) && <> Permanent deletion (master only) erases the event and every registration record without notifying anyone.</>}
                 </p>
               </div>
             </Card>
