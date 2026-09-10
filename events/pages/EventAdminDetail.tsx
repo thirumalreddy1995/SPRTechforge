@@ -16,11 +16,30 @@ import {
 } from '../services/eventsDb';
 import { formatISTDateTime, formatISTRange, relativeToNow } from '../lib/datetime';
 import { lifecycleOf, registrationWindow, seatsRemaining } from '../lib/validate';
-import { CopyButton, EmptyState, StatusBadge, TextArea, TypeBadge, publicEventUrl, whatsAppShareUrl } from '../components/shared';
-import { cancellationEmailHtml, isEventMailerConfigured, reminderEmailHtml, sendEventEmail } from '../lib/emails';
+import { CopyButton, EmptyState, StatusBadge, TextArea, TypeBadge, publicEventUrl, whatsAppShareUrl, buildShareText } from '../components/shared';
+import { cancellationEmailHtml, customMessageEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
+import { getEmailBridgeConfig } from '../../services/messagingConfig';
 
 const PAGE_SIZE = 25;
 const REMINDER_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+
+type MailStatusFilter = 'confirmed' | 'waitlisted' | 'attended';
+
+interface MailForm {
+  from: string;
+  fromName: string;
+  subject: string;
+  message: string;
+  statuses: Record<MailStatusFilter, boolean>;
+  skipRecent: boolean;
+}
+
+const defaultReminderMessage = (ev: SprEvent, priv: EventPrivateDetails | null): string => {
+  const where = ev.mode === 'offline'
+    ? `Venue: ${ev.venueName}${ev.venueAddress ? `, ${ev.venueAddress}` : ''}.`
+    : `It is online${ev.platform ? ` on ${ev.platform}` : ''} — your personal joining link is below${priv?.joinUrl ? '' : ' (we will share it before the session)'}.`;
+  return `A quick reminder that ${ev.title} is coming up on ${formatISTRange(ev.startAt, ev.endAt)}.\n\n${where}\n\nPlease join 5 minutes early so we can start on time. Bring your questions — there is a live Q&A at the end.\n\nSee you there!\nTeam SPR Techforge`;
+};
 
 const REG_STATUS_STYLES: Record<RegistrationStatus, string> = {
   confirmed: 'bg-emerald-100 text-emerald-700',
@@ -60,6 +79,11 @@ export const EventAdminDetail: React.FC = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailReg, setDetailReg] = useState<EventRegistration | null>(null);
   const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+
+  // "Send email / reminder" modal
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailForm, setMailForm] = useState<MailForm | null>(null);
+  const [mailProgress, setMailProgress] = useState<{ sent: number; failed: number; total: number } | null>(null);
 
   // Check-in tab
   const [checkinQ, setCheckinQ] = useState('');
@@ -139,7 +163,7 @@ export const EventAdminDetail: React.FC = () => {
   if (!ev) return <Card className="p-8 text-center"><p className="font-bold text-gray-700">Event not found.</p><Button className="mt-4 mx-auto" onClick={() => navigate('/events/manage')}>Back to Events</Button></Card>;
 
   const url = publicEventUrl(ev.slug);
-  const shareText = `🎓 ${ev.title}\n📅 ${formatISTRange(ev.startAt, ev.endAt)}\n💯 Free registration — limited seats!\n👉 ${url}`;
+  const shareText = buildShareText(ev, url);
   const seats = seatsRemaining(ev);
   const window_ = registrationWindow(ev);
 
@@ -256,29 +280,64 @@ export const EventAdminDetail: React.FC = () => {
     showToast(`Marked ${done} as attended`, 'success');
   };
 
-  const bulkSendReminder = async () => {
+  const openMailModal = () => {
     if (!isEventMailerConfigured()) { showToast('Email is not configured — see Admin → Communication Settings', 'error'); return; }
+    const cfg = getEmailBridgeConfig();
+    setMailForm({
+      from: cfg.senderEmail || '',
+      fromName: cfg.senderName || 'SPR Techforge',
+      subject: `Reminder: ${ev.title} — ${formatISTRange(ev.startAt, ev.endAt)}`,
+      message: defaultReminderMessage(ev, priv),
+      statuses: { confirmed: true, waitlisted: false, attended: false },
+      skipRecent: true,
+    });
+    setMailProgress(null);
+    setMailOpen(true);
+  };
+
+  /** Who the modal will email, given its current filters. */
+  const mailTargets = (f: MailForm): EventRegistration[] => {
     const now = Date.now();
-    const targets = bulkTargets().filter(r =>
-      (r.status === 'confirmed') &&
-      !(r.remindersSent || []).some(x => now - new Date(x.at).getTime() < REMINDER_COOLDOWN_MS)
+    return bulkTargets().filter(r =>
+      (f.statuses as Record<string, boolean>)[r.status] === true &&
+      (!f.skipRecent || !(r.remindersSent || []).some(x => now - new Date(x.at).getTime() < REMINDER_COOLDOWN_MS))
     );
-    if (targets.length === 0) { showToast('Everyone eligible was already reminded in the last 12 hours', 'info'); return; }
-    if (!window.confirm(`Send a reminder email to ${targets.length} confirmed registrant${targets.length === 1 ? '' : 's'}?`)) return;
-    setBulkBusy('remind');
-    let sent = 0;
+  };
+
+  const sendMail = async () => {
+    if (!mailForm) return;
+    const targets = mailTargets(mailForm);
+    if (targets.length === 0) { showToast('Nobody matches the current selection and filters', 'info'); return; }
+    if (!mailForm.subject.trim()) { showToast('Enter a subject', 'error'); return; }
+    if (!mailForm.message.trim()) { showToast('Enter a message', 'error'); return; }
+    if (mailForm.from.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailForm.from.trim())) { showToast('The sender email address does not look valid', 'error'); return; }
+
+    setBulkBusy('mail');
+    setMailProgress({ sent: 0, failed: 0, total: targets.length });
+    let sent = 0, failed = 0;
     for (const r of targets) {
       try {
-        await sendEventEmail(ev, r.email, `Reminder: ${ev.title} — ${formatISTRange(ev.startAt, ev.endAt)}`, reminderEmailHtml(ev, r, priv));
+        await sendEventEmail(
+          ev, r.email, mailForm.subject.trim(),
+          customMessageEmailHtml(ev, r, priv, mailForm.message),
+          { from: mailForm.from.trim() || undefined, fromName: mailForm.fromName.trim() || undefined },
+        );
         await updateRegistration(r.id, { remindersSent: [...(r.remindersSent || []), { kind: 'reminder', at: new Date().toISOString() }] });
         sent++;
-        await new Promise(res => setTimeout(res, 400));
-      } catch (e) { console.warn('Reminder failed for', r.email, e); }
+      } catch (e) {
+        failed++;
+        console.warn('Email failed for', r.email, e);
+      }
+      setMailProgress({ sent, failed, total: targets.length });
+      await new Promise(res => setTimeout(res, 400)); // stay under provider per-minute limits
     }
     setBulkBusy(null);
     setSelected(new Set());
-    showToast(`Reminder sent to ${sent}/${targets.length} registrants`, sent === targets.length ? 'success' : 'info');
+    showToast(`Email sent to ${sent}/${targets.length} registrants${failed ? ` — ${failed} failed (see console)` : ''}`, failed === 0 ? 'success' : 'info');
+    if (failed === 0) setMailOpen(false);
   };
+
+  const selectAllMatching = () => setSelected(new Set(filteredRegs.map(r => r.id)));
 
   const openConvert = (reg: EventRegistration) => {
     setConvertForm({ batchId: '', agreedAmount: '', joinedDate: new Date().toISOString().split('T')[0] });
@@ -486,11 +545,24 @@ export const EventAdminDetail: React.FC = () => {
               {Object.entries(REG_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </Select>
             <div className="flex gap-2 flex-wrap">
-              <Button variant="secondary" onClick={bulkSendReminder} disabled={!!bulkBusy}>{bulkBusy === 'remind' ? 'Sending…' : `📨 Remind ${selected.size > 0 ? `(${selected.size})` : 'all confirmed'}`}</Button>
+              <Button onClick={openMailModal} disabled={!!bulkBusy}>{bulkBusy === 'mail' ? 'Sending…' : `📨 Send email / reminder ${selected.size > 0 ? `(${selected.size} selected)` : '(all matching)'}`}</Button>
               <Button variant="secondary" onClick={bulkMarkAttended} disabled={!!bulkBusy}>{bulkBusy === 'attend' ? 'Marking…' : `✓ Mark attended ${selected.size > 0 ? `(${selected.size})` : ''}`}</Button>
               <Button variant="secondary" onClick={exportCsv}>⬇ Export CSV</Button>
             </div>
           </div>
+          {regs.length > 0 && filteredRegs.length > 0 && (
+            <div className="px-4 py-2 bg-blue-50/60 border-b border-blue-100 text-xs text-blue-900 flex items-center gap-3 flex-wrap">
+              {selected.size > 0
+                ? <span><strong>{selected.size}</strong> selected{selected.size < filteredRegs.length ? ` of ${filteredRegs.length} matching` : ' — everyone matching'}.</span>
+                : <span>No one selected — actions apply to all <strong>{filteredRegs.length}</strong> matching registrations.</span>}
+              {selected.size < filteredRegs.length && (
+                <button onClick={selectAllMatching} className="font-bold underline">Select all {filteredRegs.length}</button>
+              )}
+              {selected.size > 0 && (
+                <button onClick={() => setSelected(new Set())} className="font-bold underline">Clear selection</button>
+              )}
+            </div>
+          )}
 
           {regs.length === 0 ? (
             <EmptyState icon="🪑" title="No registrations yet" sub="Share the registration link — new registrations appear here instantly." />
@@ -710,6 +782,72 @@ export const EventAdminDetail: React.FC = () => {
             <Button variant="success" onClick={doConvert} disabled={convertBusy}>{convertBusy ? 'Converting…' : 'Create Candidate'}</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* ---------- Send email / reminder modal ---------- */}
+      <Modal isOpen={mailOpen && !!mailForm} onClose={() => { if (!bulkBusy) setMailOpen(false); }} title="Send email to registrants" size="lg">
+        {mailForm && (() => {
+          const targets = mailTargets(mailForm);
+          const setM = (patch: Partial<MailForm>) => setMailForm({ ...mailForm, ...patch });
+          return (
+            <div className="space-y-4 text-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-700">
+                <p>
+                  Going to <strong>{targets.length}</strong> registrant{targets.length === 1 ? '' : 's'}
+                  {selected.size > 0 ? <> from your <strong>{selected.size}</strong> selected</> : <> from all <strong>{filteredRegs.length}</strong> matching the current filter</>}.
+                  Each email is personalised with their name, registration code{ev.mode !== 'offline' ? ', the joining link' : ''} and the event details.
+                </p>
+                <div className="flex gap-4 flex-wrap mt-2">
+                  {(['confirmed', 'waitlisted', 'attended'] as MailStatusFilter[]).map(s => (
+                    <label key={s} className="flex items-center gap-1.5">
+                      <input type="checkbox" className="w-4 h-4" checked={mailForm.statuses[s]} onChange={e => setM({ statuses: { ...mailForm.statuses, [s]: e.target.checked } })} />
+                      {REG_STATUS_LABELS[s]}
+                    </label>
+                  ))}
+                  <label className="flex items-center gap-1.5">
+                    <input type="checkbox" className="w-4 h-4" checked={mailForm.skipRecent} onChange={e => setM({ skipRecent: e.target.checked })} />
+                    Skip anyone emailed in the last 12 hours
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="From (sender email)" type="email" value={mailForm.from} onChange={e => setM({ from: e.target.value })} placeholder="admin@sprtechforge.com" />
+                <Input label="Sender name" value={mailForm.fromName} onChange={e => setM({ fromName: e.target.value })} placeholder="SPR Techforge" />
+              </div>
+              <p className="text-xs text-gray-500 -mt-2">
+                Leave From empty to use the default from Admin → Communication Settings. With the Outlook provider this must be a mailbox in your Microsoft 365; with Gmail, an alias of the bridge account.
+              </p>
+              <Input label="Subject" value={mailForm.subject} onChange={e => setM({ subject: e.target.value })} />
+              <TextArea
+                label="Message"
+                hint="Plain text — blank lines make paragraphs. The event details, join link and registration code are added automatically below your message."
+                rows={8}
+                value={mailForm.message}
+                onChange={e => setM({ message: e.target.value })}
+              />
+
+              {mailProgress && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <div className="flex justify-between text-xs font-bold text-blue-900 mb-1">
+                    <span>{bulkBusy === 'mail' ? 'Sending…' : 'Finished'}</span>
+                    <span>{mailProgress.sent + mailProgress.failed} / {mailProgress.total}{mailProgress.failed ? ` · ${mailProgress.failed} failed` : ''}</span>
+                  </div>
+                  <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 transition-all" style={{ width: `${Math.round(((mailProgress.sent + mailProgress.failed) / Math.max(1, mailProgress.total)) * 100)}%` }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
+                <Button variant="secondary" onClick={() => setMailOpen(false)} disabled={bulkBusy === 'mail'}>Close</Button>
+                <Button onClick={sendMail} disabled={bulkBusy === 'mail' || targets.length === 0}>
+                  {bulkBusy === 'mail' ? 'Sending…' : `Send to ${targets.length} registrant${targets.length === 1 ? '' : 's'}`}
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* ---------- Cancel modal ---------- */}

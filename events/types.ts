@@ -75,6 +75,8 @@ export interface SprEvent {
 
   bannerPath: string; // Firebase Storage path ('' when banner is inline)
   bannerUrl: string;  // https:// or data: URL
+  /** Optional YouTube link — embedded at the top of the public page so people see what they'll learn. Absent on older events. */
+  videoUrl?: string;
   speakers: EventSpeaker[];
   agenda: EventAgendaItem[];
 
@@ -147,7 +149,10 @@ export interface EventRegistration {
   howDidYouHear: string;
   customAnswers: Record<string, string>;
 
-  // DPDP: three separate consents, unticked by default, each timestamped.
+  // DPDP: consents are timestamped and unticked by default. The public form
+  // shows ONE terms checkbox that covers event contact by email and WhatsApp,
+  // so all three stamps are set together; the fields stay separate so older
+  // registrations (three boxes) keep their exact record.
   consentTerms: ConsentStamp;
   consentEmail: ConsentStamp;
   consentWhatsApp: ConsentStamp;

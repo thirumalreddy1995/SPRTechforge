@@ -376,31 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         handleSubError
       );
 
-      const unsubCand = cloudService.subscribe('candidates', setCandidates);
-      const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
-      const unsubInter = cloudService.subscribe('interviews', setInterviews);
-      const unsubAcc = cloudService.subscribe('accounts', d => { if (d.length > 0) setAccounts(d); else setAccounts(DEFAULT_ACCOUNTS); });
-      const unsubTrans = cloudService.subscribe('transactions', setTransactions);
-      const unsubMods = cloudService.subscribe('trainingModules', setTrainingModules);
-      const unsubTops = cloudService.subscribe('trainingTopics', setTrainingTopics);
-      const unsubLogs = cloudService.subscribe('trainingLogs', setTrainingLogs);
-      const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
-      const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
-      const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
-      const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
-      const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
-      const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
-      const unsubChats = cloudService.subscribe('chats', setChats);
-      const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
-      const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
-      const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
-      const unsubNotifs = cloudService.subscribe('notifications', setNotifications);
-
-      return () => {
-        unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
-        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-        unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv(); unsubNotifs();
-      };
+      return () => { unsubUsers(); };
     } else {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -431,6 +407,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsInitialized(true);
     }
   }, [isCloudEnabled]);
+
+  // Business data is only streamed for LOGGED-IN staff. Public visitors (the
+  // event registration link, the landing page, seminar token pages) used to
+  // open ~20 Firestore listeners the moment the app booted — every candidate,
+  // transaction, chat message and log — which made the public page slow and
+  // would multiply reads by the number of registrants. Now those pages fetch
+  // only what they need; the full dataset attaches on login and detaches on
+  // logout.
+  useEffect(() => {
+    if (!isCloudEnabled || !user) return;
+    const unsubCand = cloudService.subscribe('candidates', setCandidates);
+    const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
+    const unsubInter = cloudService.subscribe('interviews', setInterviews);
+    const unsubAcc = cloudService.subscribe('accounts', d => { if (d.length > 0) setAccounts(d); else setAccounts(DEFAULT_ACCOUNTS); });
+    const unsubTrans = cloudService.subscribe('transactions', setTransactions);
+    const unsubMods = cloudService.subscribe('trainingModules', setTrainingModules);
+    const unsubTops = cloudService.subscribe('trainingTopics', setTrainingTopics);
+    const unsubLogs = cloudService.subscribe('trainingLogs', setTrainingLogs);
+    const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
+    const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
+    const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
+    const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
+    const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
+    const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
+    const unsubChats = cloudService.subscribe('chats', setChats);
+    const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
+    const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
+    const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
+    const unsubNotifs = cloudService.subscribe('notifications', setNotifications);
+
+    return () => {
+      unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
+      unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
+      unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv(); unsubNotifs();
+    };
+  }, [isCloudEnabled, user?.id]);
 
   // Email bridge config is resolved at runtime (localStorage → Firestore →
   // build env). Load the shared cloud config once and stay reactive to

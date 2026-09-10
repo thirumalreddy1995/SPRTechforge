@@ -28,9 +28,11 @@ export const CommSettings: React.FC = () => {
   const current = getEmailBridgeConfig();
   const [endpoint, setEndpoint] = useState(current.endpoint);
   const [secret, setSecret] = useState(current.secret);
+  const [senderEmail, setSenderEmail] = useState(current.senderEmail || '');
+  const [senderName, setSenderName] = useState(current.senderName || '');
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [emailTest, setEmailTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string; quotaRemaining?: number } }>({ running: false });
+  const [emailTest, setEmailTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string; quotaRemaining?: number; provider?: string; sender?: string } }>({ running: false });
   const [storageTest, setStorageTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string } }>({ running: false });
   const [source, setSource] = useState(getMessagingConfigSource());
 
@@ -38,13 +40,17 @@ export const CommSettings: React.FC = () => {
     const cfg = getEmailBridgeConfig();
     setEndpoint(cfg.endpoint);
     setSecret(cfg.secret);
+    setSenderEmail(cfg.senderEmail || '');
+    setSenderName(cfg.senderName || '');
     setSource(getMessagingConfigSource());
   };
+
+  const typedConfig = () => ({ endpoint, secret, senderEmail, senderName });
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveMessagingConfig({ endpoint, secret }, { toCloud: isCloudEnabled });
+      await saveMessagingConfig(typedConfig(), { toCloud: isCloudEnabled });
       setSource(getMessagingConfigSource());
       showToast(isCloudEnabled
         ? 'Saved — every user of this app now uses this email bridge (no rebuild needed).'
@@ -65,10 +71,12 @@ export const CommSettings: React.FC = () => {
   const runEmailTest = async () => {
     setEmailTest({ running: true });
     // Test what's currently typed, not what's saved — save first if changed.
-    const typedMatchesSaved = endpoint === getEmailBridgeConfig().endpoint && secret === getEmailBridgeConfig().secret;
+    const saved = getEmailBridgeConfig();
+    const typedMatchesSaved = endpoint === saved.endpoint && secret === saved.secret
+      && senderEmail.trim().toLowerCase() === (saved.senderEmail || '') && senderName.trim() === (saved.senderName || '');
     if (!typedMatchesSaved) {
       try {
-        await saveMessagingConfig({ endpoint, secret }, { toCloud: false });
+        await saveMessagingConfig(typedConfig(), { toCloud: false });
         setSource(getMessagingConfigSource());
       } catch (e: any) {
         setEmailTest({ running: false, result: { ok: false, error: e.message || String(e) } });
@@ -92,10 +100,14 @@ export const CommSettings: React.FC = () => {
         <p className="text-gray-600">Email bridge configuration and file-upload health. Changes here apply at runtime — no rebuild or redeploy of the site.</p>
       </div>
 
-      <Card title="Email Bridge (Google Apps Script)">
+      <Card title="Email Bridge">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 mb-4">
           <p><strong>Active config source:</strong> {sourceLabel[source]}</p>
-          <p className="mt-1">The bridge is a free Google Apps Script attached to a Gmail account — see <strong>SETUP-EMAIL.md</strong> for the one-time Google-side setup. Paste its Web App URL and shared secret here.</p>
+          <p className="mt-1">
+            The bridge is a free Google Apps Script that relays mail for the app. It can send through <strong>Gmail</strong> (the script owner's
+            account) or through <strong>Outlook / Microsoft 365</strong> (e.g. admin@sprtechforge.com) — the provider is chosen in the script's
+            properties. See <strong>SETUP-EMAIL.md</strong> for both setups. Paste the Web App URL and shared secret here.
+          </p>
         </div>
         <div className="space-y-4">
           <Input
@@ -120,6 +132,25 @@ export const CommSettings: React.FC = () => {
               {showSecret ? 'Hide' : 'Show'}
             </button>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Default sender email (From address)"
+              type="email"
+              value={senderEmail}
+              onChange={e => setSenderEmail(e.target.value)}
+              placeholder="admin@sprtechforge.com"
+            />
+            <Input
+              label="Sender display name"
+              value={senderName}
+              onChange={e => setSenderName(e.target.value)}
+              placeholder="SPR Techforge"
+            />
+          </div>
+          <p className="text-xs text-gray-500 -mt-2">
+            Every confirmation, reminder and bulk email goes out from this address unless the person sending picks a different one.
+            With the Outlook provider it must be a mailbox in your Microsoft 365 tenant; with Gmail it must be a "Send mail as" alias of the bridge account (otherwise the bridge's own address is used).
+          </p>
           <div className="flex items-center gap-3 flex-wrap">
             <Button onClick={handleSave} disabled={saving}>
               {saving ? 'Saving…' : isCloudEnabled ? 'Save for All Users' : 'Save (this browser)'}
@@ -133,15 +164,47 @@ export const CommSettings: React.FC = () => {
           </div>
           {emailTest.result && (
             emailTest.result.ok ? (
-              <p className="text-sm font-bold text-emerald-700">
-                ✓ Connected — the bridge is reachable and the secret matches.
-                {typeof emailTest.result.quotaRemaining === 'number' && ` ${emailTest.result.quotaRemaining} sends left in today's Gmail quota.`}
-              </p>
+              <div className="text-sm font-bold text-emerald-700 space-y-1">
+                <p>
+                  ✓ Connected — the bridge is reachable and the secret matches.
+                  {typeof emailTest.result.quotaRemaining === 'number' && ` ${emailTest.result.quotaRemaining} sends left in today's Gmail quota.`}
+                </p>
+                {emailTest.result.provider && (
+                  <p className="text-xs font-semibold text-emerald-800">
+                    Provider: {emailTest.result.provider === 'graph' ? 'Outlook / Microsoft 365' : 'Gmail'}
+                    {emailTest.result.sender && <> · bridge default mailbox: {emailTest.result.sender}</>}
+                    {emailTest.result.provider === 'graph' && senderEmail.trim() && emailTest.result.sender && senderEmail.trim().toLowerCase() !== emailTest.result.sender.toLowerCase() && (
+                      <> · the app will send as <strong>{senderEmail.trim()}</strong></>
+                    )}
+                  </p>
+                )}
+                {!emailTest.result.provider && (
+                  <p className="text-xs font-semibold text-amber-700">The bridge is running an older Code.gs — redeploy the latest one to enable the Outlook provider and the From-address option.</p>
+                )}
+              </div>
             ) : (
               <p className="text-sm font-bold text-red-600">✗ {emailTest.result.error}</p>
             )
           )}
         </div>
+      </Card>
+
+      <Card title="Sending from Outlook / Microsoft 365 (admin@sprtechforge.com)">
+        <p className="text-xs text-gray-600 mb-3">
+          The same bridge can deliver through your Microsoft 365 mailbox instead of Gmail, so registrants see mail from
+          <strong> admin@sprtechforge.com</strong> and replies land in that Outlook inbox. One-time setup (about 15 minutes, full steps in
+          <strong> SETUP-EMAIL.md → "Send from Outlook"</strong>):
+        </p>
+        <ol className="text-xs text-gray-700 space-y-1.5 list-decimal pl-5">
+          <li>In <strong>Microsoft Entra admin center → App registrations → New registration</strong>, create "SPRTechforge Mail Bridge" (single tenant, no redirect URI).</li>
+          <li>Copy its <strong>Application (client) ID</strong> and <strong>Directory (tenant) ID</strong>. Under <strong>Certificates &amp; secrets</strong> create a client secret and copy its <strong>Value</strong>.</li>
+          <li>Under <strong>API permissions → Add → Microsoft Graph → Application permissions</strong> add <strong>Mail.Send</strong>, then click <strong>Grant admin consent</strong>.</li>
+          <li>In the Apps Script project add Script Properties <code>MS_TENANT_ID</code>, <code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code>, <code>MS_SENDER = admin@sprtechforge.com</code> and <code>MAIL_PROVIDER = graph</code>; paste the latest <code>apps-script/Code.gs</code> and redeploy (Manage deployments → Edit → New version).</li>
+          <li>Back here: set the default sender to <strong>admin@sprtechforge.com</strong>, click <strong>Test Email Connection</strong> (it should report "Provider: Outlook / Microsoft 365"), then <strong>Save for All Users</strong>.</li>
+        </ol>
+        <p className="text-xs text-gray-500 mt-3">
+          Limits on Microsoft 365: 10,000 recipients per mailbox per day and 30 messages per minute — comfortably above the 100/day Gmail cap, and enough to confirm and remind thousands of registrants.
+        </p>
       </Card>
 
       <Card title="File Uploads (banners, chat & email attachments)">
@@ -165,7 +228,8 @@ export const CommSettings: React.FC = () => {
 
       <Card title="How the pieces fit">
         <ul className="text-xs text-gray-600 space-y-1.5 list-disc pl-4">
-          <li><strong>Email</strong> (SPRConnect → Email, Seminar campaign) goes through the bridge configured above. Free Gmail allows 100 sends/day.</li>
+          <li><strong>Email</strong> (SPRConnect → Email, Seminar campaign, Event confirmations & reminders) goes through the bridge configured above. Free Gmail allows 100 sends/day; Outlook / Microsoft 365 allows 10,000 recipients/day.</li>
+          <li><strong>Sender address:</strong> the default above is used everywhere; the event "Send email" dialog lets you override it per send.</li>
           <li><strong>Config precedence:</strong> this-browser override → cloud settings (saved here) → build-time secrets. Saving here wins over the build without redeploying.</li>
           <li><strong>Banner images</strong> stored inline are always embedded into emails as CID attachments (Gmail blocks data: images otherwise). That path needs the updated bridge — redeploy <code>apps-script/Code.gs</code> once (Deploy → Manage deployments → Edit → New version).</li>
           <li><strong>Notifications</strong> (the bell) and <strong>chat</strong> ride on Firestore real-time sync and need no extra configuration.</li>
