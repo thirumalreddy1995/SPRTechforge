@@ -653,7 +653,7 @@ export const PublicEventPage: React.FC = () => {
             )}
           </div>
 
-          <aside ref={formRef} className="scroll-mt-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+          <aside ref={formRef} className="scroll-mt-6">
             {sidePanel}
           </aside>
         </div>
