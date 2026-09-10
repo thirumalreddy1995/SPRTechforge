@@ -130,7 +130,7 @@ export const PublicEventPage: React.FC = () => {
   if (state === 'loading') {
     return (
       <div className="min-h-screen bg-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-3xl border border-gray-200 h-72 animate-pulse" />
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6"><div className="bg-white rounded-2xl border border-gray-200 h-48 animate-pulse" /><div className="bg-white rounded-2xl border border-gray-200 h-40 animate-pulse" /></div>
@@ -509,22 +509,20 @@ export const PublicEventPage: React.FC = () => {
       )}
 
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <Link to="/"><Logo size="sm" /></Link>
           <Link to="/events" className="text-sm font-bold text-blue-600 hover:text-blue-800">All events →</Link>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 pb-28 lg:pb-12">
-        {/* ---------- HERO ---------- */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 pb-28 lg:pb-12">
+        {/* ---------- HERO: full banner on top (never cropped), facts + button beneath ---------- */}
         <section className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-5">
-            <div className="lg:col-span-3 bg-slate-900">
-              {ev.bannerUrl
-                ? <img src={ev.bannerUrl} alt={ev.title} className="w-full h-full object-cover aspect-[1200/628]" />
-                : <div className="w-full h-full min-h-[220px] bg-gradient-to-br from-blue-900 to-slate-900" />}
-            </div>
-            <div className="lg:col-span-2 p-6 sm:p-8 flex flex-col">
+          {ev.bannerUrl
+            ? <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />
+            : <div className="w-full h-40 sm:h-56 bg-gradient-to-br from-blue-900 to-slate-900" />}
+          <div className="p-5 sm:p-8 lg:flex lg:items-start lg:gap-10">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-3">
                 <TypeBadge type={ev.type} />
                 {phase === 'live' && ev.status === 'published' && <LiveBadge />}
@@ -546,8 +544,10 @@ export const PublicEventPage: React.FC = () => {
                   <p className="text-gray-700">🎤 {speakers.map(s => s.title ? `${s.name} (${s.title})` : s.name).join(', ')}</p>
                 )}
               </div>
+            </div>
 
-              <div className="mt-auto pt-6">
+            <div className="mt-6 lg:mt-0 lg:w-80 lg:shrink-0 lg:self-center">
+              <div>
                 {canRegister ? (
                   <>
                     <button onClick={scrollToForm} className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-black shadow-lg shadow-blue-200 transition-colors">
