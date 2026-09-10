@@ -89,14 +89,45 @@ export const changeNoticeEmailHtml = (ev: SprEvent, reg: EventRegistration, priv
     <p><strong>Your registration code:</strong> <span style="font-family:monospace;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span> (unchanged)</p>
   `);
 
+/**
+ * Free-form message from an admin (the "Email selected registrants" modal).
+ * The typed text becomes paragraphs; the event details, join link and
+ * registration code are appended so every message doubles as a reminder.
+ */
+export const customMessageEmailHtml = (ev: SprEvent, reg: EventRegistration, priv: EventPrivateDetails | null, message: string): string => {
+  const paragraphs = (message || '')
+    .split(/\n\s*\n/)
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => `<p>${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+  return wrap(ev, `
+    <p>Hi ${escapeHtml(reg.fullName)},</p>
+    ${paragraphs}
+    <div style="background:#f3f4f6;border-radius:8px;padding:12px 16px;margin-top:16px;">
+      <p style="margin:0 0 6px 0;"><strong>${escapeHtml(ev.title)}</strong></p>
+      <p style="margin:0 0 6px 0;"><strong>When:</strong> ${escapeHtml(formatISTRange(ev.startAt, ev.endAt))}</p>
+      ${whereBlock(ev, priv, reg.status !== 'waitlisted')}
+      <p style="margin:6px 0 0 0;"><strong>Your registration code:</strong> <span style="font-family:monospace;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span></p>
+    </div>
+  `);
+};
+
+export interface EventEmailOptions {
+  /** Override the From address for this send (defaults to the configured sender). */
+  from?: string;
+  fromName?: string;
+}
+
 /** Sends one event email. Banner is CID-embedded when it's an inline data: URL. */
-export const sendEventEmail = async (ev: SprEvent, to: string, subject: string, html: string): Promise<void> => {
+export const sendEventEmail = async (ev: SprEvent, to: string, subject: string, html: string, opts: EventEmailOptions = {}): Promise<void> => {
   await emailService.sendEmail({
     to,
     subject,
     body: html,
     isHtml: true,
-    fromName: 'SPR Techforge',
+    from: opts.from,
+    fromName: opts.fromName || 'SPR Techforge',
     inlineImages: ev.bannerUrl && ev.bannerUrl.startsWith('data:')
       ? [{ key: BANNER_CID, url: ev.bannerUrl, name: 'banner' }]
       : undefined,

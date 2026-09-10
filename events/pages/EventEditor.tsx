@@ -19,7 +19,8 @@ import {
 import { istInputToUtcIso, utcIsoToIstInput, formatISTRange } from '../lib/datetime';
 import { slugify, uniqueSlug, EVENT_TYPE_LABELS } from '../lib/slug';
 import { validateForPublish } from '../lib/validate';
-import { TextArea, CopyButton, publicEventUrl, whatsAppShareUrl } from '../components/shared';
+import { youtubeEmbedUrl } from '../lib/video';
+import { TextArea, CopyButton, publicEventUrl, whatsAppShareUrl, buildShareText } from '../components/shared';
 import { changeNoticeEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
 
 const STEPS = ['Basics', 'Schedule & Mode', 'Content', 'Registration', 'Review & Publish'];
@@ -44,6 +45,7 @@ const newEvent = (userId: string): SprEvent => {
     prerequisites: [],
     bannerPath: '',
     bannerUrl: '',
+    videoUrl: '',
     speakers: [],
     agenda: [],
     mode: 'online',
@@ -258,7 +260,7 @@ export const EventEditor: React.FC = () => {
     }
   };
 
-  const shareText = `🎓 ${form.title}\n📅 ${formatISTRange(form.startAt, form.endAt)}\n💯 Free registration — limited seats!\n👉 ${publicEventUrl(form.slug)}`;
+  const shareText = buildShareText(form);
 
   // ---------------- step renderers ----------------
 
@@ -357,6 +359,33 @@ export const EventEditor: React.FC = () => {
             <p className="text-xs text-gray-500">JPG / PNG / WebP. Recommended 1200×628 (the standard social-share size).</p>
           </div>
         </div>
+      </Card>
+      <Card title="Intro video (optional)">
+        <p className="text-xs text-gray-500 mb-3">
+          Paste a YouTube link and it plays at the top of the public page, so people can see exactly what they'll learn before they register.
+          Any YouTube link format works (youtube.com/watch, youtu.be, Shorts, Live).
+        </p>
+        <Input
+          label="YouTube link"
+          value={form.videoUrl || ''}
+          onChange={e => set({ videoUrl: e.target.value })}
+          placeholder="https://www.youtube.com/watch?v=…  or  https://youtu.be/…"
+        />
+        {(form.videoUrl || '').trim() && (
+          youtubeEmbedUrl(form.videoUrl || '') ? (
+            <div className="max-w-xl aspect-video rounded-lg overflow-hidden border border-gray-200 bg-black">
+              <iframe
+                src={youtubeEmbedUrl(form.videoUrl || '')}
+                title="Intro video preview"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <p className="text-xs font-bold text-red-600">That doesn't look like a YouTube link — the page will only embed YouTube videos.</p>
+          )
+        )}
       </Card>
       <Card title="Speakers & agenda (optional but recommended)">
         <p className="text-sm font-bold text-gray-700 mb-2">Speakers</p>

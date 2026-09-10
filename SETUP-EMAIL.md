@@ -1,6 +1,15 @@
 # Email setup (Google Apps Script, $0 forever)
 
-This is the one-time setup to make the SPRConnect → Email page actually send and receive mail. Nothing requires a credit card or billing upgrade. The whole bridge runs on Google's free Apps Script tier.
+This is the one-time setup to make the SPRConnect → Email page (and event confirmations / reminders) actually send and receive mail. Nothing requires a credit card or billing upgrade. The whole bridge runs on Google's free Apps Script tier.
+
+The bridge can deliver through **two providers**:
+
+| Provider | Mail goes out from | Daily limit | Setup |
+| --- | --- | --- | --- |
+| **Gmail** (default) | the Google account that owns the script | 100/day (free Gmail), 1,500/day (Workspace) | Sections 1–7 below |
+| **Outlook / Microsoft 365** | any mailbox in your tenant, e.g. `admin@sprtechforge.com` | 10,000 recipients/day, 30 msgs/min | Sections 1–7 **plus** the ["Send from Outlook"](#send-from-outlook--microsoft-365-adminsprtechforgecom) section |
+
+The Apps Script is still needed with Outlook — it is the only server-side piece this static app has, and the Microsoft credentials must never ship inside the public JavaScript bundle. The script simply calls Microsoft Graph instead of Gmail.
 
 About **20–25 minutes** of clicking.
 
@@ -102,6 +111,65 @@ When you promote to master later, also add `EMAIL_ENDPOINT` and `EMAIL_SHARED_SE
 ## 7. Push (or re-run the QA workflow)
 
 The latest QA workflow will inject the secrets at build time and bake them into the frontend bundle. Push any commit to the `QA` branch (or click **Re-run all jobs** on the latest run at https://github.com/thirumalreddy1995/SPRTechforge/actions). Once it goes green, open `https://sprtechforge-qa.web.app/#/email` — the SPRConnect → Email page should load your inbox.
+
+---
+
+## Send from Outlook / Microsoft 365 (admin@sprtechforge.com)
+
+Do sections 1–5 first (any Google account works as the script owner — it no longer has to be the sending address). Then:
+
+### A. Register an app in Microsoft Entra (about 10 minutes)
+
+You need to be a Global Administrator of the Microsoft 365 tenant that owns `admin@sprtechforge.com`.
+
+1. Open https://entra.microsoft.com → **Identity → Applications → App registrations → New registration**.
+2. Name: `SPRTechforge Mail Bridge`. Supported account types: **Accounts in this organizational directory only**. Redirect URI: leave empty. Click **Register**.
+3. On the app's **Overview** page copy two values:
+   - **Application (client) ID** → this is `MS_CLIENT_ID`
+   - **Directory (tenant) ID** → this is `MS_TENANT_ID`
+4. **Certificates & secrets → Client secrets → New client secret**. Description `apps-script-bridge`, expiry **24 months**. Click **Add** and immediately copy the **Value** column (not "Secret ID") → this is `MS_CLIENT_SECRET`. It is shown only once.
+5. **API permissions → Add a permission → Microsoft Graph → Application permissions** → search `Mail.Send` → tick **Mail.Send** → **Add permissions**.
+6. Still on API permissions, click **Grant admin consent for <your tenant>** → **Yes**. The Status column must show a green tick.
+
+> Optional but recommended: restrict the app to the one mailbox so it can never send as anyone else. In Exchange Online PowerShell:
+> ```powershell
+> New-DistributionGroup -Name "SPR Mail Bridge Senders" -Type Security -Members admin@sprtechforge.com
+> New-ApplicationAccessPolicy -AppId <MS_CLIENT_ID> -PolicyScopeGroupId "SPR Mail Bridge Senders" -AccessRight RestrictAccess -Description "Bridge may only send as admin@"
+> ```
+
+### B. Point the Apps Script at Outlook
+
+1. In the Apps Script project, replace `Code.gs` with the latest [`apps-script/Code.gs`](apps-script/Code.gs) from this repo (the Outlook provider lives there) and **Save**.
+2. **Project Settings (gear) → Script Properties** — add:
+
+   | Property | Value |
+   | --- | --- |
+   | `MAIL_PROVIDER` | `graph` |
+   | `MS_TENANT_ID` | Directory (tenant) ID from A.3 |
+   | `MS_CLIENT_ID` | Application (client) ID from A.3 |
+   | `MS_CLIENT_SECRET` | the secret **Value** from A.4 |
+   | `MS_SENDER` | `admin@sprtechforge.com` |
+
+   `SHARED_SECRET` stays as it was.
+3. **Deploy → Manage deployments → pencil → Version: New version → Deploy**. The URL does not change. (Apps Script may ask you to re-authorize because the script now uses `UrlFetchApp`; accept.)
+4. Smoke test from a terminal:
+   ```bash
+   curl "<URL>?action=ping&secret=<SECRET>"
+   # → {"ok":true,"provider":"graph","sender":"admin@sprtechforge.com"}
+   ```
+   `"error":"Microsoft sign-in failed: …AADSTS7000215…"` means the client secret is wrong; `…Authorization_RequestDenied…` or `…ErrorAccessDenied…` means step A.6 (admin consent) was skipped.
+
+### C. Tell the app which address to use
+
+1. Log in as the master user → **Admin → Communication Settings**.
+2. Set **Default sender email** to `admin@sprtechforge.com` and **Sender display name** to `SPR Techforge`.
+3. Click **Test Email Connection** — it should say *Provider: Outlook / Microsoft 365*. Then **Save for All Users**.
+
+From now on registration confirmations (with the join link), reminders, cancellations, and everything sent from **SPRConnect → Email** go out from `admin@sprtechforge.com`, land in its **Sent Items**, and replies arrive in its inbox (which the Email page now reads instead of Gmail's).
+
+### Switching back to Gmail
+
+Set `MAIL_PROVIDER` to `gmail` (or delete the `MS_*` properties) and redeploy a new version. No app change is needed.
 
 ---
 

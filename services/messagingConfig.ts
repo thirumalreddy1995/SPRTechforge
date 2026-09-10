@@ -20,6 +20,15 @@ import { cloudService } from './cloud';
 export interface EmailBridgeConfig {
   endpoint: string;
   secret: string;
+  /**
+   * Default From address (e.g. admin@sprtechforge.com). With the Outlook /
+   * Microsoft 365 provider this selects the mailbox that sends; with Gmail it
+   * must be a configured "Send mail as" alias of the bridge account, otherwise
+   * the bridge falls back to its own address. Optional.
+   */
+  senderEmail?: string;
+  /** Default From display name, e.g. "SPR Techforge". Optional. */
+  senderName?: string;
 }
 
 export type MessagingConfigSource = 'local-override' | 'cloud' | 'build' | 'none';
@@ -33,7 +42,19 @@ const env = (import.meta as any).env ?? {};
 const buildConfig: EmailBridgeConfig = {
   endpoint: (env.VITE_EMAIL_ENDPOINT as string) || '',
   secret: (env.VITE_EMAIL_SHARED_SECRET as string) || '',
+  senderEmail: (env.VITE_EMAIL_SENDER as string) || '',
+  senderName: (env.VITE_EMAIL_SENDER_NAME as string) || '',
 };
+
+const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/** Normalize any stored/typed shape into a clean config object. */
+const cleanConfig = (c: Partial<EmailBridgeConfig>): EmailBridgeConfig => ({
+  endpoint: str(c.endpoint),
+  secret: str(c.secret),
+  senderEmail: str(c.senderEmail).toLowerCase(),
+  senderName: str(c.senderName),
+});
 
 let remoteConfig: EmailBridgeConfig | null = null;
 let remoteLoadStarted = false;
@@ -49,7 +70,7 @@ const readLocalOverride = (): EmailBridgeConfig | null => {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return isComplete(parsed) ? { endpoint: parsed.endpoint.trim(), secret: parsed.secret.trim() } : null;
+    return isComplete(parsed) ? cleanConfig(parsed) : null;
   } catch {
     return null;
   }
@@ -83,7 +104,7 @@ export const loadRemoteMessagingConfig = async (): Promise<void> => {
   try {
     const doc = await cloudService.getItem(CLOUD_COLLECTION, CLOUD_DOC_ID);
     if (isComplete(doc)) {
-      remoteConfig = { endpoint: doc.endpoint.trim(), secret: doc.secret.trim() };
+      remoteConfig = cleanConfig(doc);
       notifyListeners();
     }
   } catch (e) {
@@ -98,8 +119,11 @@ export const loadRemoteMessagingConfig = async (): Promise<void> => {
  * (and keeps working if Firestore is unreachable).
  */
 export const saveMessagingConfig = async (config: EmailBridgeConfig, opts: { toCloud: boolean }): Promise<void> => {
-  const clean: EmailBridgeConfig = { endpoint: config.endpoint.trim(), secret: config.secret.trim() };
+  const clean = cleanConfig(config);
   if (!isComplete(clean)) throw new Error('Both the bridge URL and the shared secret are required.');
+  if (clean.senderEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean.senderEmail)) {
+    throw new Error('The default sender email address does not look valid.');
+  }
   localStorage.setItem(LS_KEY, JSON.stringify(clean));
   if (opts.toCloud && cloudService.isConfigured()) {
     await cloudService.saveItem(CLOUD_COLLECTION, { id: CLOUD_DOC_ID, ...clean, updatedAt: new Date().toISOString() });

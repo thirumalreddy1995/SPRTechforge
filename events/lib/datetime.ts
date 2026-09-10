@@ -62,15 +62,31 @@ export const utcIsoToIstInput = (iso: string): string => {
   return `${shifted.getUTCFullYear()}-${p(shifted.getUTCMonth() + 1)}-${p(shifted.getUTCDate())}T${p(shifted.getUTCHours())}:${p(shifted.getUTCMinutes())}`;
 };
 
-/** Human "in 3 days" / "2 hours ago" for admin lists. */
-export const relativeToNow = (iso: string): string => {
+/** Number of whole IST calendar days from `now` to `iso` (0 = same IST date, 1 = tomorrow, -1 = yesterday). */
+export const istCalendarDayDiff = (iso: string, now = Date.now()): number => {
+  const dayOf = (ms: number) => Math.floor((ms + IST_OFFSET_MS) / 86_400_000);
+  return dayOf(new Date(iso).getTime()) - dayOf(now);
+};
+
+/**
+ * Human "today · in 3 hours" / "tomorrow" / "in 5 days" / "2 days ago" for
+ * admin lists. Day wording follows the IST CALENDAR, not rounded hours — an
+ * event tomorrow evening is "tomorrow" even when it is 41 hours away.
+ */
+export const relativeToNow = (iso: string, now = Date.now()): string => {
   if (!isValidIso(iso)) return '';
-  const diff = new Date(iso).getTime() - Date.now();
-  const abs = Math.abs(diff);
-  const mins = Math.round(abs / 60000);
-  const label =
-    mins < 60 ? `${mins} min` :
-    mins < 60 * 24 ? `${Math.round(mins / 60)} hour${Math.round(mins / 60) === 1 ? '' : 's'}` :
-    `${Math.round(mins / 60 / 24)} day${Math.round(mins / 60 / 24) === 1 ? '' : 's'}`;
-  return diff >= 0 ? `in ${label}` : `${label} ago`;
+  const diff = new Date(iso).getTime() - now;
+  const days = istCalendarDayDiff(iso, now);
+
+  if (days === 0) {
+    const mins = Math.round(Math.abs(diff) / 60000);
+    if (mins < 1) return 'now';
+    const label = mins < 60
+      ? `${mins} min`
+      : `${Math.round(mins / 60)} hour${Math.round(mins / 60) === 1 ? '' : 's'}`;
+    return diff >= 0 ? `today · in ${label}` : `today · ${label} ago`;
+  }
+  if (days === 1) return 'tomorrow';
+  if (days === -1) return 'yesterday';
+  return days > 0 ? `in ${days} days` : `${-days} days ago`;
 };

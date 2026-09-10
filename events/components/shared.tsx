@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { EventLifecycle, EventStatus, EventType, SprEvent } from '../types';
 import { EVENT_TYPE_LABELS } from '../lib/slug';
 import { lifecycleOf } from '../lib/validate';
+import { formatISTRange } from '../lib/datetime';
 
 export const TYPE_BADGE_STYLES: Record<EventType, string> = {
   webinar: 'bg-blue-100 text-blue-700',
@@ -78,6 +79,19 @@ export const publicEventUrl = (slug: string): string =>
 
 export const whatsAppShareUrl = (text: string): string =>
   `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+/**
+ * The message pasted into WhatsApp / copied by admins. Plain text on purpose:
+ * emoji were showing up as "?" boxes for recipients whose devices lack the
+ * glyphs (and after some copy/paste paths), so the share text uses none.
+ */
+export const buildShareText = (ev: Pick<SprEvent, 'title' | 'slug' | 'startAt' | 'endAt'>, url = publicEventUrl(ev.slug)): string =>
+  [
+    ev.title,
+    formatISTRange(ev.startAt, ev.endAt),
+    'Free registration - limited seats!',
+    `Register here: ${url}`,
+  ].join('\n');
 
 /** Consistent field-error line under inputs. */
 export const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>

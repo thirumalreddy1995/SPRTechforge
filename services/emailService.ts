@@ -36,7 +36,12 @@ interface ListResponse {
 interface SendResponse {
   ok: boolean;
   sentTo?: string;
+  sentFrom?: string;
   quotaRemaining?: number;
+  /** 'gmail' | 'graph' — reported by the updated bridge (ping + send). */
+  provider?: string;
+  /** Mailbox the bridge will send from when no `from` is given. */
+  sender?: string;
   error?: string;
 }
 
@@ -55,7 +60,14 @@ export interface SendEmailInput {
   subject: string;
   body: string;
   isHtml?: boolean;
-  /** Sender display name (the From address stays the bridge's Gmail account). */
+  /**
+   * From address. Defaults to the "default sender" saved on Admin →
+   * Communication Settings. With the Outlook/Microsoft 365 bridge provider
+   * this picks the sending mailbox; with Gmail it must be a "Send mail as"
+   * alias of the bridge account (otherwise the bridge uses its own address).
+   */
+  from?: string;
+  /** Sender display name. Defaults to the configured sender name. */
   fromName?: string;
   attachments?: EmailAttachment[];
   inlineImages?: InlineImageInput[];
@@ -65,6 +77,8 @@ export interface EmailDiagnostics {
   ok: boolean;
   error?: string;
   quotaRemaining?: number;
+  provider?: 'gmail' | 'graph' | string;
+  sender?: string;
 }
 
 export const isEmailConfigured = (): boolean => isEmailBridgeConfigured();
@@ -117,6 +131,10 @@ const friendlyBridgeError = (raw: string | undefined): string => {
   if (/bad secret/i.test(msg)) return 'The shared secret does not match the bridge — fix it on Admin → Communication Settings (it must equal the SHARED_SECRET in the Apps Script\'s Script Properties).';
   if (/SHARED_SECRET not configured/i.test(msg)) return 'The bridge has no SHARED_SECRET set — add it in the Apps Script project settings (see SETUP-EMAIL.md, step 3).';
   if (/service invoked too many times|quota/i.test(msg)) return 'Gmail\'s daily send quota is exhausted (100/day on free Gmail). It resets at midnight Pacific Time.';
+  if (/AADSTS7000215|invalid_client/i.test(msg)) return 'Microsoft sign-in failed: the MS_CLIENT_SECRET in the Apps Script properties is wrong or expired — create a new client secret in Entra and update it (SETUP-EMAIL.md, Outlook section).';
+  if (/AADSTS700016|AADSTS90002/i.test(msg)) return 'Microsoft sign-in failed: MS_CLIENT_ID or MS_TENANT_ID in the Apps Script properties does not match the Entra app registration.';
+  if (/ErrorAccessDenied|Access is denied|Authorization_RequestDenied|Insufficient privileges/i.test(msg)) return 'Outlook refused the send: grant the app the Mail.Send APPLICATION permission in Entra and click "Grant admin consent" (SETUP-EMAIL.md, Outlook section).';
+  if (/ErrorInvalidUser|MailboxNotEnabledForRESTAPI|ResourceNotFound/i.test(msg)) return 'Outlook refused the send: the sender mailbox does not exist or has no Exchange Online licence — check the default sender address.';
   return msg;
 };
 
@@ -181,7 +199,10 @@ export const emailService = {
       isHtml: !!input.isHtml,
       attachments: (input.attachments || []).map(a => toWireRef(a)),
     };
-    if (input.fromName) body.fromName = input.fromName;
+    const from = (input.from || cfg.senderEmail || '').trim();
+    const fromName = (input.fromName || cfg.senderName || '').trim();
+    if (from) body.from = from;
+    if (fromName) body.fromName = fromName;
     if (input.inlineImages && input.inlineImages.length) {
       body.inlineImages = input.inlineImages.map(img => toWireRef(img));
     }
@@ -220,7 +241,7 @@ export const emailService = {
         );
       }
       if (!data.ok) return { ok: false, error: friendlyBridgeError(data.error) };
-      return { ok: true, quotaRemaining: data.quotaRemaining };
+      return { ok: true, quotaRemaining: data.quotaRemaining, provider: data.provider, sender: data.sender };
     } catch (e: any) {
       return { ok: false, error: String(e?.message || e) };
     }

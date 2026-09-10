@@ -6,8 +6,48 @@
 import { normalizePhone, isValidEmail, normalizeEmail } from '../../seminar/lib/normalize';
 import { EventPrivateDetails, EventRegistration, SprEvent, EventLifecycle } from '../types';
 import { isValidIso } from './datetime';
+import { youtubeVideoId } from './video';
 
 export { normalizePhone, isValidEmail, normalizeEmail };
+
+/** Dropdown choices for the "Qualification / degree" field. 'Other' reveals a free-text box. */
+export const QUALIFICATION_OPTIONS = [
+  'B.Tech / B.E',
+  'M.Tech / M.E',
+  'B.Sc',
+  'M.Sc',
+  'BCA',
+  'MCA',
+  'B.Com',
+  'M.Com',
+  'BBA',
+  'MBA',
+  'B.A',
+  'M.A',
+  'Diploma / Polytechnic',
+  'Intermediate / 12th',
+  'Other',
+] as const;
+
+/**
+ * Stricter-than-normalizePhone check for a REAL Indian mobile number:
+ * exactly 10 digits after +91, starting 6–9, and not an obvious placeholder
+ * (all one digit, or a straight ascending/descending run). International
+ * numbers (+<cc>…) are accepted as-is when they normalize.
+ * Returns the normalized E.164 number, or '' when invalid.
+ */
+export const validMobileOrEmpty = (raw: string): string => {
+  const normalized = normalizePhone(raw);
+  if (!normalized) return '';
+  if (!normalized.startsWith('+91')) return normalized;
+  const local = normalized.slice(3);
+  if (local.length !== 10 || !/^[6-9]\d{9}$/.test(local)) return '';
+  if (/^(\d)\1{9}$/.test(local)) return '';                         // 9999999999
+  if ('0123456789'.includes(local) || '9876543210'.includes(local)) return ''; // 1234567890 / 9876543210
+  return normalized;
+};
+
+export const isValidMobile = (raw: string): boolean => !!validMobileOrEmpty(raw);
 
 export interface PublishIssue {
   step: number;         // editor step to jump to
@@ -47,6 +87,9 @@ export const validateForPublish = (ev: SprEvent, priv: EventPrivateDetails): Pub
   }
 
   if (!ev.bannerUrl) add(3, 'Banner image is required — it is the first thing people see on the shared link');
+  if ((ev.videoUrl || '').trim() && !youtubeVideoId(ev.videoUrl || '')) {
+    add(3, 'The intro video link is not a YouTube link — paste a youtube.com/watch or youtu.be link, or clear the field');
+  }
 
   ev.customQuestions.forEach((q, i) => {
     if (!q.label.trim()) add(4, `Custom question ${i + 1} has no label`);
@@ -68,6 +111,11 @@ export interface RegistrationFormInput {
   currentStatus: string;
   howDidYouHear: string;
   customAnswers: Record<string, string>;
+  /**
+   * The single "I agree to the terms & to be contacted" box. Email and
+   * WhatsApp consent are recorded from this same tick (see PublicEventPage);
+   * the separate flags remain so older callers/tests still type-check.
+   */
   consentTerms: boolean;
   consentEmail: boolean;
   consentWhatsApp: boolean;
@@ -78,7 +126,10 @@ export const validateRegistration = (form: RegistrationFormInput, ev: SprEvent):
   const errors: Record<string, string> = {};
   if (form.fullName.trim().length < 2) errors.fullName = 'Please enter your full name';
   if (!isValidEmail(form.email)) errors.email = 'Please enter a valid email address';
-  if (!normalizePhone(form.mobile)) errors.mobile = 'Please enter a valid 10-digit Indian mobile number';
+  if (!isValidMobile(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number (starts with 6–9) — we send the joining link to it';
+  if (ev.collectFields.qualification && form.qualification.trim().toLowerCase() === 'other') {
+    errors.qualification = 'Please type your qualification';
+  }
   for (const q of ev.customQuestions) {
     if (q.required && !(form.customAnswers[q.id] || '').trim()) {
       errors[`q_${q.id}`] = 'This field is required';

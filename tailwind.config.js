@@ -7,6 +7,8 @@ export default {
     "./components/**/*.{ts,tsx}",
     "./pages/**/*.{ts,tsx}",
     "./services/**/*.{ts,tsx}",
+    "./events/**/*.{ts,tsx}",
+    "./seminar/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
