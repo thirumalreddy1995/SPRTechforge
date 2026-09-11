@@ -128,6 +128,7 @@ export const PublicEventPage: React.FC = () => {
   }, [qualChoice, qualOther]);
 
   const isAdminViewer = !!user && (user.role === 'admin' || user.modules.includes('users'));
+  const country = COUNTRIES.find(c => c.iso === countryIso) || COUNTRIES[0];
 
   if (state === 'loading') {
     return (
@@ -348,18 +349,27 @@ export const PublicEventPage: React.FC = () => {
         <div>
           <label className="block text-sm font-bold text-gray-700 mb-1">Mobile (WhatsApp preferred)<span className="text-red-500"> *</span></label>
           <div className="flex gap-2">
-            <select
-              aria-label="Country code"
-              value={countryIso}
-              onChange={e => {
-                const c = COUNTRIES.find(x => x.iso === e.target.value) || COUNTRIES[0];
-                setCountryIso(c.iso);
-                setF({ mobileDial: c.dial });
-              }}
-              className={`${inputClass(errors.mobile)} bg-white w-[7.5rem] shrink-0 px-2`}
+            {/* Compact "+91" chip; the real <select> sits invisibly on top so a tap opens the native country list. */}
+            <div
+              className={`relative shrink-0 flex items-center justify-between gap-1 px-3 py-3 border rounded-xl text-base font-semibold text-gray-800 bg-white ${errors.mobile ? 'border-red-400' : 'border-gray-300'}`}
+              style={{ width: '6.75rem' }}
             >
-              {COUNTRIES.map(c => <option key={c.iso} value={c.iso}>{c.flag} +{c.dial} {c.name}</option>)}
-            </select>
+              <span aria-hidden="true" className="truncate">{country.flag} +{country.dial}</span>
+              <span aria-hidden="true" className="text-gray-400 text-xs">▼</span>
+              <select
+                aria-label={`Country code (${country.name})`}
+                title={country.name}
+                value={countryIso}
+                onChange={e => {
+                  const c = COUNTRIES.find(x => x.iso === e.target.value) || COUNTRIES[0];
+                  setCountryIso(c.iso);
+                  setF({ mobileDial: c.dial });
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              >
+                {COUNTRIES.map(c => <option key={c.iso} value={c.iso}>{c.flag} {c.name} (+{c.dial})</option>)}
+              </select>
+            </div>
             <input
               type="tel" required
               value={form.mobile}
@@ -371,7 +381,7 @@ export const PublicEventPage: React.FC = () => {
           </div>
           {errors.mobile
             ? <p className="text-xs text-red-600 font-semibold mt-1">{errors.mobile}</p>
-            : <p className="text-xs text-gray-400 mt-1">{form.mobileDial === '91' ? '10-digit number without the country code — we send the joining link here' : `Number without the +${form.mobileDial} code — we send the joining link here`}</p>}
+            : <p className="text-xs text-gray-400 mt-1">{country.dial === '91' ? '10-digit Indian number — we send the joining link here. Outside India? Tap +91 to change the country.' : `${country.name} number without the +${country.dial} code — we send the joining link here`}</p>}
         </div>
 
         {ev.collectFields.city && <PInput label="City" value={form.city} onChange={e => setF({ city: e.target.value })} autoComplete="address-level2" />}
