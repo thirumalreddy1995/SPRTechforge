@@ -1,0 +1,1 @@
+const n=(e=18)=>{const t=new Uint8Array(e);crypto.getRandomValues(t);let r="";return t.forEach(a=>{r+=String.fromCharCode(a)}),btoa(r).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")},o=e=>`${e}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;export{o as a,n as g};
