@@ -29,25 +29,40 @@ export const QUALIFICATION_OPTIONS = [
   'Other',
 ] as const;
 
-/**
- * Stricter-than-normalizePhone check for a REAL Indian mobile number:
- * exactly 10 digits after +91, starting 6–9, and not an obvious placeholder
- * (all one digit, or a straight ascending/descending run). International
- * numbers (+<cc>…) are accepted as-is when they normalize.
- * Returns the normalized E.164 number, or '' when invalid.
- */
-export const validMobileOrEmpty = (raw: string): string => {
-  const normalized = normalizePhone(raw);
-  if (!normalized) return '';
-  if (!normalized.startsWith('+91')) return normalized;
-  const local = normalized.slice(3);
-  if (local.length !== 10 || !/^[6-9]\d{9}$/.test(local)) return '';
-  if (/^(\d)\1{9}$/.test(local)) return '';                         // 9999999999
-  if ('0123456789'.includes(local) || '9876543210'.includes(local)) return ''; // 1234567890 / 9876543210
-  return normalized;
+/** A real Indian mobile: 10 digits, starts 6–9, not all-same or a straight run. */
+const isRealIndianLocal = (local: string): boolean => {
+  if (!/^[6-9]\d{9}$/.test(local)) return false;
+  if (/^(\d)\1{9}$/.test(local)) return false;                                   // 9999999999
+  if (local === '1234567890' || local === '9876543210') return false;          // straight runs
+  return true;
 };
 
-export const isValidMobile = (raw: string): boolean => !!validMobileOrEmpty(raw);
+/**
+ * Validates the mobile number typed next to a country-code selector and
+ * returns it in E.164 (`+<dial><number>`), or '' when invalid.
+ *
+ * India (dial 91, the default): strict — exactly 10 digits after stripping a
+ * leading 0 or a typed 91/+91, starting 6–9, no placeholder patterns.
+ * Any other country: 5–14 digits after stripping a leading 0 (trunk prefix)
+ * or the country's own dial code if the person typed it again.
+ */
+export const validMobileOrEmpty = (raw: string, dial: string = '91'): string => {
+  const cc = String(dial || '91').replace(/\D/g, '') || '91';
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return '';
+  // People often paste their number WITH the code even though a selector exists.
+  if (digits.startsWith(cc) && digits.length > cc.length + 4 && (cc !== '91' || digits.length === 12)) {
+    digits = digits.slice(cc.length);
+  }
+  if (digits.startsWith('0') && digits.length > 5) digits = digits.replace(/^0+/, '');
+
+  if (cc === '91') return isRealIndianLocal(digits) ? `+91${digits}` : '';
+  if (digits.length < 5 || digits.length > 14) return '';
+  if (/^(\d)\1+$/.test(digits)) return '';
+  return `+${cc}${digits}`;
+};
+
+export const isValidMobile = (raw: string, dial: string = '91'): boolean => !!validMobileOrEmpty(raw, dial);
 
 export interface PublishIssue {
   step: number;         // editor step to jump to
@@ -105,6 +120,8 @@ export interface RegistrationFormInput {
   fullName: string;
   email: string;
   mobile: string;
+  /** Country calling code chosen next to the mobile field, without "+". Defaults to India (91). */
+  mobileDial?: string;
   city: string;
   qualification: string;
   passingYear: string;
@@ -126,7 +143,12 @@ export const validateRegistration = (form: RegistrationFormInput, ev: SprEvent):
   const errors: Record<string, string> = {};
   if (form.fullName.trim().length < 2) errors.fullName = 'Please enter your full name';
   if (!isValidEmail(form.email)) errors.email = 'Please enter a valid email address';
-  if (!isValidMobile(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number (starts with 6–9) — we send the joining link to it';
+  const dial = form.mobileDial || '91';
+  if (!isValidMobile(form.mobile, dial)) {
+    errors.mobile = dial === '91'
+      ? 'Enter a valid 10-digit Indian mobile number (starts with 6–9) — we send the joining link to it'
+      : 'Enter a valid mobile number for the selected country (digits only, without the country code)';
+  }
   if (ev.collectFields.qualification && form.qualification.trim().toLowerCase() === 'other') {
     errors.qualification = 'Please type your qualification';
   }

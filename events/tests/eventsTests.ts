@@ -40,7 +40,7 @@ const baseEvent = (overrides: Partial<SprEvent> = {}): SprEvent => ({
 });
 
 const validRegForm = () => ({
-  fullName: 'Test Person', email: 'test@example.com', mobile: '9849123456',
+  fullName: 'Test Person', email: 'test@example.com', mobile: '9849123456', mobileDial: '91',
   city: '', qualification: 'B.Tech / B.E', passingYear: '', currentStatus: '', howDidYouHear: '',
   customAnswers: {}, consentTerms: true, consentEmail: true, consentWhatsApp: true,
 });
@@ -167,7 +167,22 @@ const TESTS: { name: string; fn: () => void }[] = [
       assert(!isValidMobile('5849123456'), 'Indian mobiles start with 6–9');
       assert(!isValidMobile('984912345'), '9 digits must fail');
       assert(!isValidMobile('98491234567'), '11 digits (no leading 0) must fail');
-      assert(isValidMobile('+14155552671'), 'international numbers with + are accepted');
+      assert(!isValidMobile('9849123456', '91') === false, 'sanity');
+      assert(validMobileOrEmpty('919849123456', '91') === '+919849123456', 'typed 91 prefix should be stripped');
+    },
+  },
+  {
+    name: 'Registration validation: other countries via the country-code selector',
+    fn: () => {
+      assert(validMobileOrEmpty('4155552671', '1') === '+14155552671', 'US number should get +1');
+      assert(validMobileOrEmpty('07911 123456', '44') === '+447911123456', 'UK trunk 0 should be stripped');
+      assert(validMobileOrEmpty('+44 7911 123456', '44') === '+447911123456', 'typed +44 should not be doubled');
+      assert(validMobileOrEmpty('501234567', '971') === '+971501234567', 'UAE number accepted');
+      assert(validMobileOrEmpty('1234', '1') === '', 'too short must fail');
+      assert(validMobileOrEmpty('5555555555', '1') === '', 'all-same digits must fail');
+      const ev = baseEvent();
+      assert(!validateRegistration({ ...validRegForm(), mobile: '4155552671', mobileDial: '1' }, ev).mobile, 'US form should pass');
+      assert(!!validateRegistration({ ...validRegForm(), mobile: '4155552671', mobileDial: '91' }, ev).mobile, 'US number under India must fail');
     },
   },
   {

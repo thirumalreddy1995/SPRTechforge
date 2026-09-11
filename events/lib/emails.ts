@@ -22,7 +22,7 @@ const wrap = (ev: SprEvent, inner: string): string => {
     : '';
   return `<div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:15px;line-height:1.6;">
     ${banner}${inner}
-    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">SPR Techforge · This is a free event — no payment is ever requested.</p>
+    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">SPR Techforge · Software Testing Training &amp; Careers</p>
   </div>`;
 };
 
