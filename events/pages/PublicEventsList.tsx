@@ -159,7 +159,7 @@ export const PublicEventsList: React.FC = () => {
       </main>
 
       <footer className="text-center text-xs text-gray-400 pb-8">
-        SPR Techforge · All events are free — no payment is ever requested on these pages.
+        SPR Techforge · Software Testing Training &amp; Careers
       </footer>
     </div>
   );

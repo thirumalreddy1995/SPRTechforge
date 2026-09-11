@@ -20,6 +20,7 @@ import {
   validateRegistration, RegistrationFormInput, normalizeEmail, validMobileOrEmpty, QUALIFICATION_OPTIONS,
 } from '../lib/validate';
 import { youtubeEmbedUrl } from '../lib/video';
+import { COUNTRIES, DEFAULT_DIAL } from '../lib/countries';
 import { icsDataUri, googleCalendarUrl } from '../lib/ics';
 import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText } from '../components/shared';
 import { confirmationEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
@@ -31,7 +32,7 @@ const generateRegId = () => `reg-${Date.now().toString(36)}-${Math.random().toSt
 type LoadState = 'loading' | 'ready' | 'notfound' | 'offline';
 
 const emptyForm = (): RegistrationFormInput => ({
-  fullName: '', email: '', mobile: '', city: '', qualification: '', passingYear: '',
+  fullName: '', email: '', mobile: '', mobileDial: DEFAULT_DIAL, city: '', qualification: '', passingYear: '',
   currentStatus: '', howDidYouHear: '', customAnswers: {},
   consentTerms: false, consentEmail: false, consentWhatsApp: false,
 });
@@ -85,6 +86,7 @@ export const PublicEventPage: React.FC = () => {
   const [priv, setPriv] = useState<EventPrivateDetails | null>(null);
 
   const [form, setForm] = useState<RegistrationFormInput>(emptyForm());
+  const [countryIso, setCountryIso] = useState('IN');
   const [qualChoice, setQualChoice] = useState('');
   const [qualOther, setQualOther] = useState('');
   const [showTerms, setShowTerms] = useState(false);
@@ -204,7 +206,7 @@ export const PublicEventPage: React.FC = () => {
     setSubmitting(true);
     try {
       const email = normalizeEmail(form.email);
-      const mobile = validMobileOrEmpty(form.mobile);
+      const mobile = validMobileOrEmpty(form.mobile, form.mobileDial || DEFAULT_DIAL);
 
       // Friendly duplicate handling — never a second record, never a scary error.
       const existing = await findExistingRegistration(ev.id, email, mobile);
@@ -343,13 +345,34 @@ export const PublicEventPage: React.FC = () => {
       <div className="space-y-4">
         <PInput label="Full name" required value={form.fullName} error={errors.fullName} onChange={e => setF({ fullName: e.target.value })} autoComplete="name" />
         <PInput label="Email" required type="email" value={form.email} error={errors.email} onChange={e => setF({ email: e.target.value })} autoComplete="email" inputMode="email" />
-        <PInput
-          label="Mobile (WhatsApp preferred)" required type="tel"
-          value={form.mobile} error={errors.mobile}
-          onChange={e => setF({ mobile: e.target.value.replace(/[^\d+\s-]/g, '').slice(0, 16) })}
-          autoComplete="tel" inputMode="tel" placeholder="98xxxxxxxx" maxLength={16}
-          hint="10-digit Indian number — we send the joining link here"
-        />
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Mobile (WhatsApp preferred)<span className="text-red-500"> *</span></label>
+          <div className="flex gap-2">
+            <select
+              aria-label="Country code"
+              value={countryIso}
+              onChange={e => {
+                const c = COUNTRIES.find(x => x.iso === e.target.value) || COUNTRIES[0];
+                setCountryIso(c.iso);
+                setF({ mobileDial: c.dial });
+              }}
+              className={`${inputClass(errors.mobile)} bg-white w-[7.5rem] shrink-0 px-2`}
+            >
+              {COUNTRIES.map(c => <option key={c.iso} value={c.iso}>{c.flag} +{c.dial} {c.name}</option>)}
+            </select>
+            <input
+              type="tel" required
+              value={form.mobile}
+              onChange={e => setF({ mobile: e.target.value.replace(/[^\d\s-]/g, '').slice(0, 16) })}
+              autoComplete="tel-national" inputMode="tel" maxLength={16}
+              placeholder={form.mobileDial === '91' ? '98xxxxxxxx' : 'Mobile number'}
+              className={`${inputClass(errors.mobile)} flex-1 min-w-0`}
+            />
+          </div>
+          {errors.mobile
+            ? <p className="text-xs text-red-600 font-semibold mt-1">{errors.mobile}</p>
+            : <p className="text-xs text-gray-400 mt-1">{form.mobileDial === '91' ? '10-digit number without the country code — we send the joining link here' : `Number without the +${form.mobileDial} code — we send the joining link here`}</p>}
+        </div>
 
         {ev.collectFields.city && <PInput label="City" value={form.city} onChange={e => setF({ city: e.target.value })} autoComplete="address-level2" />}
         {ev.collectFields.qualification && (
@@ -430,7 +453,7 @@ export const PublicEventPage: React.FC = () => {
           {showTerms && (
             <div className="ml-8 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-600 space-y-1.5">
               <p className="font-bold text-gray-700">Terms &amp; conditions</p>
-              <p>1. This {typeLabel} is free. No payment is requested on this page or at any point for attending.</p>
+              <p>1. Registration for this {typeLabel} is free of charge.</p>
               <p>2. Your name, email and mobile number are used to confirm your seat, send the joining link and reminders, and follow up about SPR Techforge training programs. We never sell your data.</p>
               <p>3. Seats are limited and confirmed in the order registrations arrive. SPR Techforge may reschedule or cancel the session; registrants are notified by email.</p>
               <p>4. Sessions may be recorded for those who could not attend live.</p>
@@ -448,7 +471,7 @@ export const PublicEventPage: React.FC = () => {
         >
           {submitting ? 'Reserving your seat…' : seats === 0 && ev.waitlistEnabled ? 'Join the Waitlist — Free' : 'Register Free →'}
         </button>
-        <p className="text-center text-xs text-gray-400">100% free · No payment is ever requested on this page</p>
+        <p className="text-center text-xs text-gray-400">Your joining link and registration code are emailed to you</p>
       </div>
     </div>
   );
@@ -554,7 +577,7 @@ export const PublicEventPage: React.FC = () => {
                       {seats === 0 && ev.waitlistEnabled ? 'Join the Waitlist — Free' : 'Reserve your free seat →'}
                     </button>
                     <p className="text-center text-xs text-gray-400 mt-2">
-                      {seats !== null && seats > 0 ? `${seats} seat${seats === 1 ? '' : 's'} left · ` : ''}Takes under a minute · No payment ever
+                      {seats !== null && seats > 0 ? `${seats} seat${seats === 1 ? '' : 's'} left · ` : ''}Takes under a minute
                     </p>
                   </>
                 ) : done || alreadyRegistered ? (
@@ -659,7 +682,7 @@ export const PublicEventPage: React.FC = () => {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-10">
-          SPR Techforge · Free event · No payment is ever requested on this page.
+          SPR Techforge · Software Testing Training &amp; Careers
         </p>
       </main>
 
