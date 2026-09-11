@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Card, SearchInput } from '../components/Components';
+import { Button, Card, SearchInput } from '../components/Components';
+import { downloadCSV, csvFilename } from '../utils';
 
 export const AddressBook: React.FC = () => {
   const { users, candidates } = useApp();
@@ -66,6 +67,19 @@ export const AddressBook: React.FC = () => {
                 <option value="Candidate">Candidates</option>
                 <option value="Staff">Staff</option>
             </select>
+            <Button
+              variant="outline"
+              onClick={() => downloadCSV(
+                filtered.map(c => ({
+                  Name: c.name, Type: c.type, Role: c.role, Email: c.email,
+                  Phone: c.phone, 'Alternate Phone': c.alternatePhone,
+                })),
+                csvFilename('address-book'),
+              )}
+              disabled={filtered.length === 0}
+            >
+              &#11015; Export CSV
+            </Button>
         </div>
       </div>
 

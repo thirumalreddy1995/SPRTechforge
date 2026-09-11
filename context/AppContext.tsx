@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus, AuditEvent, AuditEventCategory, AuditEventType } from '../types';
+import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus, AuditEvent, AuditEventCategory, AuditEventType, AppNotification, NotificationType } from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 import { emailService, isEmailConfigured, SendEmailInput } from '../services/emailService';
+import { uploadService } from '../services/uploadService';
+import { loadRemoteMessagingConfig, subscribeMessagingConfig } from '../services/messagingConfig';
 
 interface AppContextType {
   user: User | null;
@@ -34,7 +36,7 @@ interface AppContextType {
   addInterview: (i: InterviewSchedule) => void;
   updateInterview: (i: InterviewSchedule) => void;
   deleteInterview: (id: string) => void;
-  changeInterviewStatus: (id: string, newStatus: string, changedBy: string, changedByName: string) => void;
+  changeInterviewStatus: (id: string, newStatus: string, changedBy: string, changedByName: string, feedback?: string, extras?: Partial<Pick<InterviewSchedule, 'interviewerName' | 'supportPerson'>>) => void;
 
   markAgreementSent: (candidateId: string) => void;
   markAgreementAccepted: (candidateId: string) => void;
@@ -124,6 +126,11 @@ interface AppContextType {
   isEmailConfigured: boolean;
   sendEmail: (input: SendEmailInput) => Promise<void>;
 
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
 
@@ -210,6 +217,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [callInvitations, setCallInvitations] = useState<CallInvitation[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [emailConfigured, setEmailConfigured] = useState<boolean>(isEmailConfigured());
 
   const [toast, setToast] = useState<Toast | null>(null);
   const [cloudError, setCloudError] = useState<string | null>(null);
@@ -238,6 +247,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActivityLogs(p => [log, ...p]);
     if (isCloudEnabled) cloudService.saveItem('activityLogs', log).catch(console.error);
   };
+
+  // Notification event bus: one document per recipient (or a single 'all'
+  // broadcast doc) in the `notifications` collection, delivered everywhere by
+  // the real-time subscription and surfaced in the header bell.
+  const notify = (
+    recipients: string[] | 'all',
+    type: NotificationType,
+    title: string,
+    opts: { body?: string; link?: string } = {}
+  ) => {
+    if (!user) return;
+    const targets = recipients === 'all' ? ['all'] : [...new Set(recipients.filter(id => id && id !== user.id))];
+    if (targets.length === 0) return;
+    const now = new Date().toISOString();
+    const items: AppNotification[] = targets.map(recipientId => ({
+      id: utils.generateId(),
+      recipientId,
+      type,
+      title,
+      body: opts.body,
+      link: opts.link,
+      actorId: user.id,
+      createdAt: now,
+      readBy: [user.id],
+    }));
+    setNotifications(p => [...p, ...items]);
+    if (isCloudEnabled) items.forEach(n => cloudService.saveItem('notifications', n).catch(console.error));
+  };
+
+  const markNotificationRead = (id: string) => {
+    if (!user) return;
+    const target = notifications.find(n => n.id === id);
+    if (!target || target.readBy.includes(user.id)) return;
+    const readBy = [...target.readBy, user.id];
+    setNotifications(p => p.map(n => n.id === id ? { ...n, readBy } : n));
+    if (isCloudEnabled) cloudService.updateItem('notifications', id, { readBy }).catch(console.error);
+  };
+
+  const markAllNotificationsRead = () => {
+    if (!user) return;
+    const unread = notifications.filter(n =>
+      (n.recipientId === user.id || n.recipientId === 'all') && n.actorId !== user.id && !n.readBy.includes(user.id)
+    );
+    if (unread.length === 0) return;
+    setNotifications(p => p.map(n => unread.some(u => u.id === n.id) ? { ...n, readBy: [...n.readBy, user.id] } : n));
+    if (isCloudEnabled) {
+      unread.forEach(n => cloudService.updateItem('notifications', n.id, { readBy: [...n.readBy, user.id] }).catch(console.error));
+    }
+  };
+
+  const unreadNotificationCount = user
+    ? notifications.filter(n =>
+        (n.recipientId === user.id || n.recipientId === 'all') && n.actorId !== user.id && !n.readBy.includes(user.id)
+      ).length
+    : 0;
 
   // G-06/G-07 scaffold: append-only writer for security & business audit events.
   // Full Audit page UI and login-failure plumbing land in G-07; G-06 uses this only
@@ -312,30 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         handleSubError
       );
 
-      const unsubCand = cloudService.subscribe('candidates', setCandidates);
-      const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
-      const unsubInter = cloudService.subscribe('interviews', setInterviews);
-      const unsubAcc = cloudService.subscribe('accounts', d => { if (d.length > 0) setAccounts(d); else setAccounts(DEFAULT_ACCOUNTS); });
-      const unsubTrans = cloudService.subscribe('transactions', setTransactions);
-      const unsubMods = cloudService.subscribe('trainingModules', setTrainingModules);
-      const unsubTops = cloudService.subscribe('trainingTopics', setTrainingTopics);
-      const unsubLogs = cloudService.subscribe('trainingLogs', setTrainingLogs);
-      const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
-      const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
-      const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
-      const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
-      const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
-      const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
-      const unsubChats = cloudService.subscribe('chats', setChats);
-      const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
-      const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
-      const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
-
-      return () => {
-        unsubUsers(); unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
-        unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-        unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv();
-      };
+      return () => { unsubUsers(); };
     } else {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -365,6 +406,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDataLoaded(true);
       setIsInitialized(true);
     }
+  }, [isCloudEnabled]);
+
+  // Business data is only streamed for LOGGED-IN staff. Public visitors (the
+  // event registration link, the landing page, seminar token pages) used to
+  // open ~20 Firestore listeners the moment the app booted — every candidate,
+  // transaction, chat message and log — which made the public page slow and
+  // would multiply reads by the number of registrants. Now those pages fetch
+  // only what they need; the full dataset attaches on login and detaches on
+  // logout.
+  useEffect(() => {
+    if (!isCloudEnabled || !user) return;
+    const unsubCand = cloudService.subscribe('candidates', setCandidates);
+    const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
+    const unsubInter = cloudService.subscribe('interviews', setInterviews);
+    const unsubAcc = cloudService.subscribe('accounts', d => { if (d.length > 0) setAccounts(d); else setAccounts(DEFAULT_ACCOUNTS); });
+    const unsubTrans = cloudService.subscribe('transactions', setTransactions);
+    const unsubMods = cloudService.subscribe('trainingModules', setTrainingModules);
+    const unsubTops = cloudService.subscribe('trainingTopics', setTrainingTopics);
+    const unsubLogs = cloudService.subscribe('trainingLogs', setTrainingLogs);
+    const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
+    const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
+    const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
+    const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
+    const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
+    const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
+    const unsubChats = cloudService.subscribe('chats', setChats);
+    const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
+    const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
+    const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
+    const unsubNotifs = cloudService.subscribe('notifications', setNotifications);
+
+    return () => {
+      unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
+      unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
+      unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv(); unsubNotifs();
+    };
+  }, [isCloudEnabled, user?.id]);
+
+  // Email bridge config is resolved at runtime (localStorage → Firestore →
+  // build env). Load the shared cloud config once and stay reactive to
+  // changes made on Admin → Communication Settings.
+  useEffect(() => {
+    const unsub = subscribeMessagingConfig(() => setEmailConfigured(isEmailConfigured()));
+    if (isCloudEnabled) {
+      loadRemoteMessagingConfig().catch(console.error);
+    }
+    return unsub;
   }, [isCloudEnabled]);
 
   useEffect(() => {
@@ -425,11 +513,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addInterview = (i: InterviewSchedule) => { setInterviews(p => [...p, i]); if (isCloudEnabled) cloudService.saveItem('interviews', i); };
   const updateInterview = (i: InterviewSchedule) => { setInterviews(p => p.map(x => x.id === i.id ? i : x)); if (isCloudEnabled) cloudService.updateItem('interviews', i.id, i); };
   const deleteInterview = (id: string) => { setInterviews(p => p.filter(x => x.id !== id)); if (isCloudEnabled) cloudService.deleteItem('interviews', id); };
-  const changeInterviewStatus = (id: string, newStatus: string, changedBy: string, changedByName: string) => {
+  const changeInterviewStatus = (id: string, newStatus: string, changedBy: string, changedByName: string, feedback?: string, extras?: Partial<Pick<InterviewSchedule, 'interviewerName' | 'supportPerson'>>) => {
     setInterviews(p => p.map(x => {
       if (x.id !== id) return x;
-      const entry = { status: newStatus, changedBy, changedByName, changedAt: new Date().toISOString(), previousStatus: x.status };
-      const updated = { ...x, status: newStatus as InterviewSchedule['status'], statusHistory: [...(x.statusHistory || []), entry] };
+      // Non-empty, changed feedback updates the interview's candidate-facing
+      // feedback record (and is captured in the history entry); empty or
+      // unchanged feedback leaves the existing record and its author intact.
+      const trimmedFeedback = feedback?.trim() || '';
+      const feedbackChanged = !!trimmedFeedback && trimmedFeedback !== x.feedback;
+      const changedAt = new Date().toISOString();
+      const entry = {
+        status: newStatus, changedBy, changedByName, changedAt, previousStatus: x.status,
+        ...(feedbackChanged ? { feedback: trimmedFeedback } : {}),
+      };
+      const updated = {
+        ...x,
+        status: newStatus as InterviewSchedule['status'],
+        statusHistory: [...(x.statusHistory || []), entry],
+        ...(feedbackChanged ? { feedback: trimmedFeedback, feedbackBy: changedBy, feedbackByName: changedByName, feedbackAt: changedAt } : {}),
+        // Who actually interviewed / supported can be corrected after the fact.
+        ...(extras?.interviewerName !== undefined ? { interviewerName: extras.interviewerName.trim() } : {}),
+        ...(extras?.supportPerson !== undefined ? { supportPerson: extras.supportPerson.trim() } : {}),
+      };
       if (isCloudEnabled) cloudService.updateItem('interviews', id, updated);
       return updated;
     }));
@@ -790,13 +895,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
 
+    // Storage-first upload with inline base64 fallback — attachments keep
+    // working even when Firebase Storage is unavailable (see uploadService).
     let attachments: ChatAttachment[] = [];
-    if (files.length > 0 && isCloudEnabled) {
-      for (const f of files) {
-        const path = `chats/${chatId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${f.name}`;
-        const up = await cloudService.uploadFile(path, f);
-        attachments.push(up);
-      }
+    for (const f of files) {
+      const path = `chats/${chatId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${f.name}`;
+      const up = await uploadService.uploadFile(path, f);
+      attachments.push({ url: up.url, name: up.name, type: up.type, size: up.size });
     }
 
     const msg: ChatMessage = {
@@ -826,6 +931,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lastMessageAt: updated.lastMessageAt,
         lastSenderId: updated.lastSenderId,
       });
+
+      const preview = trimmed ? trimmed.slice(0, 90) : `📎 ${attachments[0]?.name || 'Attachment'}`;
+      if (chat.type === 'announcement') {
+        notify('all', 'announcement', `📢 ${user.name} posted an announcement`, { body: preview, link: '/chat' });
+      } else {
+        notify(chat.participants, 'chat', `New message from ${user.name}`, { body: preview, link: '/chat' });
+      }
     }
   };
 
@@ -959,6 +1071,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMeetings(p => [...p, meeting]);
     if (isCloudEnabled) await cloudService.saveItem('meetings', meeting);
     logActivity('CREATE', `Meeting scheduled: ${meeting.title}`, 'Meeting', meeting.id);
+    notify(
+      meeting.participants.map(p => p.userId),
+      'meeting',
+      `${user.name} invited you: ${meeting.title}`,
+      { body: new Date(meeting.startTime).toLocaleString(), link: '/meetings' }
+    );
     return meeting;
   };
 
@@ -1030,7 +1148,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
       startCallInChat,
       callInvitations, incomingCall, callUser, acceptCall, declineCall, endCall,
-      isEmailConfigured: isEmailConfigured(), sendEmail,
+      isEmailConfigured: emailConfigured, sendEmail,
+      notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>

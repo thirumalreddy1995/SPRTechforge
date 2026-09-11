@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card, Button, Input, BackButton, SearchInput } from '../../components/Components';
 import { CandidateProfile } from '../../types';
+import { downloadCSV, csvFilename } from '../../utils';
 
 export const CandidateInfo: React.FC = () => {
   const { user, candidates, candidateProfiles, updateCandidateProfile, trainingModules, trainingTopics, trainingLogs, interviews, showToast } = useApp();
@@ -48,6 +49,27 @@ export const CandidateInfo: React.FC = () => {
               <BackButton />
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Candidate Information</h1>
            </div>
+           <Button
+             variant="outline"
+             disabled={filteredCandidates.length === 0}
+             onClick={() => downloadCSV(
+               filteredCandidates.map(c => {
+                 const p = candidateProfiles.find(x => x.candidateId === c.id);
+                 return {
+                   Name: c.name, Batch: c.batchId, Email: c.email, Phone: c.phone,
+                   DOB: p?.dob || '', Gender: p?.gender || '', Nationality: p?.nationality || '',
+                   'Permanent Address': p?.permanentAddress || '', 'Current Address': p?.currentAddress || '',
+                   Degree: p?.degree || '', University: p?.university || '', 'Passing Year': p?.passingYear || '',
+                   Percentage: p?.percentage || '', 'Has Experience': p?.hasExperience ? 'Yes' : 'No',
+                   'Last Company': p?.lastCompany || '', Designation: p?.designation || '',
+                   'Years of Experience': p?.yearsOfExperience ?? '', Skills: p?.skills || '',
+                 };
+               }),
+               csvFilename('candidate-profiles'),
+             )}
+           >
+             &#11015; Export CSV
+           </Button>
         </div>
 
         <Card title="Select a Candidate to View Self-Filled Info">

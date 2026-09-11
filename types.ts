@@ -160,6 +160,7 @@ export interface InterviewStatusChange {
   changedByName: string;
   changedAt: string;       // ISO timestamp
   previousStatus: string;
+  feedback?: string;       // feedback recorded together with this status change
 }
 
 export interface InterviewSchedule {
@@ -176,6 +177,13 @@ export interface InterviewSchedule {
   status: InterviewStatus;
   outcome?: 'Selected' | 'Rejected' | 'Pending';
   notes?: string;
+  // Feedback for the candidate (what went well / what to improve), recorded
+  // by admin or staff when the interview outcome is updated. Visible to the
+  // candidate on their own schedule.
+  feedback?: string;
+  feedbackBy?: string;                           // userId
+  feedbackByName?: string;
+  feedbackAt?: string;                           // ISO timestamp
   scheduledBy?: string;                          // userId of who created it
   scheduledByRole?: 'admin' | 'staff' | 'candidate';
   scheduledAt?: string;                          // ISO creation timestamp
@@ -389,6 +397,27 @@ export interface EmailMessage {
   isRead?: boolean;
   sentByUserId?: string;
   sentByUserName?: string;
+}
+
+export type NotificationType = 'chat' | 'announcement' | 'meeting' | 'email' | 'system';
+
+// In-app notification event. Written to the `notifications` collection by the
+// action that triggers it (chat send, meeting create, ...), delivered to every
+// client through the existing real-time Firestore subscription, surfaced in
+// the header bell (components/NotificationBell.tsx).
+export interface AppNotification {
+  id: string;
+  /** Target user id, or 'all' for a broadcast visible to everyone. */
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  body?: string;
+  /** In-app route to open when the notification is clicked. */
+  link?: string;
+  /** Who triggered it — actors never see their own notifications as unread. */
+  actorId?: string;
+  createdAt: string; // ISO
+  readBy: string[];
 }
 
 export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';

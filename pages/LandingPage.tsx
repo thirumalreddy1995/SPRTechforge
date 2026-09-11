@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Logo, Modal } from '../components/Components';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { UpcomingEventsWidget } from '../events';
 
 /* ─── Intersection observer hook ─── */
 const useInView = (threshold = 0.15) => {
@@ -304,6 +305,9 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ══════════ UPCOMING EVENTS (renders nothing when none) ══════════ */}
+      <UpcomingEventsWidget />
 
       {/* ══════════ WHY US ══════════ */}
       <section id="why-us" className="py-28 bg-white">

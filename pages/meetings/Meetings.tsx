@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Button, Card, Input, Modal, Select, SearchInput } from '../../components/Components';
 import { Meeting, MeetingParticipant, MeetingType, RsvpStatus, User } from '../../types';
-import { isMasterUser } from '../../utils';
+import { isMasterUser, downloadCSV, csvFilename } from '../../utils';
 
 const meetingRoomId = (meetingId: string) => `sprtechforge-meet-${meetingId}`;
 
@@ -433,7 +433,7 @@ const MeetingCard: React.FC<{ meeting: Meeting; onOpen: () => void; currentUserI
 type Tab = 'upcoming' | 'mine' | 'past';
 
 export const MeetingsPage: React.FC = () => {
-  const { user, meetings } = useApp();
+  const { user, users, meetings } = useApp();
   const [tab, setTab] = useState<Tab>('upcoming');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Meeting | null>(null);
@@ -479,7 +479,31 @@ export const MeetingsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Meetings &amp; Classes</h1>
           <p className="text-sm text-slate-500 mt-0.5">Schedule sessions, track RSVPs, manage your calendar.</p>
         </div>
-        <Button variant="primary" onClick={() => setShowNew(true)}>+ New meeting</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={visible.length === 0}
+            onClick={() => downloadCSV(
+              visible.map(m => ({
+                Title: m.title,
+                Type: m.meetingType,
+                Status: m.status,
+                Starts: new Date(m.startTime).toLocaleString(),
+                Ends: new Date(m.endTime).toLocaleString(),
+                Organizer: m.organizerName,
+                Location: m.location || '',
+                Participants: m.participants
+                  .map(p => `${users.find(u => u.id === p.userId)?.name || p.userId} (${p.rsvp})`)
+                  .join(' | '),
+                Description: m.description || '',
+              })),
+              csvFilename(`meetings-${tab}`),
+            )}
+          >
+            &#11015; Export CSV
+          </Button>
+          <Button variant="primary" onClick={() => setShowNew(true)}>+ New meeting</Button>
+        </div>
       </div>
 
       <div className="flex gap-1 border-b border-slate-200">
