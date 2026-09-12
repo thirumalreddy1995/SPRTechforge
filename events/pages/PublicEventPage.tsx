@@ -13,7 +13,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Logo } from '../../components/Components';
 import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
-import { fetchEventBySlug, findExistingRegistration, registerForEvent, fetchPrivateDetails } from '../services/eventsDb';
+import { fetchEventBySlug, findExistingRegistration, registerForEvent, fetchPrivateDetails } from '../services/eventsPublicDb';
 import { formatISTRange } from '../lib/datetime';
 import {
   lifecycleOf, registrationWindow, seatsRemaining,

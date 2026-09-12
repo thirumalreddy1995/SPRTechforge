@@ -29,6 +29,13 @@
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Inter is loaded WITHOUT blocking first paint: the stylesheet is fetched
+         as a preload and switched on when it arrives; text renders in the
+         system font meanwhile (font-display: swap). The old @import inside the
+         CSS bundle held a blank screen for 2+ seconds on slow connections. -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" /></noscript>
   </head>
   <body>
     <div id="root"></div>
