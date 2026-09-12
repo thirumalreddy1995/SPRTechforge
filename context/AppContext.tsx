@@ -157,6 +157,11 @@ export const useApp = () => {
 const STORAGE_KEY = 'SPR_TECHFORGE_FRESH_V10';
 const SESSION_KEY = 'SPR_TECHFORGE_SESSION_V4';
 
+/** A saved login exists in this browser (it is validated against the users list once that arrives). */
+const hasStoredSession = (): boolean => {
+  try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
+};
+
 /** Routes anyone can open without logging in. Everything else implies staff. */
 const PUBLIC_ROUTE_PREFIXES = ['#/events', '#/seminar/s/', '#/portal/agreement'];
 const isPublicRoute = (hash: string): boolean => {
@@ -400,7 +405,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
 
           setDataLoaded(true);
-          setIsInitialized(true);
+          // With a saved session, stay "initializing" until the restore effect
+          // below has set the user. Flipping to initialized here made the route
+          // guards see "initialized but no user" for one render on every page
+          // refresh and bounce staff from deep links (e.g. an event's detail
+          // page) to the dashboard or login.
+          if (!hasStoredSession()) setIsInitialized(true);
         },
         handleSubError
       );
@@ -496,6 +506,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         } catch (e) { }
       }
+      // Restore attempted (found or not) — routes may now decide. setUser and
+      // this flip are batched into one render, so guards never see a
+      // half-restored state.
+      setIsInitialized(true);
     }
   }, [dataLoaded, users]);
 
