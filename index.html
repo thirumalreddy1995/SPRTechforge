@@ -36,6 +36,30 @@
          CSS bundle held a blank screen for 2+ seconds on slow connections. -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" /></noscript>
+
+    <!-- Event page prefetch. When the URL is a public event link, ask Firestore
+         for that event NOW — in parallel with the JS download, roughly 1.5 s
+         before React could. A text/plain POST is a CORS "simple request", so
+         there is no preflight round trip. events/services/eventsPublicDb.ts
+         picks the promise up; if anything is off it just queries normally.
+         The two %VITE_...% values are filled in at build time by Vite. -->
+    <script>
+      (function () {
+        try {
+          var m = /^#\/events\/([a-z0-9-]+)\/?(\?.*)?$/.exec(location.hash || '');
+          if (!m || m[1] === 'manage') return;
+          var pid = '%VITE_FIREBASE_PROJECT_ID%', key = '%VITE_FIREBASE_API_KEY%';
+          if (!pid || !key || pid.charAt(0) === '%' || key.charAt(0) === '%') return;
+          var url = 'https://firestore.googleapis.com/v1/projects/' + pid + '/databases/(default)/documents:runQuery?key=' + key;
+          var body = JSON.stringify({ structuredQuery: { from: [{ collectionId: 'events_events' }], where: { fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: m[1] } } }, limit: 1 } });
+          window.__SPR_EVENT_PREFETCH = {
+            slug: m[1],
+            projectId: pid,
+            promise: fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: body }).then(function (r) { return r.ok ? r.json() : null; })
+          };
+        } catch (e) { /* prefetch is best-effort */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

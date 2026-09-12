@@ -30,6 +30,57 @@ import { registrationWindow } from '../lib/validate';
 const db = () => getFirestore(getApp());
 const stripUndefined = (data: any) => JSON.parse(JSON.stringify(data));
 
+// ---------------------------------------------------------------------------
+// Prefetch hand-off. index.html starts the slug query with a plain fetch the
+// moment the HTML arrives (before any JS bundle downloads), and parks the
+// promise on window.__SPR_EVENT_PREFETCH. We consume it here when it matches
+// the requested slug and project; otherwise we fall through to the SDK.
+// ---------------------------------------------------------------------------
+
+interface EventPrefetch {
+  slug: string;
+  projectId: string;
+  promise: Promise<any>;
+}
+
+/** Firestore REST value → plain JS (the subset of types this app stores). */
+const decodeRestValue = (v: any): any => {
+  if (v === null || typeof v !== 'object') return v;
+  if ('stringValue' in v) return v.stringValue;
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('integerValue' in v) return Number(v.integerValue);
+  if ('doubleValue' in v) return v.doubleValue;
+  if ('nullValue' in v) return null;
+  if ('timestampValue' in v) return v.timestampValue;
+  if ('arrayValue' in v) return (v.arrayValue.values || []).map(decodeRestValue);
+  if ('mapValue' in v) return decodeRestFields(v.mapValue.fields || {});
+  return undefined;
+};
+
+const decodeRestFields = (fields: Record<string, any>): Record<string, any> => {
+  const out: Record<string, any> = {};
+  for (const k of Object.keys(fields)) out[k] = decodeRestValue(fields[k]);
+  return out;
+};
+
+const takePrefetchedEvent = async (slug: string): Promise<SprEvent | null | undefined> => {
+  try {
+    const pf: EventPrefetch | undefined = (window as any).__SPR_EVENT_PREFETCH;
+    if (!pf || pf.slug !== slug) return undefined;
+    (window as any).__SPR_EVENT_PREFETCH = undefined; // single use
+    if (pf.projectId !== getApp().options.projectId) return undefined; // admin browser with a config override
+    const rows = await pf.promise;
+    if (!Array.isArray(rows)) return undefined;
+    const row = rows.find(r => r && r.document);
+    if (!row) return null; // query ran fine: no such slug
+    const name: string = row.document.name || '';
+    const id = name.slice(name.lastIndexOf('/') + 1);
+    return { ...(decodeRestFields(row.document.fields || {}) as any), id } as SprEvent;
+  } catch {
+    return undefined; // any hiccup → normal SDK path
+  }
+};
+
 /** All publicly listable events (published + cancelled for their info pages). */
 export const fetchPublicEvents = async (): Promise<SprEvent[]> => {
   const q = query(collection(db(), EVENT_COLLECTIONS.events), where('status', 'in', ['published', 'cancelled']));
@@ -39,6 +90,8 @@ export const fetchPublicEvents = async (): Promise<SprEvent[]> => {
 
 export const fetchEventBySlug = async (slug: string): Promise<SprEvent | null> => {
   if (!slug) return null;
+  const prefetched = await takePrefetchedEvent(slug);
+  if (prefetched !== undefined) return prefetched;
   const q = query(collection(db(), EVENT_COLLECTIONS.events), where('slug', '==', slug), limit(1));
   const snap = await getDocs(q);
   if (snap.empty) return null;
