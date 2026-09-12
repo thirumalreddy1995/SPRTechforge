@@ -21,10 +21,12 @@ import {
   getDoc,
   doc,
   runTransaction,
+  writeBatch,
+  increment,
 } from 'firebase/firestore/lite';
 import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
-import { EVENT_COLLECTIONS, emptyCounters, emptyPrivateDetails, RegisterOutcome } from './eventsDb';
-import { formatRegistrationCode } from '../lib/slug';
+import { EVENT_COLLECTIONS, emptyCounters, emptyPrivateDetails, RegisterOutcome, withContentionRetry } from './eventsDb';
+import { formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
 import { registrationWindow } from '../lib/validate';
 
 const db = () => getFirestore(getApp());
@@ -123,15 +125,40 @@ export const findExistingRegistration = async (
 };
 
 /**
- * Atomically: re-check publish status + window + capacity, claim the next
- * registration-code sequence, bump the right counter, and write the
- * registration. Identical rules to eventsDb.registerForEvent.
+ * Registers one person. Two write paths, same rules as eventsDb.registerForEvent:
+ *
+ * UNLIMITED seats (capacity 0 — the normal free webinar): NO transaction.
+ *   Load-testing showed that a transaction on the shared event document
+ *   fails for ~25 % of people once 10 register at the same moment (every
+ *   commit conflicts with every other). Instead we read the event once to
+ *   check the window, then write the registration plus blind `increment`
+ *   counters in one batch. Increments never conflict, so thousands can sign
+ *   up simultaneously; the code is time+random instead of sequential.
+ *
+ * LIMITED seats (capacity > 0): the transaction stays, because "is there a
+ *   seat left?" must be decided atomically. Contention is retried with
+ *   backoff; a burst gets slower, not wrong.
  */
 export const registerForEvent = async (
   eventId: string,
   draft: Omit<EventRegistration, 'registrationCode' | 'status'>,
 ): Promise<RegisterOutcome> => {
-  return runTransaction(db(), async tx => {
+  const evRef = doc(db(), EVENT_COLLECTIONS.events, eventId);
+  const first = await getDoc(evRef);
+  if (!first.exists()) return { ok: false, reason: 'not_found' };
+  const ev0 = { ...(first.data() as any), id: eventId } as SprEvent;
+  if (!registrationWindow(ev0).open) return { ok: false, reason: 'closed' };
+
+  if (!ev0.capacity || ev0.capacity <= 0) {
+    const registration: EventRegistration = { ...draft, registrationCode: randomRegistrationCode(ev0.type), status: 'confirmed' };
+    const batch = writeBatch(db());
+    batch.set(doc(db(), EVENT_COLLECTIONS.registrations, registration.id), stripUndefined(registration));
+    batch.update(evRef, { 'counters.confirmed': increment(1), registrationSeq: increment(1) });
+    await withContentionRetry(() => batch.commit(), 4);
+    return { ok: true, registration };
+  }
+
+  return withContentionRetry(() => runTransaction(db(), async tx => {
     const evRef = doc(db(), EVENT_COLLECTIONS.events, eventId);
     const snap = await tx.get(evRef);
     if (!snap.exists()) return { ok: false as const, reason: 'not_found' as const };
@@ -156,5 +183,5 @@ export const registerForEvent = async (
     tx.update(evRef, { registrationSeq: seq, counters });
     tx.set(doc(db(), EVENT_COLLECTIONS.registrations, registration.id), stripUndefined(registration));
     return { ok: true as const, registration };
-  });
+  }, { maxAttempts: 10 }));
 };

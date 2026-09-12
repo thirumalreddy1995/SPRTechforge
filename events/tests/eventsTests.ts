@@ -2,7 +2,7 @@
 // in-app test-runner convention (no Node test runner in this project).
 // Run from Events → "Run module tests".
 
-import { slugify, uniqueSlug, formatRegistrationCode } from '../lib/slug';
+import { slugify, uniqueSlug, formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
 import { istInputToUtcIso, utcIsoToIstInput, formatISTTime, relativeToNow, istCalendarDayDiff } from '../lib/datetime';
 import {
   validateForPublish, validateRegistration, lifecycleOf, registrationWindow, seatsRemaining,
@@ -69,6 +69,20 @@ const TESTS: { name: string; fn: () => void }[] = [
       assert(formatRegistrationCode('webinar', 42) === 'SPR-WEB-0042', `got ${formatRegistrationCode('webinar', 42)}`);
       assert(formatRegistrationCode('demo_class', 7) === 'SPR-DEMO-0007', `got ${formatRegistrationCode('demo_class', 7)}`);
       assert(formatRegistrationCode('other', 12345) === 'SPR-EVT-12345', 'long sequences must not truncate');
+    },
+  },
+  {
+    name: 'Registration code (unlimited events): format, time-ordering, no ambiguous chars, unique in a burst',
+    fn: () => {
+      const c = randomRegistrationCode('webinar');
+      assert(/^SPR-WEB-[A-HJ-NP-Z2-9]{7}$/.test(c), `unexpected format ${c}`);
+      assert(!/[0O1I]/.test(c.slice(8)), 'codes must avoid 0/O/1/I');
+      const early = randomRegistrationCode('seminar', Date.UTC(2026, 8, 1)).slice(8, 12);
+      const later = randomRegistrationCode('seminar', Date.UTC(2026, 8, 2)).slice(8, 12);
+      assert(early < later, `time prefix should sort by registration time (${early} vs ${later})`);
+      const seen = new Set();
+      for (let i = 0; i < 2000; i++) seen.add(randomRegistrationCode('webinar', Date.now() + i * 1600));
+      assert(seen.size === 2000, `expected 2000 distinct codes across distinct time slots, got ${seen.size}`);
     },
   },
   {
