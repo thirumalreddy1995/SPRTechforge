@@ -2,6 +2,9 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   Firestore,
   collection,
   onSnapshot,
@@ -87,7 +90,17 @@ class CloudService {
       if (config.projectId && config.apiKey) {
          try {
             this.app = initializeApp(config);
-            this.db = getFirestore(this.app);
+            // Persistent local cache: every collection the staff app streams is
+            // kept in IndexedDB, so the next visit paints from disk instantly and
+            // Firestore only sends the changes since. Shared across open tabs.
+            // Falls back to the plain in-memory client where IndexedDB is
+            // unavailable (private mode on some browsers).
+            try {
+              this.db = initializeFirestore(this.app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+            } catch (cacheErr) {
+              console.warn('Persistent Firestore cache unavailable, using memory cache:', cacheErr);
+              this.db = getFirestore(this.app);
+            }
             this.storage = getStorage(this.app);
             this.isInitialized = true;
             console.log(`Firebase Firestore Initialized (project: ${config.projectId})`);

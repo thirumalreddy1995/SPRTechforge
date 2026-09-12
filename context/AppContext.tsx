@@ -156,6 +156,14 @@ export const useApp = () => {
 
 const STORAGE_KEY = 'SPR_TECHFORGE_FRESH_V10';
 const SESSION_KEY = 'SPR_TECHFORGE_SESSION_V4';
+
+/** Routes anyone can open without logging in. Everything else implies staff. */
+const PUBLIC_ROUTE_PREFIXES = ['#/events', '#/seminar/s/', '#/portal/agreement'];
+const isPublicRoute = (hash: string): boolean => {
+  const h = hash || '#/';
+  if (h === '#/' || h === '#') return true; // landing page
+  return PUBLIC_ROUTE_PREFIXES.some(p => h.startsWith(p)) && !h.startsWith('#/events/manage');
+};
 const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
 // G-06: the bootstrap admin record. `isMaster: true` is the authoritative master flag;
@@ -323,14 +331,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isCloudEnabled) cloudService.saveItem('events', event).catch(console.error);
   };
 
+  // Public visitors (event registration link, events list, seminar token
+  // pages, portal agreement) get NO staff data at all — not even the users
+  // collection. Opening that realtime stream costs a 1.5–3 s channel
+  // handshake on a phone and exposes staff records to anonymous browsers.
+  // The stream starts only when someone might log in: a saved session exists,
+  // or the URL is (or becomes) a staff route such as #/login.
+  const [wantsStaffData, setWantsStaffData] = useState<boolean>(() => {
+    try { if (localStorage.getItem(SESSION_KEY)) return true; } catch { /* storage blocked */ }
+    return !isPublicRoute(window.location.hash);
+  });
   useEffect(() => {
+    if (wantsStaffData) return;
+    const onHash = () => { if (!isPublicRoute(window.location.hash)) setWantsStaffData(true); };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [wantsStaffData]);
+
+  useEffect(() => {
+    if (isCloudEnabled && !wantsStaffData) {
+      // Nothing to wait for on a public page — let routes render immediately.
+      setIsInitialized(true);
+      return;
+    }
     if (isCloudEnabled) {
       const handleSubError = (err: any) => {
         setCloudError(err.message);
         setDataLoaded(true);
         setIsInitialized(true);
       };
-      //const unsubUsers = cloudService.subscribe('users', d => { if(d.length > 0) setUsers(d); else setUsers([DEFAULT_ADMIN]); setDataLoaded(true);}, handleSubError);
       const unsubUsers = cloudService.subscribe(
         'users',
         d => {
@@ -406,7 +435,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDataLoaded(true);
       setIsInitialized(true);
     }
-  }, [isCloudEnabled]);
+  }, [isCloudEnabled, wantsStaffData]);
 
   // Business data is only streamed for LOGGED-IN staff. Public visitors (the
   // event registration link, the landing page, seminar token pages) used to

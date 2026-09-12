@@ -27,7 +27,18 @@ export interface UploadResult {
 export interface ImageUploadOptions {
   maxWidth?: number;   // default 1600 — plenty for banners and chat photos
   quality?: number;    // JPEG/WebP quality, default 0.82
+  /**
+   * Re-encode even PNGs as a lossy WebP (or JPEG where WebP is unsupported).
+   * Used for the inline-in-Firestore fallback, where an 80 KB PNG banner
+   * becomes ~25 KB and every visitor downloads it inside the event document.
+   */
+  forceLossy?: boolean;
 }
+
+/** WebP encoding support check (Safari < 14 and old browsers say no). */
+const canEncodeWebp = (): boolean => {
+  try { return document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp'); } catch { return false; }
+};
 
 const STORAGE_TIMEOUT_MS = 25_000;
 // Keep inline payloads well under Firestore's 1 MiB doc limit (base64 inflates ~4/3,
@@ -62,14 +73,15 @@ const loadImage = (file: Blob): Promise<HTMLImageElement> =>
  * everything else becomes JPEG (best size for photos/banners).
  */
 export const compressImage = async (file: File, opts: ImageUploadOptions = {}): Promise<Blob> => {
-  const { maxWidth = 1600, quality = 0.82 } = opts;
+  const { maxWidth = 1600, quality = 0.82, forceLossy = false } = opts;
   const img = await loadImage(file);
   const scale = Math.min(1, maxWidth / img.naturalWidth);
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
   const h = Math.max(1, Math.round(img.naturalHeight * scale));
 
-  // Already small and no downscale needed — keep the original bytes.
-  if (scale === 1 && file.size < 300 * 1024) return file;
+  // Already small and no downscale needed — keep the original bytes
+  // (unless we must shrink it for inline storage).
+  if (!forceLossy && scale === 1 && file.size < 300 * 1024) return file;
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -78,7 +90,9 @@ export const compressImage = async (file: File, opts: ImageUploadOptions = {}): 
   if (!ctx) return file;
   ctx.drawImage(img, 0, 0, w, h);
 
-  const outType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  const outType = forceLossy
+    ? (canEncodeWebp() ? 'image/webp' : 'image/jpeg')
+    : (file.type === 'image/png' ? 'image/png' : 'image/jpeg');
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, outType, quality));
   if (!blob) return file;
   // Re-encoding occasionally inflates tiny files — keep whichever is smaller.
@@ -130,10 +144,12 @@ export const uploadService = {
       storageError = e;
       console.warn('Storage upload failed, falling back to inline:', e);
     }
-    // Fallback must fit in Firestore — compress harder if the first pass was gentle.
-    if (blob.size * 1.4 > MAX_INLINE_DATAURL_CHARS) {
-      try { blob = await compressImage(file, { maxWidth: 1200, quality: 0.72 }); } catch { /* keep current blob */ }
-    }
+    // Inline fallback lives INSIDE the Firestore document, which every public
+    // visitor downloads — so always re-encode lossy (WebP/JPEG) at ≤1200px.
+    try {
+      const lossy = await compressImage(file, { maxWidth: Math.min(opts.maxWidth || 1200, 1200), quality: 0.78, forceLossy: true });
+      if (lossy.size < blob.size) blob = lossy;
+    } catch { /* keep current blob */ }
     return inlineFallback(blob, file.name, storageError);
   },
 

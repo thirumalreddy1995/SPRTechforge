@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Components';
 import { SprEvent } from '../types';
-import { fetchPublicEvents } from '../services/eventsDb';
+import { fetchPublicEvents } from '../services/eventsPublicDb';
 import { formatISTRange } from '../lib/datetime';
 import { lifecycleOf, registrationWindow, seatsRemaining } from '../lib/validate';
 import { LiveBadge, TypeBadge } from '../components/shared';
