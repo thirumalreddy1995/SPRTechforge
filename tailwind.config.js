@@ -9,6 +9,7 @@ export default {
     "./services/**/*.{ts,tsx}",
     "./events/**/*.{ts,tsx}",
     "./seminar/**/*.{ts,tsx}",
+    "./community/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {

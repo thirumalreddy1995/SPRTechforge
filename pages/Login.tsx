@@ -45,7 +45,7 @@ const PasswordInput: React.FC<{
 };
 
 export const Login: React.FC = () => {
-  const { login, updateUser, user, isCloudEnabled, cloudError, addPasswordResetRequest, showToast } = useApp();
+  const { login, updateUser, user, isCloudEnabled, cloudError, addPasswordResetRequest, showToast, isInitialized } = useApp();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -220,10 +220,19 @@ export const Login: React.FC = () => {
 
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || !isInitialized}
                     className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide"
                   >
-                    {isLoading ? (
+                    {!isInitialized ? (
+                      // The staff list is still streaming in; a click now would be rejected as "Invalid credentials".
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Connecting…
+                      </span>
+                    ) : isLoading ? (
                       <span className="flex items-center justify-center gap-2">
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

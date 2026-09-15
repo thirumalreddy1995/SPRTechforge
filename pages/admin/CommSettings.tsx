@@ -207,11 +207,11 @@ export const CommSettings: React.FC = () => {
         </p>
       </Card>
 
-      <Card title="File Uploads (banners, chat & email attachments)">
+      <Card title="File Uploads (banners, community posts & email attachments)">
         <p className="text-xs text-gray-600 mb-3">
           Uploads try <strong>Firebase Storage</strong> first. When Storage is unavailable (not provisioned for the
           project, or its security rules reject writes), images are automatically compressed and stored
-          <strong> inline</strong> instead — banners, chat photos and emailed banners keep working either way.
+          <strong> inline</strong> instead — banners, community images and emailed banners keep working either way.
           Large non-image files (&gt;~500 KB) do require Storage.
         </p>
         <div className="flex items-center gap-3 flex-wrap">
@@ -232,7 +232,7 @@ export const CommSettings: React.FC = () => {
           <li><strong>Sender address:</strong> the default above is used everywhere; the event "Send email" dialog lets you override it per send.</li>
           <li><strong>Config precedence:</strong> this-browser override → cloud settings (saved here) → build-time secrets. Saving here wins over the build without redeploying.</li>
           <li><strong>Banner images</strong> stored inline are always embedded into emails as CID attachments (Gmail blocks data: images otherwise). That path needs the updated bridge — redeploy <code>apps-script/Code.gs</code> once (Deploy → Manage deployments → Edit → New version).</li>
-          <li><strong>Notifications</strong> (the bell) and <strong>chat</strong> ride on Firestore real-time sync and need no extra configuration.</li>
+          <li><strong>Notifications</strong> (the bell) and the <strong>Community</strong> feed ride on Firestore real-time sync and need no extra configuration.</li>
           <li>The shared secret has always shipped inside the public app bundle; storing it in cloud settings is equivalent. Rotate it in the Apps Script and update it here if it leaks.</li>
         </ul>
       </Card>
