@@ -9,6 +9,7 @@ import { Button, Card, Input, Modal, Select, SearchInput } from '../../component
 import { useApp } from '../../context/AppContext';
 import { uploadService } from '../../services/uploadService';
 import * as utils from '../../utils';
+import { AccountType, TransactionType } from '../../types';
 import { EventPrivateDetails, EventRegistration, FollowUpStatus, RegistrationStatus, SprEvent } from '../types';
 import {
   subscribeEvents, subscribeRegistrations, fetchPrivateDetails, updateEvent, updateRegistration,
@@ -64,7 +65,7 @@ const RegStatusBadge: React.FC<{ status: RegistrationStatus }> = ({ status }) =>
 export const EventAdminDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, users, showToast, addCandidate } = useApp();
+  const { user, users, showToast, addCandidate, accounts, addTransaction } = useApp();
 
   const [events, setEvents] = useState<SprEvent[]>([]);
   const [allRegs, setAllRegs] = useState<EventRegistration[]>([]);
@@ -105,7 +106,7 @@ export const EventAdminDetail: React.FC = () => {
 
   // Convert modal
   const [convertReg, setConvertReg] = useState<EventRegistration | null>(null);
-  const [convertForm, setConvertForm] = useState({ batchId: '', agreedAmount: '', joinedDate: new Date().toISOString().split('T')[0] });
+  const [convertForm, setConvertForm] = useState({ batchId: '', agreedAmount: '', joinedDate: new Date().toISOString().split('T')[0], paidNow: '', paidInto: '' });
   const [convertBusy, setConvertBusy] = useState(false);
 
   useEffect(() => {
@@ -339,16 +340,22 @@ export const EventAdminDetail: React.FC = () => {
 
   const selectAllMatching = () => setSelected(new Set(filteredRegs.map(r => r.id)));
 
+  const cashAccounts = accounts.filter(a => a.type === AccountType.Bank || a.type === AccountType.Cash);
+
   const openConvert = (reg: EventRegistration) => {
-    setConvertForm({ batchId: '', agreedAmount: '', joinedDate: new Date().toISOString().split('T')[0] });
+    setConvertForm({ batchId: '', agreedAmount: '', joinedDate: new Date().toISOString().split('T')[0], paidNow: '', paidInto: cashAccounts[0]?.id || '' });
     setConvertReg(reg);
   };
 
   const doConvert = async () => {
     if (!convertReg) return;
     const amount = parseFloat(convertForm.agreedAmount);
+    const paidNow = convertForm.paidNow.trim() ? parseFloat(convertForm.paidNow) : 0;
     if (!convertForm.batchId.trim()) { showToast('Enter a batch name', 'error'); return; }
     if (isNaN(amount) || amount < 0) { showToast('Enter the agreed course fee', 'error'); return; }
+    if (isNaN(paidNow) || paidNow < 0) { showToast('Amount paid now must be a number', 'error'); return; }
+    if (paidNow > amount) { showToast('Amount paid now cannot exceed the agreed fee', 'error'); return; }
+    if (paidNow > 0 && !convertForm.paidInto) { showToast('Choose the bank/cash account the payment went into', 'error'); return; }
     setConvertBusy(true);
     try {
       const candidateId = utils.generateId();
@@ -359,7 +366,7 @@ export const EventAdminDetail: React.FC = () => {
         phone: convertReg.mobile,
         batchId: convertForm.batchId.trim(),
         agreedAmount: amount,
-        paidAmount: 0,
+        paidAmount: paidNow,
         status: 'Training',
         isActive: true,
         joinedDate: convertForm.joinedDate,
@@ -367,8 +374,33 @@ export const EventAdminDetail: React.FC = () => {
         referredBy: `Event: ${convertReg.eventTitle}`,
         notes: `Converted from event registration ${convertReg.registrationCode} (${convertReg.eventTitle}).`,
       });
+      // The agreed fee becomes a receivable the moment the candidate exists
+      // (Finance derives receivables from agreedAmount − ledger payments). A
+      // payment taken at sign-up is booked as an Income transaction so cash,
+      // P&L and the candidate's statement all move together.
+      if (paidNow > 0) {
+        const account = accounts.find(a => a.id === convertForm.paidInto);
+        addTransaction({
+          id: utils.generateId(),
+          date: convertForm.joinedDate,
+          type: TransactionType.Income,
+          amount: paidNow,
+          fromEntityId: candidateId,
+          fromEntityType: 'Candidate',
+          toEntityId: convertForm.paidInto,
+          toEntityType: 'Account',
+          description: `Course fee from ${convertReg.fullName} (event ${convertReg.registrationCode})${account ? ` → ${account.name}` : ''}`,
+          isLocked: false,
+          category: 'Candidate Fees',
+        });
+      }
       await updateRegistration(convertReg.id, { convertedToCandidateId: candidateId, followUpStatus: 'converted' });
-      showToast(`${convertReg.fullName} is now a candidate 🎉 — fees are tracked in Candidates & Finance`, 'success');
+      showToast(
+        paidNow > 0
+          ? `${convertReg.fullName} is now a candidate 🎉 — ${utils.formatCurrency(paidNow)} received, ${utils.formatCurrency(amount - paidNow)} receivable`
+          : `${convertReg.fullName} is now a candidate 🎉 — ${utils.formatCurrency(amount)} added to receivables`,
+        'success',
+      );
       setConvertReg(null);
       setDetailReg(null);
     } catch (e: any) {
@@ -777,6 +809,17 @@ export const EventAdminDetail: React.FC = () => {
           <Input label="Batch" value={convertForm.batchId} onChange={e => setConvertForm({ ...convertForm, batchId: e.target.value })} placeholder={`e.g. ${new Date().toLocaleString('en-IN', { month: 'short' })}-${new Date().getFullYear()} Weekday Batch`} />
           <Input label="Agreed course fee (₹)" type="number" min={0} value={convertForm.agreedAmount} onChange={e => setConvertForm({ ...convertForm, agreedAmount: e.target.value })} placeholder="e.g. 35000" />
           <Input label="Joining date" type="date" value={convertForm.joinedDate} onChange={e => setConvertForm({ ...convertForm, joinedDate: e.target.value })} />
+          <div className="border border-emerald-100 bg-emerald-50/50 rounded-xl p-3">
+            <p className="text-xs font-bold text-emerald-800 uppercase mb-2">Payment received at sign-up (optional)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="Amount paid now (₹)" type="number" min={0} value={convertForm.paidNow} onChange={e => setConvertForm({ ...convertForm, paidNow: e.target.value })} placeholder="0" />
+              <Select label="Received into" value={convertForm.paidInto} onChange={e => setConvertForm({ ...convertForm, paidInto: e.target.value })}>
+                {cashAccounts.length === 0 && <option value="">No bank/cash account set up</option>}
+                {cashAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </Select>
+            </div>
+            <p className="text-xs text-gray-500 -mt-2">Books an Income entry from the candidate into that account, so Finance → receivables, P&amp;L, cash and the candidate statement update immediately. The unpaid balance stays as a receivable.</p>
+          </div>
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="secondary" onClick={() => setConvertReg(null)}>Cancel</Button>
             <Button variant="success" onClick={doConvert} disabled={convertBusy}>{convertBusy ? 'Converting…' : 'Create Candidate'}</Button>

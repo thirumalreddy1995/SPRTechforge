@@ -18,9 +18,8 @@ import { PublicEventPage } from './events/pages/PublicEventPage';
 const named = <T extends Record<string, any>>(loader: () => Promise<T>, key: keyof T) =>
   lazy(async () => ({ default: (await loader())[key] as React.ComponentType<any> }));
 
-// The staff shell (sidebar, notification bell, call overlay) is only needed after login.
+// The staff shell (sidebar, notification bell) is only needed after login.
 const Layout = named(() => import('./components/Layout'), 'Layout');
-const IncomingCallOverlay = named(() => import('./pages/spconnect/IncomingCallOverlay'), 'IncomingCallOverlay');
 
 const Dashboard = named(() => import('./pages/Dashboard'), 'Dashboard');
 const CandidateList = named(() => import('./pages/candidates/CandidateList'), 'CandidateList');
@@ -53,10 +52,7 @@ const InterviewQuestions = named(() => import('./pages/training/InterviewQuestio
 const Interviews = named(() => import('./pages/training/Interviews'), 'Interviews');
 const InterviewPrepModule = named(() => import('./pages/training/InterviewPrepModule'), 'InterviewPrepModule');
 const WebLeadsPage = named(() => import('./pages/WebLeads'), 'WebLeadsPage');
-const ChatPage = named(() => import('./pages/chat/Chat'), 'ChatPage');
-const MeetingsPage = named(() => import('./pages/meetings/Meetings'), 'MeetingsPage');
-const EmailPage = named(() => import('./pages/spconnect/Email'), 'EmailPage');
-const CallRoom = named(() => import('./pages/spconnect/CallRoom'), 'CallRoom');
+const CommunityHome = named(() => import('./community/pages/CommunityHome'), 'CommunityHome');
 
 const EventsAdminList = named(() => import('./events/pages/EventsAdminList'), 'EventsAdminList');
 const EventEditor = named(() => import('./events/pages/EventEditor'), 'EventEditor');
@@ -71,6 +67,14 @@ const SeminarCandidates = named(() => import('./seminar/pages/SeminarCandidates'
 const SeminarRegistrationPage = named(() => import('./seminar/pages/SeminarRegistrationPage'), 'SeminarRegistrationPage');
 
 const PageLoading = () => <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Loading...</div>;
+
+/** /dashboard shows the Director Dashboard to the master user only; every other user lands on Community. */
+const DashboardOrHome: React.FC = () => {
+  const { user } = useApp();
+  if (!user) return null;
+  if (isMasterUser(user)) return <Dashboard />;
+  return <Navigate to="/community" replace />;
+};
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isInitialized } = useApp();
@@ -106,7 +110,8 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/portal/agreement/:id" element={<PortalAgreement />} />
 
-        <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+        {/* Dashboard is the master user's view; everyone else's "home" is the Community page */}
+        <Route path="/dashboard" element={<ProtectedRoute><Layout><DashboardOrHome /></Layout></ProtectedRoute>} />
 
         {/* Candidate Section */}
         <Route path="/candidates" element={<ProtectedRoute><Layout><CandidateList /></Layout></ProtectedRoute>} />
@@ -165,17 +170,12 @@ const AppRoutes = () => {
         <Route path="/events" element={<PublicEventsList />} />
         <Route path="/events/:slug" element={<PublicEventPage />} />
 
-        {/* Chat */}
-        <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
-
-        {/* Meetings */}
-        <Route path="/meetings" element={<ProtectedRoute><Layout><MeetingsPage /></Layout></ProtectedRoute>} />
-
-        {/* Email */}
-        <Route path="/email" element={<ProtectedRoute><Layout><EmailPage /></Layout></ProtectedRoute>} />
-
-        {/* Video/audio call (Jitsi) - intentionally no Layout, full-screen */}
-        <Route path="/call/:roomId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
+        {/* Community — the home page for every logged-in user: announcements, celebrations, events, daily learning */}
+        <Route path="/community" element={<ProtectedRoute><Layout><CommunityHome /></Layout></ProtectedRoute>} />
+        {/* Old SPRConnect routes — send anyone with a stale bookmark to Community */}
+        <Route path="/chat" element={<Navigate to="/community" replace />} />
+        <Route path="/meetings" element={<Navigate to="/community" replace />} />
+        <Route path="/email" element={<Navigate to="/community" replace />} />
 
         {/* Master Section */}
         <Route path="/admin/logs" element={<MasterRoute><Layout><ActivityLogs /></Layout></MasterRoute>} />
@@ -187,23 +187,11 @@ const AppRoutes = () => {
   );
 };
 
-/** Loads the call overlay only once someone is logged in — public visitors never need it. */
-const StaffOverlays: React.FC = () => {
-  const { user } = useApp();
-  if (!user) return null;
-  return (
-    <Suspense fallback={null}>
-      <IncomingCallOverlay />
-    </Suspense>
-  );
-};
-
 export default function App() {
   return (
     <AppProvider>
       <HashRouter>
         <ToastOverlay />
-        <StaffOverlays />
         <AppRoutes />
       </HashRouter>
     </AppProvider>

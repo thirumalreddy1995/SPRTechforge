@@ -218,7 +218,7 @@ export const EventsAdminList: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-900 truncate">{ev.title || 'Untitled event'}</span>
+                      <span className="font-bold text-gray-900 line-clamp-2 sm:line-clamp-none sm:truncate break-words">{ev.title || 'Untitled event'}</span>
                       <TypeBadge type={ev.type} />
                       <StatusBadge ev={ev} />
                     </div>

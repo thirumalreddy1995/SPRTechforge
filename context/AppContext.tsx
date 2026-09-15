@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, Chat, ChatMessage, ChatAttachment, Meeting, MeetingParticipant, RsvpStatus, MeetingType, CallInvitation, CallInvitationStatus, AuditEvent, AuditEventCategory, AuditEventType, AppNotification, NotificationType } from '../types';
+import {User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, AuditEvent, AuditEventCategory, AuditEventType, AppNotification, NotificationType} from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
 import { emailService, isEmailConfigured, SendEmailInput } from '../services/emailService';
@@ -101,28 +101,6 @@ interface AppContextType {
   addInterviewPrepSession: (s: InterviewPrepSession) => void;
   deleteInterviewPrepSession: (id: string) => void;
 
-  chats: Chat[];
-  chatMessages: ChatMessage[];
-  createOrGetDmChat: (otherUserId: string) => Promise<Chat>;
-  getOrCreateAnnouncementChat: () => Promise<Chat>;
-  sendChatMessage: (chatId: string, text: string, files?: File[]) => Promise<void>;
-  markChatRead: (chatId: string) => void;
-
-  meetings: Meeting[];
-  createMeeting: (input: Omit<Meeting, 'id' | 'organizerId' | 'organizerName' | 'createdAt' | 'status'>) => Promise<Meeting>;
-  updateMeeting: (m: Meeting) => Promise<void>;
-  cancelMeeting: (id: string) => Promise<void>;
-  setRsvp: (meetingId: string, status: RsvpStatus) => Promise<void>;
-
-  startCallInChat: (chatId: string) => Promise<string>;
-
-  callInvitations: CallInvitation[];
-  incomingCall: CallInvitation | null;
-  callUser: (calleeId: string, chatId?: string) => Promise<CallInvitation>;
-  acceptCall: (invitationId: string) => Promise<CallInvitation | null>;
-  declineCall: (invitationId: string) => Promise<void>;
-  endCall: (invitationId: string) => Promise<void>;
-
   isEmailConfigured: boolean;
   sendEmail: (input: SendEmailInput) => Promise<void>;
 
@@ -130,6 +108,8 @@ interface AppContextType {
   unreadNotificationCount: number;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  /** Write an in-app notification (header bell) to specific users or everyone. Used by the Community module. */
+  notifyUsers: (recipients: string[] | 'all', type: NotificationType, title: string, opts?: { body?: string; link?: string }) => void;
 
   getEntityName: (id: string, type: 'Account' | 'Candidate' | 'Staff') => string;
   getEntityBalance: (id: string, type: 'Account' | 'Candidate' | 'Staff') => number;
@@ -226,10 +206,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [webLeads, setWebLeads] = useState<WebLead[]>([]);
   const [interviewPrepSessions, setInterviewPrepSessions] = useState<InterviewPrepSession[]>([]);
 
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [callInvitations, setCallInvitations] = useState<CallInvitation[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [emailConfigured, setEmailConfigured] = useState<boolean>(isEmailConfigured());
 
@@ -437,9 +413,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setEnquiries(data.enquiries || []);
           setWebLeads(data.webLeads || []);
           setInterviewPrepSessions(data.interviewPrepSessions || []);
-          setChats(data.chats || []);
-          setChatMessages(data.chatMessages || []);
-          setMeetings(data.meetings || []);
         }
       } catch (e) { }
       setDataLoaded(true);
@@ -470,16 +443,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
     const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
     const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
-    const unsubChats = cloudService.subscribe('chats', setChats);
-    const unsubChatMessages = cloudService.subscribe('chatMessages', setChatMessages);
-    const unsubMeetings = cloudService.subscribe('meetings', setMeetings);
-    const unsubCallInv = cloudService.subscribe('callInvitations', setCallInvitations);
     const unsubNotifs = cloudService.subscribe('notifications', setNotifications);
 
     return () => {
       unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
       unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-      unsubChats(); unsubChatMessages(); unsubMeetings(); unsubCallInv(); unsubNotifs();
+      unsubNotifs();
     };
   }, [isCloudEnabled, user?.id]);
 
@@ -518,11 +487,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         users, candidates, candidateProfiles, interviews, accounts, transactions,
         trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions,
-        activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions,
-        chats, chatMessages, meetings
+        activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions
       }));
     }
-  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, chats, chatMessages, meetings, isCloudEnabled, dataLoaded]);
+  }, [users, candidates, candidateProfiles, interviews, accounts, transactions, trainingModules, trainingTopics, trainingLogs, interviewModules, interviewQuestions, activityLogs, candidateStatuses, enquiries, webLeads, interviewPrepSessions, isCloudEnabled, dataLoaded]);
 
   const login = async (u?: string, p?: string) => {
     if (!u || !p) return { success: false, message: "Missing credentials" };
@@ -891,271 +859,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const ANNOUNCEMENT_CHAT_ID = 'announcements-global';
-
-  const dmChatId = (a: string, b: string) => {
-    const [x, y] = [a, b].sort();
-    return `dm-${x}-${y}`;
-  };
-
-  const createOrGetDmChat = async (otherUserId: string): Promise<Chat> => {
-    if (!user) throw new Error('Not logged in');
-    if (otherUserId === user.id) throw new Error('Cannot DM yourself');
-    const id = dmChatId(user.id, otherUserId);
-    const existing = chats.find(c => c.id === id);
-    if (existing) return existing;
-    const chat: Chat = {
-      id,
-      type: 'dm',
-      participants: [user.id, otherUserId],
-      createdAt: new Date().toISOString(),
-      createdBy: user.id,
-    };
-    setChats(p => [...p, chat]);
-    if (isCloudEnabled) await cloudService.saveItem('chats', chat);
-    return chat;
-  };
-
-  const getOrCreateAnnouncementChat = async (): Promise<Chat> => {
-    if (!user) throw new Error('Not logged in');
-    const existing = chats.find(c => c.id === ANNOUNCEMENT_CHAT_ID);
-    if (existing) return existing;
-    const chat: Chat = {
-      id: ANNOUNCEMENT_CHAT_ID,
-      type: 'announcement',
-      name: 'Announcements',
-      participants: [],
-      createdAt: new Date().toISOString(),
-      createdBy: user.id,
-    };
-    setChats(p => [...p, chat]);
-    if (isCloudEnabled) await cloudService.saveItem('chats', chat);
-    return chat;
-  };
-
-  const sendChatMessage = async (chatId: string, text: string, files: File[] = []) => {
-    if (!user) throw new Error('Not logged in');
-    const trimmed = text.trim();
-    if (!trimmed && files.length === 0) return;
-
-    // Storage-first upload with inline base64 fallback — attachments keep
-    // working even when Firebase Storage is unavailable (see uploadService).
-    let attachments: ChatAttachment[] = [];
-    for (const f of files) {
-      const path = `chats/${chatId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${f.name}`;
-      const up = await uploadService.uploadFile(path, f);
-      attachments.push({ url: up.url, name: up.name, type: up.type, size: up.size });
-    }
-
-    const msg: ChatMessage = {
-      id: utils.generateId(),
-      chatId,
-      senderId: user.id,
-      senderName: user.name,
-      text: trimmed,
-      attachments: attachments.length > 0 ? attachments : undefined,
-      timestamp: new Date().toISOString(),
-      readBy: [user.id],
-    };
-    setChatMessages(p => [...p, msg]);
-    if (isCloudEnabled) await cloudService.saveItem('chatMessages', msg);
-
-    const chat = chats.find(c => c.id === chatId);
-    if (chat) {
-      const updated: Chat = {
-        ...chat,
-        lastMessageText: trimmed || (attachments.length > 0 ? `📎 ${attachments[0].name}` : ''),
-        lastMessageAt: msg.timestamp,
-        lastSenderId: user.id,
-      };
-      setChats(p => p.map(c => c.id === chatId ? updated : c));
-      if (isCloudEnabled) await cloudService.updateItem('chats', chatId, {
-        lastMessageText: updated.lastMessageText,
-        lastMessageAt: updated.lastMessageAt,
-        lastSenderId: updated.lastSenderId,
-      });
-
-      const preview = trimmed ? trimmed.slice(0, 90) : `📎 ${attachments[0]?.name || 'Attachment'}`;
-      if (chat.type === 'announcement') {
-        notify('all', 'announcement', `📢 ${user.name} posted an announcement`, { body: preview, link: '/chat' });
-      } else {
-        notify(chat.participants, 'chat', `New message from ${user.name}`, { body: preview, link: '/chat' });
-      }
-    }
-  };
-
-  const RING_TIMEOUT_MS = 45000;
-
-  const incomingCall: CallInvitation | null = user
-    ? (callInvitations.find(inv =>
-        inv.calleeId === user.id &&
-        inv.status === 'ringing' &&
-        Date.now() - new Date(inv.createdAt).getTime() < RING_TIMEOUT_MS
-      ) || null)
-    : null;
-
-  const callUser = async (calleeId: string, chatId?: string): Promise<CallInvitation> => {
-    if (!user) throw new Error('Not logged in');
-    if (calleeId === user.id) throw new Error('Cannot call yourself');
-    const callee = users.find(u => u.id === calleeId);
-    const roomId = `sprtechforge-call-${user.id}-${calleeId}-${Date.now().toString(36)}`;
-    const invitation: CallInvitation = {
-      id: utils.generateId(),
-      callerId: user.id,
-      callerName: user.name,
-      calleeId,
-      calleeName: callee?.name,
-      chatId,
-      roomId,
-      status: 'ringing',
-      createdAt: new Date().toISOString(),
-    };
-    setCallInvitations(p => [...p, invitation]);
-    if (isCloudEnabled) await cloudService.saveItem('callInvitations', invitation);
-    logActivity('CREATE', `Called ${callee?.name || 'a user'}`, 'CallInvitation', invitation.id);
-    return invitation;
-  };
-
-  const acceptCall = async (invitationId: string): Promise<CallInvitation | null> => {
-    const inv = callInvitations.find(i => i.id === invitationId);
-    if (!inv) return null;
-    const updated: CallInvitation = { ...inv, status: 'accepted', respondedAt: new Date().toISOString() };
-    setCallInvitations(p => p.map(x => x.id === invitationId ? updated : x));
-    if (isCloudEnabled) await cloudService.updateItem('callInvitations', invitationId, { status: 'accepted', respondedAt: updated.respondedAt });
-    return updated;
-  };
-
-  const declineCall = async (invitationId: string): Promise<void> => {
-    const inv = callInvitations.find(i => i.id === invitationId);
-    if (!inv) return;
-    setCallInvitations(p => p.map(x => x.id === invitationId ? { ...x, status: 'declined', respondedAt: new Date().toISOString() } : x));
-    if (isCloudEnabled) await cloudService.updateItem('callInvitations', invitationId, { status: 'declined', respondedAt: new Date().toISOString() });
-  };
-
   const sendEmail = async (input: SendEmailInput): Promise<void> => {
     await emailService.sendEmail(input);
     const recipients = Array.isArray(input.to) ? input.to.join(', ') : input.to;
     logActivity('CREATE', `Emailed ${recipients}: ${input.subject}`, 'Email');
-  };
-
-  const endCall = async (invitationId: string): Promise<void> => {
-    setCallInvitations(p => p.map(x => x.id === invitationId ? { ...x, status: 'ended' as CallInvitationStatus } : x));
-    if (isCloudEnabled) {
-      try { await cloudService.updateItem('callInvitations', invitationId, { status: 'ended' }); } catch (e) { console.warn(e); }
-    }
-  };
-
-  const startCallInChat = async (chatId: string): Promise<string> => {
-    if (!user) throw new Error('Not logged in');
-    const roomId = `sprtechforge-dm-${chatId}-${Date.now().toString(36)}`;
-    const msg: ChatMessage = {
-      id: utils.generateId(),
-      chatId,
-      senderId: user.id,
-      senderName: user.name,
-      text: `📹 ${user.name} started a video call`,
-      callRoomId: roomId,
-      callStartedAt: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      readBy: [user.id],
-    };
-    setChatMessages(p => [...p, msg]);
-    if (isCloudEnabled) await cloudService.saveItem('chatMessages', msg);
-
-    const chat = chats.find(c => c.id === chatId);
-    if (chat) {
-      const updated: Chat = {
-        ...chat,
-        lastMessageText: msg.text,
-        lastMessageAt: msg.timestamp,
-        lastSenderId: user.id,
-      };
-      setChats(p => p.map(c => c.id === chatId ? updated : c));
-      if (isCloudEnabled) await cloudService.updateItem('chats', chatId, {
-        lastMessageText: updated.lastMessageText,
-        lastMessageAt: updated.lastMessageAt,
-        lastSenderId: updated.lastSenderId,
-      });
-    }
-
-    return roomId;
-  };
-
-  const markChatRead = (chatId: string) => {
-    if (!user) return;
-    const toUpdate = chatMessages.filter(m => m.chatId === chatId && !m.readBy.includes(user.id));
-    if (toUpdate.length === 0) return;
-    setChatMessages(p => p.map(m => {
-      if (m.chatId !== chatId || m.readBy.includes(user.id)) return m;
-      return { ...m, readBy: [...m.readBy, user.id] };
-    }));
-    if (isCloudEnabled) {
-      toUpdate.forEach(m => {
-        cloudService.updateItem('chatMessages', m.id, { readBy: [...m.readBy, user.id] }).catch(console.error);
-      });
-    }
-  };
-
-  const createMeeting = async (input: Omit<Meeting, 'id' | 'organizerId' | 'organizerName' | 'createdAt' | 'status'>) => {
-    if (!user) throw new Error('Not logged in');
-    const meeting: Meeting = {
-      ...input,
-      id: utils.generateId(),
-      organizerId: user.id,
-      organizerName: user.name,
-      status: 'scheduled',
-      createdAt: new Date().toISOString(),
-      participants: input.participants.map(p =>
-        p.userId === user.id
-          ? { ...p, rsvp: 'accepted', respondedAt: new Date().toISOString() }
-          : p
-      ),
-    };
-    setMeetings(p => [...p, meeting]);
-    if (isCloudEnabled) await cloudService.saveItem('meetings', meeting);
-    logActivity('CREATE', `Meeting scheduled: ${meeting.title}`, 'Meeting', meeting.id);
-    notify(
-      meeting.participants.map(p => p.userId),
-      'meeting',
-      `${user.name} invited you: ${meeting.title}`,
-      { body: new Date(meeting.startTime).toLocaleString(), link: '/meetings' }
-    );
-    return meeting;
-  };
-
-  const updateMeeting = async (m: Meeting) => {
-    setMeetings(p => p.map(x => x.id === m.id ? m : x));
-    if (isCloudEnabled) await cloudService.saveItem('meetings', m);
-    logActivity('UPDATE', `Meeting updated: ${m.title}`, 'Meeting', m.id);
-  };
-
-  const cancelMeeting = async (id: string) => {
-    const target = meetings.find(m => m.id === id);
-    if (!target) return;
-    const updated: Meeting = { ...target, status: 'cancelled' };
-    setMeetings(p => p.map(x => x.id === id ? updated : x));
-    if (isCloudEnabled) await cloudService.updateItem('meetings', id, { status: 'cancelled' });
-    logActivity('UPDATE', `Meeting cancelled: ${target.title}`, 'Meeting', id);
-  };
-
-  const setRsvp = async (meetingId: string, status: RsvpStatus) => {
-    if (!user) throw new Error('Not logged in');
-    const meeting = meetings.find(m => m.id === meetingId);
-    if (!meeting) return;
-    const now = new Date().toISOString();
-    const existing = meeting.participants.find(p => p.userId === user.id);
-    let newParticipants: MeetingParticipant[];
-    if (existing) {
-      newParticipants = meeting.participants.map(p =>
-        p.userId === user.id ? { ...p, rsvp: status, respondedAt: now } : p
-      );
-    } else {
-      // User wasn't pre-invited but is replying anyway — add them
-      newParticipants = [...meeting.participants, { userId: user.id, rsvp: status, respondedAt: now }];
-    }
-    const updated: Meeting = { ...meeting, participants: newParticipants };
-    setMeetings(p => p.map(x => x.id === meetingId ? updated : x));
-    if (isCloudEnabled) await cloudService.updateItem('meetings', meetingId, { participants: newParticipants });
   };
 
   const syncLocalToCloud = async () => {
@@ -1187,12 +894,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       candidateStatuses, addCandidateStatus, passwordResetRequests, addPasswordResetRequest, resolvePasswordResetRequest,
       activityLogs, clearActivityLogs,
       interviewPrepSessions, addInterviewPrepSession, deleteInterviewPrepSession,
-      chats, chatMessages, createOrGetDmChat, getOrCreateAnnouncementChat, sendChatMessage, markChatRead,
-      meetings, createMeeting, updateMeeting, cancelMeeting, setRsvp,
-      startCallInChat,
-      callInvitations, incomingCall, callUser, acceptCall, declineCall, endCall,
       isEmailConfigured: emailConfigured, sendEmail,
-      notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead,
+      notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead, notifyUsers: notify,
       markAgreementSent, markAgreementAccepted, markAgreementRejected, getEntityName, getEntityBalance,
       exportData, exportFullExcel, importDatabase, factoryReset, isCloudEnabled, syncLocalToCloud, cloudError
     }}>
