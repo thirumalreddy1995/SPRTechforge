@@ -307,7 +307,7 @@ export const CommunityHome: React.FC = () => {
             {todayBirthdays.length > 0
               ? `🎂 ${todayBirthdays.map(b => b.name.split(' ')[0]).join(', ')} ${todayBirthdays.length === 1 ? 'has' : 'have'} a birthday today!`
               : upcomingEvents.length > 0
-                ? `📅 Next event: ${upcomingEvents[0].title} · ${relativeToNow(upcomingEvents[0].startAt)}`
+                ? `Next event: ${upcomingEvents[0].title} · ${relativeToNow(upcomingEvents[0].startAt)}`
                 : 'Here is what is happening at SPR Techforge.'}
           </p>
         </div>
@@ -391,7 +391,7 @@ export const CommunityHome: React.FC = () => {
             {canPost && <button onClick={() => openComposer('learning')} className="mt-3 text-xs font-bold text-blue-600 underline">Share your own tip →</button>}
           </Card>
 
-          <Card title="📅 Upcoming events" action={canPost && (user.role === 'admin' || user.modules.includes('users')) ? <Link to="/events/manage" className="text-xs font-bold text-blue-600">Manage</Link> : undefined}>
+          <Card title="Upcoming events" action={canPost && (user.role === 'admin' || user.modules.includes('users')) ? <Link to="/events/manage" className="text-xs font-bold text-blue-600">Manage</Link> : undefined}>
             {eventsState === 'loading' ? (
               <div className="space-y-2">{[0, 1].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}</div>
             ) : eventsState === 'error' ? (

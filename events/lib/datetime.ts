@@ -9,12 +9,18 @@ const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
 export const isValidIso = (iso: string): boolean => !!iso && !isNaN(new Date(iso).getTime());
 
-/** "Sat, 15 Aug 2026" */
+/**
+ * "Sat, 15 Aug 2026". Assembled from parts rather than toLocaleDateString so
+ * every browser prints the same shape (Chrome's en-IN added a comma after the
+ * month — "12 Sept, 2026" — which made the separators look inconsistent).
+ */
 export const formatISTDate = (iso: string): string => {
   if (!isValidIso(iso)) return '';
-  return new Date(iso).toLocaleDateString('en-IN', {
+  const parts = new Intl.DateTimeFormat('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: IST_TZ,
-  });
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+  return `${get('weekday')}, ${get('day')} ${get('month')} ${get('year')}`;
 };
 
 /** "11:00 AM" */

@@ -51,7 +51,7 @@ export const UpcomingEventsWidget: React.FC = () => {
                   {lifecycleOf(ev) === 'live' && <LiveBadge />}
                 </div>
                 <h3 className="font-black text-gray-900 leading-snug mb-1 line-clamp-2">{ev.title}</h3>
-                <p className="text-xs font-bold text-gray-600">📅 {formatISTRange(ev.startAt, ev.endAt)}</p>
+                <p className="text-xs font-bold text-gray-600">{formatISTRange(ev.startAt, ev.endAt)}</p>
                 {registrationWindow(ev).open && (
                   <p className="mt-2 text-sm font-black text-blue-600">Register free →</p>
                 )}
