@@ -129,7 +129,7 @@ export const PhotoCarousel: React.FC<Props> = ({ images, canManage, uploading, o
                       label={`Caption (photo ${i + 1})`}
                       value={captions[img.id] ?? img.caption}
                       onChange={e => setCaptions(c => ({ ...c, [img.id]: e.target.value }))}
-                      onBlur={() => { const v = (captions[img.id] ?? img.caption).trim(); if (v !== img.caption) onCaption(img.id, v); }}
+                      onBlur={e => { const v = e.currentTarget.value.trim(); if (v !== img.caption) onCaption(img.id, v); }}
                       placeholder="e.g. Batch 12 — Selenium demo day"
                       maxLength={120}
                     />
