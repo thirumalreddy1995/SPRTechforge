@@ -4,10 +4,12 @@ import { useApp } from '../context/AppContext';
 import { AppNotification, NotificationType } from '../types';
 
 const typeIcon: Record<NotificationType, string> = {
-  chat: '💬',
   announcement: '📢',
-  meeting: '📅',
-  email: '✉️',
+  birthday: '🎂',
+  celebration: '🎉',
+  achievement: '🏆',
+  learning: '💡',
+  event: '📅',
   system: '⚙️',
 };
 

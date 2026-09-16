@@ -338,40 +338,6 @@ export interface InterviewPrepSession {
   speedRate?: number;    // TTS rate used
 }
 
-export interface ChatAttachment {
-  url: string;
-  name: string;
-  type: string;
-  size: number;
-}
-
-export type ChatType = 'dm' | 'announcement';
-
-export interface Chat {
-  id: string;
-  type: ChatType;
-  name?: string;
-  participants: string[];
-  createdAt: string;
-  createdBy: string;
-  lastMessageText?: string;
-  lastMessageAt?: string;
-  lastSenderId?: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  chatId: string;
-  senderId: string;
-  senderName: string;
-  text: string;
-  attachments?: ChatAttachment[];
-  callRoomId?: string;
-  callStartedAt?: string;
-  timestamp: string;
-  readBy: string[];
-}
-
 export interface EmailAttachment {
   url: string;
   name: string;
@@ -399,12 +365,12 @@ export interface EmailMessage {
   sentByUserName?: string;
 }
 
-export type NotificationType = 'chat' | 'announcement' | 'meeting' | 'email' | 'system';
+export type NotificationType = 'announcement' | 'birthday' | 'celebration' | 'achievement' | 'learning' | 'event' | 'system';
 
 // In-app notification event. Written to the `notifications` collection by the
-// action that triggers it (chat send, meeting create, ...), delivered to every
-// client through the existing real-time Firestore subscription, surfaced in
-// the header bell (components/NotificationBell.tsx).
+// action that triggers it (a Community post, an event announcement, ...),
+// delivered to every client through the existing real-time Firestore
+// subscription, surfaced in the header bell (components/NotificationBell.tsx).
 export interface AppNotification {
   id: string;
   /** Target user id, or 'all' for a broadcast visible to everyone. */
@@ -418,47 +384,6 @@ export interface AppNotification {
   actorId?: string;
   createdAt: string; // ISO
   readBy: string[];
-}
-
-export type CallInvitationStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed';
-
-export interface CallInvitation {
-  id: string;
-  callerId: string;
-  callerName: string;
-  calleeId: string;
-  calleeName?: string;
-  chatId?: string;
-  roomId: string;
-  status: CallInvitationStatus;
-  createdAt: string;
-  respondedAt?: string;
-}
-
-export type MeetingType = 'meeting' | 'class' | 'other';
-export type MeetingStatus = 'scheduled' | 'cancelled' | 'completed';
-export type RsvpStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
-
-export interface MeetingParticipant {
-  userId: string;
-  rsvp: RsvpStatus;
-  respondedAt?: string;
-}
-
-export interface Meeting {
-  id: string;
-  title: string;
-  description?: string;
-  meetingType: MeetingType;
-  organizerId: string;
-  organizerName: string;
-  participants: MeetingParticipant[];
-  startTime: string; // ISO
-  endTime: string;   // ISO
-  location?: string;
-  linkedChatId?: string;
-  status: MeetingStatus;
-  createdAt: string;
 }
 
 export interface AppState {

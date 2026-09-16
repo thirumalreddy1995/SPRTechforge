@@ -23,6 +23,7 @@ import {
   onSnapshot,
   runTransaction,
   writeBatch,
+  increment,
 } from 'firebase/firestore';
 import {
   EventCounters,
@@ -30,7 +31,7 @@ import {
   EventRegistration,
   SprEvent,
 } from '../types';
-import { formatRegistrationCode } from '../lib/slug';
+import { formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
 import { registrationWindow } from '../lib/validate';
 
 export const EVENT_COLLECTIONS = {
@@ -41,6 +42,34 @@ export const EVENT_COLLECTIONS = {
 
 const db = () => getFirestore(getApp());
 const stripUndefined = (data: any) => JSON.parse(JSON.stringify(data));
+
+const isContentionError = (e: any): boolean => {
+  const code = String(e?.code || '');
+  const msg = String(e?.message || e || '');
+  return code === 'failed-precondition' || code === 'aborted' || code === 'unavailable' || code === 'resource-exhausted'
+    || /contention|does not match the required base version|too much contention|aborted/i.test(msg);
+};
+
+/**
+ * Re-runs a Firestore transaction that failed because other writers hit the
+ * same document at the same moment. Backs off exponentially with jitter
+ * (0.3 s, 0.6 s, 1.2 s, … capped at 4 s) so colliding clients spread out.
+ * Non-contention errors are rethrown immediately.
+ */
+export const withContentionRetry = async <T>(run: () => Promise<T>, rounds = 7): Promise<T> => {
+  let lastErr: any;
+  for (let i = 0; i < rounds; i++) {
+    try {
+      return await run();
+    } catch (e) {
+      if (!isContentionError(e)) throw e;
+      lastErr = e;
+      const wait = Math.min(4000, 300 * 2 ** i) * (0.5 + Math.random());
+      await new Promise(res => setTimeout(res, wait));
+    }
+  }
+  throw lastErr;
+};
 
 export const emptyCounters = (): EventCounters => ({ confirmed: 0, waitlisted: 0 });
 
@@ -162,17 +191,32 @@ export type RegisterOutcome =
   | { ok: false; reason: 'full' | 'closed' | 'not_found' };
 
 /**
- * Atomically: re-check publish status + window + capacity, claim the next
- * registration-code sequence, bump the right counter, and write the
- * registration. Two simultaneous registrations for the last seat cannot both
- * succeed — the second retries on the updated snapshot and lands on the
- * waitlist (or is refused).
+ * Registers one person. Mirror of eventsPublicDb.registerForEvent (the public
+ * page uses that lite/REST version; this one serves admin-side callers):
+ * unlimited-seat events write the registration + blind counter increments in
+ * a batch (no shared-document contention); limited-seat events keep the
+ * atomic transaction so the last seat can never be sold twice.
  */
 export const registerForEvent = async (
   eventId: string,
   draft: Omit<EventRegistration, 'registrationCode' | 'status'>,
 ): Promise<RegisterOutcome> => {
-  return runTransaction(db(), async tx => {
+  const evRef0 = doc(db(), EVENT_COLLECTIONS.events, eventId);
+  const first = await getDoc(evRef0);
+  if (!first.exists()) return { ok: false, reason: 'not_found' };
+  const ev0 = { ...(first.data() as any), id: eventId } as SprEvent;
+  if (!registrationWindow(ev0).open) return { ok: false, reason: 'closed' };
+
+  if (!ev0.capacity || ev0.capacity <= 0) {
+    const registration: EventRegistration = { ...draft, registrationCode: randomRegistrationCode(ev0.type), status: 'confirmed' };
+    const batch = writeBatch(db());
+    batch.set(doc(db(), EVENT_COLLECTIONS.registrations, registration.id), stripUndefined(registration));
+    batch.update(evRef0, { 'counters.confirmed': increment(1), registrationSeq: increment(1) });
+    await withContentionRetry(() => batch.commit(), 4);
+    return { ok: true, registration };
+  }
+
+  return withContentionRetry(() => runTransaction(db(), async tx => {
     const evRef = doc(db(), EVENT_COLLECTIONS.events, eventId);
     const snap = await tx.get(evRef);
     if (!snap.exists()) return { ok: false as const, reason: 'not_found' as const };
@@ -197,7 +241,7 @@ export const registerForEvent = async (
     tx.update(evRef, { registrationSeq: seq, counters });
     tx.set(doc(db(), EVENT_COLLECTIONS.registrations, registration.id), stripUndefined(registration));
     return { ok: true as const, registration };
-  });
+  }));
 };
 
 // --- Registration admin updates ---
@@ -219,7 +263,7 @@ export const changeRegistrationStatus = async (
   newStatus: EventRegistration['status'],
 ): Promise<void> => {
   if (reg.status === newStatus) return;
-  await runTransaction(db(), async tx => {
+  await withContentionRetry(() => runTransaction(db(), async tx => {
     const evRef = doc(db(), EVENT_COLLECTIONS.events, reg.eventId);
     const snap = await tx.get(evRef);
     if (snap.exists()) {
@@ -232,5 +276,5 @@ export const changeRegistrationStatus = async (
       status: newStatus,
       attendedAt: newStatus === 'attended' ? new Date().toISOString() : reg.attendedAt,
     }));
-  });
+  }));
 };

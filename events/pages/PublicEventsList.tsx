@@ -5,10 +5,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Components';
 import { SprEvent } from '../types';
-import { fetchPublicEvents } from '../services/eventsDb';
+import { fetchPublicEvents } from '../services/eventsPublicDb';
 import { formatISTRange } from '../lib/datetime';
 import { lifecycleOf, registrationWindow, seatsRemaining } from '../lib/validate';
-import { LiveBadge, TypeBadge } from '../components/shared';
+import { LiveBadge, TypeBadge, DetailRow, IconCalendar, IconVideo, IconPin, PublicFooter } from '../components/shared';
 
 type LoadState = 'loading' | 'ready' | 'offline';
 
@@ -30,10 +30,14 @@ const EventCard: React.FC<{ ev: SprEvent; live?: boolean }> = ({ ev, live }) => 
         </div>
         <h3 className="font-black text-gray-900 text-lg leading-snug mb-1">{ev.title}</h3>
         <p className="text-sm text-gray-500 mb-3 line-clamp-2">{ev.shortDescription}</p>
-        <p className="text-sm font-bold text-gray-800">📅 {formatISTRange(ev.startAt, ev.endAt)}</p>
-        <p className="text-sm text-gray-600 mt-0.5">
-          {ev.mode === 'online' ? `💻 Online${ev.platform ? ` · ${ev.platform}` : ''}` : ev.mode === 'offline' ? `📍 ${ev.venueName}` : `📍 ${ev.venueName} + 💻 Online`}
-        </p>
+        <div className="text-sm space-y-1">
+          <DetailRow icon={<IconCalendar />} strong>{formatISTRange(ev.startAt, ev.endAt)}</DetailRow>
+          {ev.mode === 'online'
+            ? <DetailRow icon={<IconVideo />}>Online{ev.platform ? ` on ${ev.platform}` : ''}</DetailRow>
+            : ev.mode === 'offline'
+              ? <DetailRow icon={<IconPin />}>{ev.venueName}</DetailRow>
+              : <DetailRow icon={<IconPin />}>{ev.venueName} and online</DetailRow>}
+        </div>
         {window_.open && (
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-xs font-bold text-orange-600">
@@ -158,9 +162,7 @@ export const PublicEventsList: React.FC = () => {
         )}
       </main>
 
-      <footer className="text-center text-xs text-gray-400 pb-8">
-        SPR Techforge · Software Testing Training &amp; Careers
-      </footer>
+      <div className="max-w-4xl mx-auto px-4 pb-4"><PublicFooter /></div>
     </div>
   );
 };

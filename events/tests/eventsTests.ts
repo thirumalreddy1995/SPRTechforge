@@ -2,8 +2,8 @@
 // in-app test-runner convention (no Node test runner in this project).
 // Run from Events → "Run module tests".
 
-import { slugify, uniqueSlug, formatRegistrationCode } from '../lib/slug';
-import { istInputToUtcIso, utcIsoToIstInput, formatISTTime, relativeToNow, istCalendarDayDiff } from '../lib/datetime';
+import { slugify, uniqueSlug, formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
+import { istInputToUtcIso, utcIsoToIstInput, formatISTTime, formatISTDate, formatISTRange, relativeToNow, istCalendarDayDiff } from '../lib/datetime';
 import {
   validateForPublish, validateRegistration, lifecycleOf, registrationWindow, seatsRemaining,
   normalizeEmail, normalizePhone, isValidMobile, validMobileOrEmpty, QUALIFICATION_OPTIONS,
@@ -72,12 +72,29 @@ const TESTS: { name: string; fn: () => void }[] = [
     },
   },
   {
+    name: 'Registration code (unlimited events): format, time-ordering, no ambiguous chars, unique in a burst',
+    fn: () => {
+      const c = randomRegistrationCode('webinar');
+      assert(/^SPR-WEB-[A-HJ-NP-Z2-9]{7}$/.test(c), `unexpected format ${c}`);
+      assert(!/[0O1I]/.test(c.slice(8)), 'codes must avoid 0/O/1/I');
+      const early = randomRegistrationCode('seminar', Date.UTC(2026, 8, 1)).slice(8, 12);
+      const later = randomRegistrationCode('seminar', Date.UTC(2026, 8, 2)).slice(8, 12);
+      assert(early < later, `time prefix should sort by registration time (${early} vs ${later})`);
+      const seen = new Set();
+      for (let i = 0; i < 2000; i++) seen.add(randomRegistrationCode('webinar', Date.now() + i * 1600));
+      assert(seen.size === 2000, `expected 2000 distinct codes across distinct time slots, got ${seen.size}`);
+    },
+  },
+  {
     name: 'Timezone: IST input ↔ UTC ISO round-trip',
     fn: () => {
       const utc = istInputToUtcIso('2026-08-15T11:00');
       assert(utc === '2026-08-15T05:30:00.000Z', `IST 11:00 should be 05:30 UTC, got ${utc}`);
       assert(utcIsoToIstInput(utc) === '2026-08-15T11:00', `round-trip failed: ${utcIsoToIstInput(utc)}`);
       assert(formatISTTime(utc).toLowerCase().includes('11'), `IST display should show 11 AM, got ${formatISTTime(utc)}`);
+      assert(formatISTDate(utc) === 'Sat, 15 Aug 2026', `date shape must be 'Sat, 15 Aug 2026' on every browser, got '${formatISTDate(utc)}'`);
+      const range = formatISTRange(utc, istInputToUtcIso('2026-08-15T13:00'));
+      assert(range.startsWith('Sat, 15 Aug 2026 · ') && range.endsWith(' IST') && !/,s*2026/.test(range.replace('Sat,', '')), `range separators inconsistent: ${range}`);
     },
   },
   {

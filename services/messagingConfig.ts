@@ -15,6 +15,8 @@
 // security regression. Real secrecy requires a server-side proxy — out of
 // scope for a static-hosted app.
 
+import { getApp } from 'firebase/app';
+import { getFirestore as getLiteFirestore, doc as liteDoc, getDoc as liteGetDoc } from 'firebase/firestore/lite';
 import { cloudService } from './cloud';
 
 export interface EmailBridgeConfig {
@@ -102,7 +104,10 @@ export const loadRemoteMessagingConfig = async (): Promise<void> => {
   if (remoteLoadStarted || !cloudService.isConfigured()) return;
   remoteLoadStarted = true;
   try {
-    const doc = await cloudService.getItem(CLOUD_COLLECTION, CLOUD_DOC_ID);
+    // One plain HTTPS read via the lite SDK. Using the realtime SDK here made
+    // every PUBLIC visitor open a WebChannel just to learn the email settings.
+    const snap = await liteGetDoc(liteDoc(getLiteFirestore(getApp()), CLOUD_COLLECTION, CLOUD_DOC_ID));
+    const doc = snap.exists() ? snap.data() : null;
     if (isComplete(doc)) {
       remoteConfig = cleanConfig(doc);
       notifyListeners();
