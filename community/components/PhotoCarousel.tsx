@@ -130,6 +130,7 @@ export const PhotoCarousel: React.FC<Props> = ({ images, canManage, uploading, o
                       value={captions[img.id] ?? img.caption}
                       onChange={e => setCaptions(c => ({ ...c, [img.id]: e.target.value }))}
                       onBlur={e => { const v = e.currentTarget.value.trim(); if (v !== img.caption) onCaption(img.id, v); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { const v = e.currentTarget.value.trim(); if (v !== img.caption) onCaption(img.id, v); e.currentTarget.blur(); } }}
                       placeholder="e.g. Batch 12 — Selenium demo day"
                       maxLength={120}
                     />
@@ -144,7 +145,15 @@ export const PhotoCarousel: React.FC<Props> = ({ images, canManage, uploading, o
             </div>
           )}
           <div className="flex justify-end border-t border-gray-100 pt-3">
-            <Button variant="secondary" onClick={() => setManageOpen(false)}>Done</Button>
+            <Button variant="secondary" onClick={async () => {
+              // Flush any caption edited but not yet saved (e.g. typed, then Done clicked straight away).
+              for (const img of images) {
+                const v = captions[img.id];
+                if (v !== undefined && v.trim() !== img.caption) await onCaption(img.id, v.trim());
+              }
+              setCaptions({});
+              setManageOpen(false);
+            }}>Done</Button>
           </div>
         </div>
       </Modal>
