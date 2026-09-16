@@ -14,13 +14,15 @@ export const isValidIso = (iso: string): boolean => !!iso && !isNaN(new Date(iso
  * every browser prints the same shape (Chrome's en-IN added a comma after the
  * month — "12 Sept, 2026" — which made the separators look inconsistent).
  */
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export const formatISTDate = (iso: string): string => {
   if (!isValidIso(iso)) return '';
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: IST_TZ,
-  }).formatToParts(new Date(iso));
-  const get = (t: string) => parts.find(p => p.type === t)?.value || '';
-  return `${get('weekday')}, ${get('day')} ${get('month')} ${get('year')}`;
+  // Shift to IST wall time, then read the fields — fixed 3-letter names so
+  // browsers cannot substitute "Sept" or add commas.
+  const shifted = new Date(new Date(iso).getTime() + IST_OFFSET_MS);
+  return `${WEEKDAYS_SHORT[shifted.getUTCDay()]}, ${shifted.getUTCDate()} ${MONTHS_SHORT[shifted.getUTCMonth()]} ${shifted.getUTCFullYear()}`;
 };
 
 /** "11:00 AM" */
