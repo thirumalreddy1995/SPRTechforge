@@ -10,6 +10,7 @@ export default {
     "./events/**/*.{ts,tsx}",
     "./seminar/**/*.{ts,tsx}",
     "./community/**/*.{ts,tsx}",
+    "./site/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {

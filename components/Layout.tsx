@@ -344,6 +344,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 )}
                 {isMaster && <NavItem to="/admin/logs" label="System Logs" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
                 {isMaster && <NavItem to="/admin/cloud" label="Cloud Setup" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
+                {(user.role === 'admin' || user.modules.includes('users')) && <NavItem to="/admin/website" label="Website Content" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
                 {isMaster && <NavItem to="/admin/communication" label="Communication Settings" onClick={closeMobile} isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />}
               </CollapsibleGroup>
             </>
