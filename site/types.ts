@@ -76,8 +76,8 @@ export const defaultSettings = (): SiteSettings => ({
   youtubeUrl: 'https://youtube.com/@sprtechforge',
   instagramUrl: 'https://www.instagram.com/sprtechforgepvt',
   whatsappNumber: '918297276500',
-  addressLine1: 'Sri Godha Nilayam, Kukatpally',
-  addressLine2: 'Hyderabad, Telangana 500085',
+  addressLine1: '202, Above Union Bank, Near Forum Sujana Mall',
+  addressLine2: 'KPHB 6th Phase, Kukatpally, Hyderabad 500085',
   mapUrl: '',
 });
 
