@@ -193,7 +193,7 @@ SPR Techforge Pvt Ltd`;
         </div>
 
         <div className="mt-12 text-center text-xs text-gray-400 print:fixed print:bottom-4 print:w-full">
-           <p>SPR Techforge Pvt Ltd | Sri Godha Nilayam, 9th Phase Rd, KPHB phase 6, Kukatpally, Hyderabad | contact@sprtechforge.com</p>
+           <p>SPR TechForge Pvt Ltd | 202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085 | admin@sprtechforge.com</p>
         </div>
       </div>
     </div>
