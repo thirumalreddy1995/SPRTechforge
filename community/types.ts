@@ -48,3 +48,15 @@ export const REACTIONS: { key: ReactionKey; emoji: string; label: string }[] = [
 ];
 
 export const emptyReactions = (): Record<ReactionKey, string[]> => ({ party: [], clap: [], heart: [], bulb: [] });
+
+/** One slide of the photo carousel on the home page (`community_gallery`). */
+export interface GalleryImage {
+  id: string;
+  imageUrl: string;      // hosted URL or inline data: URL
+  caption: string;
+  /** Lower first. New photos get max+1. */
+  order: number;
+  createdAt: string;
+  createdBy: string;
+  createdByName: string;
+}
