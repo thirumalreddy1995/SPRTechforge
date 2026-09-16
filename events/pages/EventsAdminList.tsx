@@ -209,7 +209,7 @@ export const EventsAdminList: React.FC = () => {
                   tabIndex={0}
                   onClick={() => navigate(ev.status === 'draft' ? `/events/manage/edit/${ev.id}` : `/events/manage/view/${ev.id}`)}
                   onKeyDown={e => { if (e.key === 'Enter') navigate(ev.status === 'draft' ? `/events/manage/edit/${ev.id}` : `/events/manage/view/${ev.id}`); }}
-                  className="w-full text-left p-4 hover:bg-blue-50/40 transition-colors flex items-center gap-4 cursor-pointer"
+                  className="w-full text-left p-4 hover:bg-blue-50/40 transition-colors flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 cursor-pointer"
                 >
                   <div className="w-20 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 hidden sm:block">
                     {ev.bannerUrl
@@ -227,15 +227,18 @@ export const EventsAdminList: React.FC = () => {
                       {' · '}{ev.mode === 'online' ? 'Online' : ev.mode === 'offline' ? 'In person' : 'Hybrid'}
                     </p>
                   </div>
-                  <div className="text-center shrink-0 px-2">
-                    <p className="text-2xl font-black text-blue-700">{regs}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">Registered{ev.capacity > 0 ? ` / ${ev.capacity}` : ''}</p>
-                  </div>
-                  <div className="shrink-0 flex flex-col gap-1.5 items-stretch" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => handleDuplicate(ev)} className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">Duplicate</button>
-                    {isMaster && (
-                      <button onClick={() => handleDelete(ev)} title="Delete permanently (master only)" className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50">Delete</button>
-                    )}
+                  {/* On phones the count and actions sit on their own line under the title; `sm:contents` dissolves the wrapper on wider screens. */}
+                  <div className="flex items-center justify-between gap-3 sm:contents">
+                    <div className="text-center shrink-0 px-2 flex sm:block items-baseline gap-2">
+                      <p className="text-2xl font-black text-blue-700">{regs}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Registered{ev.capacity > 0 ? ` / ${ev.capacity}` : ''}</p>
+                    </div>
+                    <div className="shrink-0 flex sm:flex-col gap-1.5 items-stretch" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => handleDuplicate(ev)} className="text-xs font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">Duplicate</button>
+                      {isMaster && (
+                        <button onClick={() => handleDelete(ev)} title="Delete permanently (master only)" className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
