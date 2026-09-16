@@ -566,7 +566,7 @@ export const PublicEventPage: React.FC = () => {
           disabled={submitting}
           className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-lg font-black shadow-lg shadow-blue-200 transition-colors disabled:opacity-60"
         >
-          {submitting ? 'Reserving your seat…' : seats === 0 && ev.waitlistEnabled ? 'Join the Waitlist — Free' : 'Register Free →'}
+          {submitting ? 'Submitting…' : seats === 0 && ev.waitlistEnabled ? 'Join the Waitlist' : 'Submit'}
         </button>
         <p className="text-center text-xs text-gray-400">Your joining link and registration code are emailed to you</p>
       </div>
