@@ -13,8 +13,8 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Logo } from '../../components/Components';
 import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
-import { fetchEventBySlug, findExistingRegistration, registerForEvent, fetchPrivateDetails } from '../services/eventsPublicDb';
-import { formatISTRange } from '../lib/datetime';
+import { fetchEventBySlug, findExistingRegistration, registerForEvent, fetchPrivateDetails, updateRegistrationContact } from '../services/eventsPublicDb';
+import { formatISTRange, formatISTDate, formatISTTime } from '../lib/datetime';
 import {
   lifecycleOf, registrationWindow, seatsRemaining,
   validateRegistration, RegistrationFormInput, normalizeEmail, validMobileOrEmpty, QUALIFICATION_OPTIONS,
@@ -22,7 +22,7 @@ import {
 import { youtubeEmbedUrl } from '../lib/video';
 import { COUNTRIES, DEFAULT_DIAL } from '../lib/countries';
 import { icsDataUri, googleCalendarUrl } from '../lib/ics';
-import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText } from '../components/shared';
+import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText, IconCalendar, IconClock, IconVideo, IconPin, IconMic, DetailRow, PublicFooter } from '../components/shared';
 import { confirmationEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
 
 const MIN_FILL_TIME_MS = 3000; // bots submit instantly; humans don't
@@ -98,7 +98,15 @@ export const PublicEventPage: React.FC = () => {
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [done, setDone] = useState<EventRegistration | null>(null);
   const [alreadyRegistered, setAlreadyRegistered] = useState<EventRegistration | null>(null);
+  /** What the person typed when the duplicate check matched an earlier registration — offered as a correction. */
+  const [pendingContact, setPendingContact] = useState<{ email: string; mobile: string } | null>(null);
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactNote, setContactNote] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const heroCtaRef = useRef<HTMLDivElement>(null);
+  // The phone-only sticky bar hides while the hero button or the form itself is on screen (no doubled CTA).
+  const [heroCtaVisible, setHeroCtaVisible] = useState(true);
+  const [formVisible, setFormVisible] = useState(false);
 
   const utm = useMemo(() => {
     const p = new URLSearchParams(location.search);
@@ -120,6 +128,19 @@ export const PublicEventPage: React.FC = () => {
       .catch(() => { if (!cancelled) setState('offline'); });
     return () => { cancelled = true; document.title = 'SPR Techforge Management'; };
   }, [slug]);
+
+  useEffect(() => {
+    if (state !== 'ready' || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (e.target === heroCtaRef.current) setHeroCtaVisible(e.isIntersecting);
+        if (e.target === formRef.current) setFormVisible(e.isIntersecting);
+      }
+    }, { threshold: 0.05 });
+    if (heroCtaRef.current) obs.observe(heroCtaRef.current);
+    if (formRef.current) obs.observe(formRef.current);
+    return () => obs.disconnect();
+  }, [state, done, alreadyRegistered]);
 
   // Keep the qualification dropdown + "Other" text in sync with the form value.
   useEffect(() => {
@@ -213,6 +234,8 @@ export const PublicEventPage: React.FC = () => {
       const existing = await findExistingRegistration(ev.id, email, mobile);
       if (existing && existing.status !== 'cancelled') {
         setAlreadyRegistered(existing);
+        setPendingContact({ email, mobile });
+        setContactNote(null);
         if (existing.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid')) {
           fetchPrivateDetails(ev.id).then(setPriv).catch(() => {});
         }
@@ -286,6 +309,43 @@ export const PublicEventPage: React.FC = () => {
     }
   };
 
+  // ---------------- contact correction / resend (already-registered card) ----------------
+
+  const sendConfirmationTo = async (reg: EventRegistration) => {
+    if (!isEventMailerConfigured()) { setContactNote('Email sending is not set up right now — please contact us and we will send your details.'); return false; }
+    let privDetails: EventPrivateDetails | null = priv;
+    if (!privDetails && reg.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid')) {
+      try { privDetails = await fetchPrivateDetails(ev.id); setPriv(privDetails); } catch { /* still send without the link */ }
+    }
+    await sendEventEmail(ev, reg.email, `${reg.status === 'waitlisted' ? 'Waitlisted' : 'Registered'}: ${ev.title}`, confirmationEmailHtml(ev, reg, privDetails));
+    return true;
+  };
+
+  const resendConfirmation = async (reg: EventRegistration) => {
+    setContactBusy(true); setContactNote(null);
+    try {
+      if (await sendConfirmationTo(reg)) setContactNote(`Confirmation email sent again to ${reg.email}.`);
+    } catch (e) { console.warn(e); setContactNote('Could not send the email right now — please try again in a minute.'); }
+    finally { setContactBusy(false); }
+  };
+
+  const correctContact = async (reg: EventRegistration, patch: { email?: string; mobile?: string }) => {
+    setContactBusy(true); setContactNote(null);
+    try {
+      await updateRegistrationContact(reg.id, patch);
+      const updated = { ...reg, ...patch };
+      setAlreadyRegistered(updated);
+      setPendingContact(null);
+      if (patch.email) {
+        const sent = await sendConfirmationTo(updated);
+        setContactNote(sent ? `Email updated. Your confirmation and joining details have been sent to ${updated.email}.` : `Email updated to ${updated.email}.`);
+      } else {
+        setContactNote(`Mobile number updated to ${updated.mobile}.`);
+      }
+    } catch (e) { console.warn(e); setContactNote('Could not update your details right now — please try again or contact us.'); }
+    finally { setContactBusy(false); }
+  };
+
   // ---------------- sub-views ----------------
 
   const successView = (reg: EventRegistration, isExisting: boolean) => (
@@ -306,7 +366,34 @@ export const PublicEventPage: React.FC = () => {
           {emailSent === false && <span className="text-gray-500">Save this page or take a screenshot — it has everything you need to join.</span>}
         </p>
       )}
-      {isExisting && <p className="text-sm text-gray-500 mb-5">Here are your details again — nothing else to do.</p>}
+      {isExisting && (
+        <div className="text-left bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 text-sm">
+          <p className="text-gray-700">You registered earlier with <strong className="break-all">{reg.email}</strong> and <strong>{reg.mobile}</strong>. Your details are shown below.</p>
+          {pendingContact && pendingContact.email && pendingContact.email !== reg.email && (
+            <div className="mt-3 bg-white border border-amber-200 rounded-lg p-3">
+              <p className="text-gray-800">Typed a different email this time: <strong className="break-all">{pendingContact.email}</strong></p>
+              <p className="text-xs text-gray-500 mt-0.5">If the earlier one was a mistake, switch to this one and we will resend your confirmation and joining link there.</p>
+              <button onClick={() => correctContact(reg, { email: pendingContact.email })} disabled={contactBusy} className="mt-2 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold disabled:opacity-60">
+                {contactBusy ? 'Updating…' : `Use ${pendingContact.email} and resend confirmation`}
+              </button>
+            </div>
+          )}
+          {pendingContact && pendingContact.mobile && pendingContact.mobile !== reg.mobile && (
+            <div className="mt-3 bg-white border border-amber-200 rounded-lg p-3">
+              <p className="text-gray-800">Typed a different mobile this time: <strong>{pendingContact.mobile}</strong></p>
+              <button onClick={() => correctContact(reg, { mobile: pendingContact.mobile })} disabled={contactBusy} className="mt-2 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold disabled:opacity-60">
+                {contactBusy ? 'Updating…' : `Use ${pendingContact.mobile} instead`}
+              </button>
+            </div>
+          )}
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <button onClick={() => resendConfirmation(reg)} disabled={contactBusy} className="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold disabled:opacity-60">
+              {contactBusy ? 'Sending…' : `Resend confirmation to ${reg.email}`}
+            </button>
+          </div>
+          {contactNote && <p className="mt-3 text-xs font-semibold text-emerald-700">{contactNote}</p>}
+        </div>
+      )}
 
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 inline-block">
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Your registration code</p>
@@ -552,7 +639,12 @@ export const PublicEventPage: React.FC = () => {
         {/* ---------- HERO: full banner on top (never cropped), facts + button beneath ---------- */}
         <section className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
           {ev.bannerUrl
-            ? <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />
+            ? (canRegister
+              // Banners often carry a painted "Register" button; make the whole image act as one.
+              ? <button type="button" onClick={scrollToForm} aria-label="Go to the registration form" className="block w-full cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300">
+                  <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />
+                </button>
+              : <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />)
             : <div className="w-full h-40 sm:h-56 bg-gradient-to-br from-blue-900 to-slate-900" />}
           <div className="p-5 sm:p-8 lg:flex lg:items-start lg:gap-10">
             <div className="min-w-0 flex-1">
@@ -565,22 +657,30 @@ export const PublicEventPage: React.FC = () => {
               <p className="text-gray-600 mb-5">{ev.shortDescription}</p>
 
               <div className="space-y-2 text-sm border-t border-gray-100 pt-4">
-                <p className="font-bold text-gray-900">📅 {formatISTRange(ev.startAt, ev.endAt)}</p>
-                {(ev.mode === 'online' || ev.mode === 'hybrid') && <p className="text-gray-700">💻 Online{ev.platform ? ` · ${ev.platform}` : ''} — join link is emailed after you register</p>}
+                <DetailRow icon={<IconCalendar />} strong>{formatISTDate(ev.startAt)}</DetailRow>
+                <DetailRow icon={<IconClock />} strong>
+                  {formatISTTime(ev.startAt)}{ev.endAt && formatISTDate(ev.endAt) === formatISTDate(ev.startAt) ? ` – ${formatISTTime(ev.endAt)}` : ''} IST
+                </DetailRow>
+                {(ev.mode === 'online' || ev.mode === 'hybrid') && (
+                  <DetailRow icon={<IconVideo />}>
+                    Online{ev.platform ? ` on ${ev.platform}` : ''}
+                    <span className="block text-xs text-gray-500">Join link is emailed after you register</span>
+                  </DetailRow>
+                )}
                 {(ev.mode === 'offline' || ev.mode === 'hybrid') && (
-                  <p className="text-gray-700">
-                    📍 {ev.venueName}{ev.venueAddress ? `, ${ev.venueAddress}` : ''}
-                    {ev.venueMapUrl && <> · <a className="text-blue-600 underline font-bold" href={ev.venueMapUrl} target="_blank" rel="noopener noreferrer">Map</a></>}
-                  </p>
+                  <DetailRow icon={<IconPin />}>
+                    {ev.venueName}{ev.venueAddress ? `, ${ev.venueAddress}` : ''}
+                    {ev.venueMapUrl && <> <a className="text-blue-600 underline font-bold" href={ev.venueMapUrl} target="_blank" rel="noopener noreferrer">Map</a></>}
+                  </DetailRow>
                 )}
                 {speakers.length > 0 && (
-                  <p className="text-gray-700">🎤 {speakers.map(s => s.title ? `${s.name} (${s.title})` : s.name).join(', ')}</p>
+                  <DetailRow icon={<IconMic />}>{speakers.map(s => s.title ? `${s.name} (${s.title})` : s.name).join(', ')}</DetailRow>
                 )}
               </div>
             </div>
 
             <div className="mt-6 lg:mt-0 lg:w-80 lg:shrink-0 lg:self-center">
-              <div>
+              <div ref={heroCtaRef}>
                 {canRegister ? (
                   <>
                     <button onClick={scrollToForm} className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-black shadow-lg shadow-blue-200 transition-colors">
@@ -691,13 +791,11 @@ export const PublicEventPage: React.FC = () => {
           </aside>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-10">
-          SPR Techforge · Software Testing Training &amp; Careers
-        </p>
+        <PublicFooter />
       </main>
 
-      {/* Sticky register button on phones — the form sits below the content there. */}
-      {canRegister && (
+      {/* Sticky register button on phones — only while neither the hero button nor the form is on screen. */}
+      {canRegister && !heroCtaVisible && !formVisible && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-20 p-3 bg-white/95 backdrop-blur border-t border-gray-200">
           <button onClick={scrollToForm} className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-base font-black shadow-lg shadow-blue-200">
             {seats === 0 && ev.waitlistEnabled ? 'Join the Waitlist — Free' : 'Register Free →'}

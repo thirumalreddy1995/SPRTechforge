@@ -3,7 +3,7 @@
 // Run from Events → "Run module tests".
 
 import { slugify, uniqueSlug, formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
-import { istInputToUtcIso, utcIsoToIstInput, formatISTTime, relativeToNow, istCalendarDayDiff } from '../lib/datetime';
+import { istInputToUtcIso, utcIsoToIstInput, formatISTTime, formatISTDate, formatISTRange, relativeToNow, istCalendarDayDiff } from '../lib/datetime';
 import {
   validateForPublish, validateRegistration, lifecycleOf, registrationWindow, seatsRemaining,
   normalizeEmail, normalizePhone, isValidMobile, validMobileOrEmpty, QUALIFICATION_OPTIONS,
@@ -92,6 +92,9 @@ const TESTS: { name: string; fn: () => void }[] = [
       assert(utc === '2026-08-15T05:30:00.000Z', `IST 11:00 should be 05:30 UTC, got ${utc}`);
       assert(utcIsoToIstInput(utc) === '2026-08-15T11:00', `round-trip failed: ${utcIsoToIstInput(utc)}`);
       assert(formatISTTime(utc).toLowerCase().includes('11'), `IST display should show 11 AM, got ${formatISTTime(utc)}`);
+      assert(formatISTDate(utc) === 'Sat, 15 Aug 2026', `date shape must be 'Sat, 15 Aug 2026' on every browser, got '${formatISTDate(utc)}'`);
+      const range = formatISTRange(utc, istInputToUtcIso('2026-08-15T13:00'));
+      assert(range.startsWith('Sat, 15 Aug 2026 · ') && range.endsWith(' IST') && !/,s*2026/.test(range.replace('Sat,', '')), `range separators inconsistent: ${range}`);
     },
   },
   {

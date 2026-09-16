@@ -23,6 +23,7 @@ import {
   runTransaction,
   writeBatch,
   increment,
+  updateDoc,
 } from 'firebase/firestore/lite';
 import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
 import { EVENT_COLLECTIONS, emptyCounters, emptyPrivateDetails, RegisterOutcome, withContentionRetry } from './eventsDb';
@@ -104,6 +105,22 @@ export const fetchEventBySlug = async (slug: string): Promise<SprEvent | null> =
 export const fetchPrivateDetails = async (eventId: string): Promise<EventPrivateDetails> => {
   const snap = await getDoc(doc(db(), EVENT_COLLECTIONS.private, eventId));
   return snap.exists() ? ({ ...(snap.data() as any), id: eventId }) : emptyPrivateDetails(eventId);
+};
+
+/**
+ * Lets a registrant fix a mistyped email/mobile on their own registration.
+ * Reached only after the duplicate check matched them on the OTHER field, so
+ * they have proven they know the original contact detail.
+ */
+export const updateRegistrationContact = async (
+  registrationId: string,
+  patch: { email?: string; mobile?: string },
+): Promise<void> => {
+  const clean: Record<string, string> = {};
+  if (patch.email) clean.email = patch.email;
+  if (patch.mobile) clean.mobile = patch.mobile;
+  if (Object.keys(clean).length === 0) return;
+  await updateDoc(doc(db(), EVENT_COLLECTIONS.registrations, registrationId), { ...clean, contactUpdatedAt: new Date().toISOString() });
 };
 
 /** Duplicate check: existing registration for this event by email OR mobile. Both lookups run in parallel. */

@@ -73,6 +73,49 @@ export const CopyButton: React.FC<{ text: string; label?: string; className?: st
   );
 };
 
+// ---------- icons (inline SVG, not emoji) ----------
+// Emoji were replaced on purpose: the 📅 glyph renders as a calendar showing
+// a fixed date (17 on Apple, 31 on Google) and registrants read it as the
+// event date. SVGs look the same on every device.
+
+const iconCls = 'w-4 h-4 shrink-0';
+export const IconCalendar: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg className={`${iconCls} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+);
+export const IconClock: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg className={`${iconCls} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+);
+export const IconVideo: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg className={`${iconCls} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+);
+export const IconPin: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg className={`${iconCls} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+);
+export const IconMic: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg className={`${iconCls} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+);
+
+/** One line of event facts: icon + text, used on the public pages for a consistent look. */
+export const DetailRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode; strong?: boolean }> = ({ icon, children, strong }) => (
+  <div className={`flex items-start gap-2.5 ${strong ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+    <span className="mt-0.5 text-blue-600">{icon}</span>
+    <span className="min-w-0">{children}</span>
+  </div>
+);
+
+/** Support line shown in public footers. */
+export const CONTACT = { adminEmail: 'admin@sprtechforge.com', hrEmail: 'hr@sprtechforge.com', phoneDisplay: '+91 82972 76500', phoneTel: '+918297276500' };
+export const PublicFooter: React.FC = () => (
+  <footer className="text-center text-xs text-gray-400 mt-10 space-y-1.5 pb-4">
+    <p>SPR TechForge · Software Testing Training &amp; Careers</p>
+    <p>
+      Need help? <a className="text-blue-600 font-semibold" href={`mailto:${CONTACT.adminEmail}`}>{CONTACT.adminEmail}</a>
+      {' · '}<a className="text-blue-600 font-semibold" href={`mailto:${CONTACT.hrEmail}`}>{CONTACT.hrEmail}</a>
+      {' · '}<a className="text-blue-600 font-semibold" href={`tel:${CONTACT.phoneTel}`}>{CONTACT.phoneDisplay}</a>
+    </p>
+  </footer>
+);
+
 /** The public registration URL for an event (HashRouter-aware). */
 export const publicEventUrl = (slug: string): string =>
   `${window.location.origin}${window.location.pathname}#/events/${slug}`;
