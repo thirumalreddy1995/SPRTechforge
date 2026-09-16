@@ -144,11 +144,7 @@ export const validateRegistration = (form: RegistrationFormInput, ev: SprEvent):
   if (form.fullName.trim().length < 2) errors.fullName = 'Please enter your full name';
   if (!isValidEmail(form.email)) errors.email = 'Please enter a valid email address';
   const dial = form.mobileDial || '91';
-  if (!isValidMobile(form.mobile, dial)) {
-    errors.mobile = dial === '91'
-      ? 'Enter a valid 10-digit Indian mobile number (starts with 6–9) — we send the joining link to it'
-      : 'Enter a valid mobile number for the selected country (digits only, without the country code)';
-  }
+  if (!isValidMobile(form.mobile, dial)) errors.mobile = 'Enter valid Mobile number';
   if (ev.collectFields.qualification && form.qualification.trim().toLowerCase() === 'other') {
     errors.qualification = 'Please type your qualification';
   }
