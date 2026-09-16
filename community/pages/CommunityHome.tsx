@@ -11,8 +11,9 @@ import { useApp } from '../../context/AppContext';
 import { uploadService } from '../../services/uploadService';
 import { isMasterUser, generateId } from '../../utils';
 import { CandidateStatus, NotificationType } from '../../types';
-import { CommunityPost, PostAudience, PostKind, POST_KIND_META, REACTIONS, ReactionKey, emptyReactions } from '../types';
-import { subscribePosts, savePost, updatePost, deletePost, toggleReaction } from '../services/communityDb';
+import { CommunityPost, GalleryImage, PostAudience, PostKind, POST_KIND_META, REACTIONS, ReactionKey, emptyReactions } from '../types';
+import { subscribePosts, savePost, updatePost, deletePost, toggleReaction, subscribeGallery, saveGalleryImage, updateGalleryImage, deleteGalleryImage } from '../services/communityDb';
+import { PhotoCarousel } from '../components/PhotoCarousel';
 import { DailyQuote, LearningTip, fetchQuoteOfTheDay, fallbackQuote, learningTipOfTheDay, upcomingBirthdays, greetingFor, BirthdayHit } from '../lib/daily';
 import { fetchPublicEvents } from '../../events/services/eventsPublicDb';
 import { SprEvent } from '../../events/types';
@@ -68,6 +69,9 @@ export const CommunityHome: React.FC = () => {
   const [filter, setFilter] = useState<Filter>('all');
   const [quote, setQuote] = useState<DailyQuote>(fallbackQuote());
   const [events, setEvents] = useState<SprEvent[]>([]);
+  const [eventsState, setEventsState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -87,8 +91,51 @@ export const CommunityHome: React.FC = () => {
     return unsub;
   }, [isCloudEnabled]);
 
+  useEffect(() => {
+    if (!isCloudEnabled) return;
+    return subscribeGallery(setGallery);
+  }, [isCloudEnabled]);
+
   useEffect(() => { fetchQuoteOfTheDay().then(setQuote).catch(() => {}); }, []);
-  useEffect(() => { fetchPublicEvents().then(setEvents).catch(() => {}); }, []);
+  useEffect(() => {
+    // One retry after a short pause — a flaky connection should not leave the
+    // card claiming "No upcoming events".
+    let cancelled = false;
+    const load = (attempt: number) => fetchPublicEvents()
+      .then(items => { if (!cancelled) { setEvents(items); setEventsState('ready'); } })
+      .catch(() => { if (cancelled) return; if (attempt < 2) setTimeout(() => load(attempt + 1), 2500); else setEventsState('error'); });
+    load(1);
+    return () => { cancelled = true; };
+  }, []);
+
+  // ---------------- gallery management ----------------
+
+  const addGalleryPhotos = async (files: File[]) => {
+    setGalleryUploading(true);
+    let added = 0;
+    try {
+      let order = gallery.reduce((m, g) => Math.max(m, g.order), 0);
+      for (const f of files) {
+        if (!/^image\//.test(f.type)) continue;
+        const up = await uploadService.uploadImage(`community/gallery/${Date.now()}-${f.name}`, f, { maxWidth: 1600 });
+        order += 1;
+        await saveGalleryImage({ id: `photo-${generateId()}`, imageUrl: up.url, caption: '', order, createdAt: new Date().toISOString(), createdBy: user!.id, createdByName: user!.name });
+        added++;
+      }
+      showToast(`${added} photo${added === 1 ? '' : 's'} added to the home page`, 'success');
+    } catch (e: any) { showToast(`Upload failed: ${e.message || e}`, 'error'); }
+    finally { setGalleryUploading(false); }
+  };
+  const captionGalleryPhoto = async (id: string, caption: string) => { try { await updateGalleryImage(id, { caption }); } catch (e: any) { showToast(`Failed: ${e.message || e}`, 'error'); } };
+  const moveGalleryPhoto = async (id: string, direction: -1 | 1) => {
+    const i = gallery.findIndex(g => g.id === id); const j = i + direction;
+    if (i < 0 || j < 0 || j >= gallery.length) return;
+    const a = gallery[i], b = gallery[j];
+    // swap orders (use distinct values even if both were 0)
+    const oa = a.order, ob = b.order === oa ? oa + direction : b.order;
+    try { await Promise.all([updateGalleryImage(a.id, { order: ob }), updateGalleryImage(b.id, { order: oa })]); } catch (e: any) { showToast(`Failed: ${e.message || e}`, 'error'); }
+  };
+  const removeGalleryPhoto = async (id: string) => { try { await deleteGalleryImage(id); } catch (e: any) { showToast(`Failed: ${e.message || e}`, 'error'); } };
 
   const visiblePosts = useMemo(() => {
     const now = Date.now();
@@ -292,9 +339,10 @@ export const CommunityHome: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Feed */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {/* Feed. min-w-0 lets the column shrink to its grid track — without it the
+            chip row's intrinsic width pushed the column under the side panel on laptops. */}
+        <div className="lg:col-span-2 min-w-0 space-y-4">
+          <div className="flex flex-wrap gap-2">
             {filters.map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${filter === f.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
@@ -315,10 +363,21 @@ export const CommunityHome: React.FC = () => {
           ) : (
             visiblePosts.map(p => <PostCard key={p.id} p={p} />)
           )}
+
+          {/* Photo carousel — under the announcements, visible to everyone */}
+          <PhotoCarousel
+            images={gallery}
+            canManage={canPost}
+            uploading={galleryUploading}
+            onAdd={addGalleryPhotos}
+            onCaption={captionGalleryPhoto}
+            onMove={moveGalleryPhoto}
+            onRemove={removeGalleryPhoto}
+          />
         </div>
 
         {/* Side column */}
-        <aside className="space-y-4">
+        <aside className="space-y-4 min-w-0">
           <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-5 text-white">
             <p className="text-[11px] font-bold uppercase tracking-widest text-violet-200">Quote of the day</p>
             <p className="text-lg font-semibold leading-snug mt-2">“{quote.text}”</p>
@@ -333,7 +392,11 @@ export const CommunityHome: React.FC = () => {
           </Card>
 
           <Card title="📅 Upcoming events" action={canPost && (user.role === 'admin' || user.modules.includes('users')) ? <Link to="/events/manage" className="text-xs font-bold text-blue-600">Manage</Link> : undefined}>
-            {upcomingEvents.length === 0 ? (
+            {eventsState === 'loading' ? (
+              <div className="space-y-2">{[0, 1].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}</div>
+            ) : eventsState === 'error' ? (
+              <p className="text-sm text-gray-500">Couldn't load events right now. <Link to="/events" className="text-blue-600 font-bold underline">Open the events page</Link></p>
+            ) : upcomingEvents.length === 0 ? (
               <p className="text-sm text-gray-500">No upcoming events. <Link to="/events" className="text-blue-600 font-bold underline">See all events</Link></p>
             ) : (
               <div className="space-y-3">
