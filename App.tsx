@@ -43,6 +43,7 @@ const ActivityLogs = named(() => import('./pages/admin/ActivityLogs'), 'Activity
 const TestRunner = named(() => import('./pages/admin/TestRunner'), 'TestRunner');
 const CloudSetup = named(() => import('./pages/admin/CloudSetup'), 'CloudSetup');
 const CommSettings = named(() => import('./pages/admin/CommSettings'), 'CommSettings');
+const WebsiteContent = named(() => import('./pages/admin/WebsiteContent'), 'WebsiteContent');
 const PortalAgreement = named(() => import('./pages/public/PortalAgreement'), 'PortalAgreement');
 const Curriculum = named(() => import('./pages/training/Curriculum'), 'Curriculum');
 const CandidateDashboard = named(() => import('./pages/training/CandidateDashboard'), 'CandidateDashboard');
@@ -140,6 +141,7 @@ const AppRoutes = () => {
         <Route path="/admin/users" element={<AdminRoute><Layout><UserList /></Layout></AdminRoute>} />
         <Route path="/admin/users/new" element={<AdminRoute><Layout><AddUser /></Layout></AdminRoute>} />
         <Route path="/admin/users/edit/:id" element={<AdminRoute><Layout><AddUser /></Layout></AdminRoute>} />
+        <Route path="/admin/website" element={<AdminRoute><Layout><WebsiteContent /></Layout></AdminRoute>} />
 
         {/* Training Section */}
         <Route path="/training/curriculum" element={<ProtectedRoute><Layout><Curriculum /></Layout></ProtectedRoute>} />
