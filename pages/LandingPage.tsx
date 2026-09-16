@@ -138,12 +138,49 @@ export const LandingPage: React.FC = () => {
     else window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const glass = 'bg-white/[0.07] backdrop-blur-md border border-white/15 rounded-3xl';
+  const tracksPanel = (
+    <div className={`${glass} p-6 shadow-[0_40px_80px_rgba(0,0,0,0.35)]`}>
+      <p className="text-amber-300 text-[11px] font-black uppercase tracking-[0.25em] mb-4">What you will master</p>
+      <div className="grid grid-cols-2 gap-2.5">
+        {TRACKS.map(t => (
+          <div key={t.title} className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+            <span className={`w-8 h-8 ${t.accent} rounded-lg flex items-center justify-center shrink-0`}><Icon d={t.icon} className="w-4 h-4" /></span>
+            <span className="text-sm font-bold text-white/90 leading-tight">{t.title}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-blue-100/70 text-xs mt-4">Live projects · Working-engineer trainers · Placement support</p>
+    </div>
+  );
+  const servicesPanel = (
+    <div className="grid grid-cols-2 gap-4">
+      {[['Testing & QA services', 'Web · Mobile · API · Desktop', I.check, 'bg-blue-600'], ['Application development', 'Web apps · Mobile · Portals', I.build, 'bg-emerald-600'], ['Automation frameworks', 'Selenium · Playwright · Appium', I.code, 'bg-indigo-600'], ['Performance & security', 'JMeter · Burp · OWASP', I.shield, 'bg-amber-500']].map(([t, d, icon, color]) => (
+        <div key={t as string} className={`${glass} p-5`}>
+          <span className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3`}><Icon d={icon as string} className="w-5 h-5" /></span>
+          <p className="font-black text-white">{t}</p>
+          <p className="text-blue-100/70 text-xs mt-1">{d}</p>
+        </div>
+      ))}
+    </div>
+  );
+  const eventsPanel = (
+    <div className={`${glass} p-7`}>
+      <p className="text-emerald-300 text-[11px] font-black uppercase tracking-[0.25em] mb-4">In every free seminar</p>
+      <ul className="space-y-3">
+        {['The QA job market right now and the roles open to freshers', 'The exact skills that get interview calls', 'A live testing demo on a real application', 'Manual → Automation → SDET career path', 'Open Q&A about your background'].map(t => (
+          <li key={t} className="flex items-start gap-3 text-white/90"><Icon d={I.check} className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" /><span className="text-sm font-semibold">{t}</span></li>
+        ))}
+      </ul>
+    </div>
+  );
+
   const slides: HeroSlide[] = useMemo(() => {
     if (content.banners.length > 0) return content.banners.map(b => bannerToSlide(b, goUrl));
     return [
-      { id: 'train', eyebrow: 'Software testing training · Hyderabad & online', title: <>Become a job-ready<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400">Software Tester</span></>, subtitle: 'Manual, Automation, API, Performance, Mobile, Desktop and Security testing — taught on live projects by working QA engineers, with placement support until you are hired.', primary: { label: 'Book a free demo class', onClick: () => enquire(INTERESTS[0]) }, secondary: { label: 'See training tracks', onClick: () => scrollTo('training') }, gradient: 'from-[#1a3478] via-[#0b1c54] to-[#020617]' },
-      { id: 'services', eyebrow: 'Software IT company', title: <>We test and build<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-blue-200 to-indigo-300">software for businesses</span></>, subtitle: 'Independent QA, test automation, performance and security testing, and custom web and mobile application development for startups and enterprises.', primary: { label: 'Talk to our team', onClick: () => enquire('Testing services for my company') }, secondary: { label: 'Our services', onClick: () => scrollTo('services') }, gradient: 'from-[#0f3d3e] via-[#0b2a4a] to-[#020617]' },
-      { id: 'events', eyebrow: 'Free live seminars', title: <>Start with a<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300">free career seminar</span></>, subtitle: 'Live sessions on how to enter IT through software testing — what the job looks like, a real testing demo, and honest answers to your questions.', primary: { label: 'See upcoming events', onClick: () => navigate('/events') }, secondary: { label: 'Enquire now', onClick: () => enquire() }, gradient: 'from-[#3b1d6e] via-[#1e1b4b] to-[#020617]' },
+      { id: 'train', eyebrow: 'Software testing training · Hyderabad & online', title: <>Become a job-ready<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400">Software Tester</span></>, subtitle: 'Manual, Automation, API, Performance, Mobile, Desktop and Security testing — taught on live projects by working QA engineers, with placement support until you are hired.', primary: { label: 'Book a free demo class', onClick: () => enquire(INTERESTS[0]) }, secondary: { label: 'See training tracks', onClick: () => scrollTo('training') }, gradient: 'from-[#1a3478] via-[#0b1c54] to-[#020617]', aside: tracksPanel },
+      { id: 'services', eyebrow: 'Software IT company', title: <>We test and build<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-blue-200 to-indigo-300">software for businesses</span></>, subtitle: 'Independent QA, test automation, performance and security testing, and custom web and mobile application development for startups and enterprises.', primary: { label: 'Talk to our team', onClick: () => enquire('Testing services for my company') }, secondary: { label: 'Our services', onClick: () => scrollTo('services') }, gradient: 'from-[#0f3d3e] via-[#0b2a4a] to-[#020617]', aside: servicesPanel },
+      { id: 'events', eyebrow: 'Free live seminars', title: <>Start with a<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300">free career seminar</span></>, subtitle: 'Live sessions on how to enter IT through software testing — what the job looks like, a real testing demo, and honest answers to your questions.', primary: { label: 'See upcoming events', onClick: () => navigate('/events') }, secondary: { label: 'Enquire now', onClick: () => enquire() }, gradient: 'from-[#3b1d6e] via-[#1e1b4b] to-[#020617]', aside: eventsPanel },
     ];
   }, [content.banners]);
 

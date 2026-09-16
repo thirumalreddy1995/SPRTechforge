@@ -15,6 +15,8 @@ export interface HeroSlide {
   imageUrl?: string;
   /** Tailwind gradient classes for slides without an image */
   gradient?: string;
+  /** Optional visual for the right half on large screens (ignored for image banners). */
+  aside?: React.ReactNode;
 }
 
 const AUTOPLAY_MS = 6000;
@@ -66,8 +68,8 @@ export const HeroCarousel: React.FC<{ slides: HeroSlide[] }> = ({ slides }) => {
               <div className="absolute bottom-[-20%] left-[-5%] w-[600px] h-[600px] bg-amber-500/10 blur-[140px] rounded-full" />
             </div>
           )}
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[600px] md:min-h-[680px] lg:min-h-[740px] flex items-center pt-24 pb-24">
-            <div className="max-w-3xl">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[600px] md:min-h-[680px] lg:min-h-[740px] flex items-center pt-32 md:pt-28 pb-24 gap-12">
+            <div className={`max-w-3xl ${s.aside && !s.imageUrl ? 'lg:w-[58%] lg:shrink-0' : ''}`}>
               {s.eyebrow && (
                 <div className="inline-flex items-center gap-2.5 bg-white/10 border border-white/15 px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
                   <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
@@ -81,6 +83,7 @@ export const HeroCarousel: React.FC<{ slides: HeroSlide[] }> = ({ slides }) => {
                 {s.secondary && <button onClick={s.secondary.onClick} className="border-2 border-white/30 text-white font-black px-8 py-4 rounded-2xl hover:bg-white/10 hover:scale-[1.03] transition-all text-base backdrop-blur-sm">{s.secondary.label}</button>}
               </div>
             </div>
+            {s.aside && !s.imageUrl && <div className="hidden lg:block flex-1 min-w-0">{s.aside}</div>}
           </div>
         </div>
       ))}
