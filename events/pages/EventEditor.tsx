@@ -101,6 +101,9 @@ export const EventEditor: React.FC = () => {
   const bannerRef = useRef<HTMLInputElement>(null);
   // Snapshot of registrant-facing fields, to detect critical changes on published events.
   const criticalBaseline = useRef<string>('');
+  // What was last written to Firestore — drives the "All changes saved" / "Save Changes" state.
+  const savedSnapshot = useRef<string>('');
+  const snapshotOf = (ev: SprEvent, p: EventPrivateDetails) => JSON.stringify([ev, p]);
 
   const criticalFingerprint = (ev: SprEvent, p: EventPrivateDetails) =>
     JSON.stringify([ev.startAt, ev.endAt, ev.mode, ev.venueName, ev.venueAddress, p.joinUrl, p.meetingId, p.passcode]);
@@ -121,6 +124,7 @@ export const EventEditor: React.FC = () => {
           setForm(ev);
           setPriv(emptyPrivateDetails(ev.id));
           criticalBaseline.current = '';
+          savedSnapshot.current = snapshotOf(ev, emptyPrivateDetails(ev.id));
         }
         return;
       }
@@ -136,6 +140,7 @@ export const EventEditor: React.FC = () => {
       setForm(existing);
       setPriv(p);
       criticalBaseline.current = criticalFingerprint(existing, p);
+      savedSnapshot.current = snapshotOf(existing, p);
     })();
     return () => { cancelled = true; };
   }, [routeId, allEvents, user]);
@@ -144,6 +149,9 @@ export const EventEditor: React.FC = () => {
   const setP = (patch: Partial<EventPrivateDetails>) => setPriv(prev => prev ? { ...prev, ...patch } : prev);
 
   const issues = useMemo(() => (form && priv ? validateForPublish(form, priv) : []), [form, priv]);
+  const isDirty = !!form && !!priv && snapshotOf(form, priv) !== savedSnapshot.current;
+  const isPublished = form?.status === 'published';
+  const saveLabel = saving ? 'Saving…' : !isDirty ? 'All changes saved ✓' : isPublished ? 'Save Changes' : 'Save Draft';
 
   if (!user) return null;
   if (notFound) return <Card className="p-8 text-center"><p className="font-bold text-gray-700">Event not found.</p><Button className="mt-4 mx-auto" onClick={() => navigate('/events/manage')}>Back to Events</Button></Card>;
@@ -160,6 +168,7 @@ export const EventEditor: React.FC = () => {
     await saveEvent(withMeta);
     await savePrivateDetails(p);
     setForm(withMeta);
+    savedSnapshot.current = snapshotOf(withMeta, p);
     if (toastMsg) showToast(toastMsg, 'success');
     // First save of a brand-new event: move to the edit URL so a browser
     // refresh reopens this same draft instead of a blank form.
@@ -185,7 +194,7 @@ export const EventEditor: React.FC = () => {
         setPendingCriticalSave({ changed });
         return;
       }
-      await persist(form, priv, form.status === 'draft' ? 'Draft saved' : 'Changes saved');
+      await persist(form, priv, form.status === 'draft' ? 'Draft saved' : 'Changes saved — the public event page shows them now');
     } catch (e: any) {
       showToast(`Save failed: ${e.message || e}`, 'error');
     } finally {
@@ -499,7 +508,11 @@ export const EventEditor: React.FC = () => {
         </Card>
       ) : (
         <Card>
-          <p className="text-emerald-700 font-bold">✓ Everything looks good — ready to publish.</p>
+          <p className="text-emerald-700 font-bold">
+            {isPublished
+              ? (isDirty ? '● This event is published. You have unsaved changes — click Save Changes to put them live.' : '✓ This event is published and all changes are saved.')
+              : '✓ Everything looks good — ready to publish.'}
+          </p>
         </Card>
       )}
 
@@ -524,7 +537,7 @@ export const EventEditor: React.FC = () => {
       </Card>
 
       <div className="flex gap-3 justify-end">
-        <Button variant="secondary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save as Draft'}</Button>
+        <Button variant={isDirty && isPublished ? 'primary' : 'secondary'} onClick={handleSave} disabled={saving || !isDirty}>{saveLabel}</Button>
         {form.status !== 'published' && (
           <Button variant="success" onClick={handlePublish} disabled={publishing || issues.length > 0}>
             {publishing ? 'Publishing…' : '🚀 Publish Event'}
@@ -543,9 +556,14 @@ export const EventEditor: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate(form.status === 'draft' ? '/events/manage' : `/events/manage/view/${form.id}`)}>← Back</Button>
-          <Button variant="secondary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Draft'}</Button>
+          <Button variant={isDirty && isPublished ? 'primary' : 'secondary'} onClick={handleSave} disabled={saving || !isDirty}>{saveLabel}</Button>
         </div>
       </div>
+      {isPublished && (
+        <p className={`text-xs font-bold -mt-3 ${isDirty ? 'text-amber-700' : 'text-emerald-700'}`}>
+          {isDirty ? '● Unsaved changes — the public page still shows the previous version.' : '✓ Saved — the public page is up to date.'}
+        </p>
+      )}
 
       {/* Stepper */}
       <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1">
