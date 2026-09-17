@@ -209,6 +209,7 @@ export const LandingPage: React.FC = () => {
     { key: 'twitter', url: s.twitterUrl, label: 'X', svg: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z' },
   ].filter(x => x.url);
   const waNumber = (s.whatsappNumber || CONTACT_DEFAULTS.phones[0].wa).replace(/\D/g, '');
+  const mapUrl = s.mapUrl || CONTACT_DEFAULTS.mapUrl;
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent('Hi SPR TechForge, I would like to know more about your software testing training.')}`;
 
   return (
@@ -461,14 +462,14 @@ export const LandingPage: React.FC = () => {
                   <div><a href={`mailto:${email}`} className="font-black text-gray-900 hover:text-blue-700 break-all">{email}</a><p className="text-xs text-gray-500">{label}</p></div>
                 </div>
               ))}
-              <div className="flex items-start gap-4">
-                <div className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0"><Icon d={I.pin} className="w-5 h-5" /></div>
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" aria-label="Open our office location in Google Maps" className="flex items-start gap-4 group">
+                <div className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0 group-hover:bg-blue-700 group-hover:text-white transition-colors"><Icon d={I.pin} className="w-5 h-5" /></div>
                 <div>
-                  <p className="font-black text-gray-900">{s.addressLine1}</p>
+                  <p className="font-black text-gray-900 group-hover:text-blue-700">{s.addressLine1}</p>
                   <p className="text-sm text-gray-500">{s.addressLine2}</p>
-                  {s.mapUrl && <a href={s.mapUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-700 underline">Open in Google Maps</a>}
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 underline mt-1">Open in Google Maps <Icon d={I.pin} className="w-3.5 h-3.5" /></span>
                 </div>
-              </div>
+              </a>
               {socials.length > 0 && (
                 <div className="flex items-center gap-3 pt-2">
                   {socials.map(so => (
@@ -559,7 +560,7 @@ export const LandingPage: React.FC = () => {
               <ul className="space-y-3 text-gray-500 text-sm font-semibold">
                 {CONTACT_DEFAULTS.phones.map(p => <li key={p.tel}><a href={`tel:${p.tel}`} className="hover:text-white">{p.display}</a></li>)}
                 {CONTACT_DEFAULTS.emails.map(e => <li key={e}><a href={`mailto:${e}`} className="hover:text-white break-all">{e}</a></li>)}
-                <li className="leading-relaxed">{s.addressLine1}<br />{s.addressLine2}</li>
+                <li className="leading-relaxed"><a href={mapUrl} target="_blank" rel="noopener noreferrer" className="hover:text-white">{s.addressLine1}<br />{s.addressLine2}<span className="block text-xs text-blue-400 mt-1">Open in Google Maps</span></a></li>
               </ul>
             </div>
           </div>

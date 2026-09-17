@@ -64,6 +64,8 @@ export const SITE_COLLECTIONS = {
 
 export const CONTACT_DEFAULTS = {
   emails: ['admin@sprtechforge.com', 'hr@sprtechforge.com'],
+  /** Google Maps short link for the office. Opens the Maps app on Android/iOS and the website on desktop. */
+  mapUrl: 'https://maps.app.goo.gl/diXNusi9LLbdN2ZdA',
   phones: [
     { display: '+91 82972 76500', tel: '+918297276500', wa: '918297276500' },
     { display: '+91 82176 51466', tel: '+918217651466', wa: '918217651466' },
@@ -78,7 +80,7 @@ export const defaultSettings = (): SiteSettings => ({
   whatsappNumber: '918297276500',
   addressLine1: '202, Above Union Bank, Near Forum Sujana Mall',
   addressLine2: 'KPHB 6th Phase, Kukatpally, Hyderabad 500085',
-  mapUrl: '',
+  mapUrl: CONTACT_DEFAULTS.mapUrl,
 });
 
 export const defaultStats = (): SiteStats => ({
