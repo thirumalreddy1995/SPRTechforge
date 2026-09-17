@@ -404,7 +404,8 @@ export const PublicEventPage: React.FC = () => {
       {reg.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid') && priv?.joinUrl && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-left">
           <p className="text-xs font-bold text-blue-700 uppercase mb-1">Join online{ev.platform ? ` · ${ev.platform}` : ''}</p>
-          <a href={priv.joinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-bold underline break-all text-sm">{priv.joinUrl}</a>
+          <a href={priv.joinUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 px-5 py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-black text-sm shadow">▶ Join Meeting{ev.platform ? ` on ${ev.platform}` : ''}</a>
+          <p className="text-[11px] text-gray-500 mt-2">The same link is in your confirmation email. Join a few minutes before the start time.</p>
           {(priv.meetingId || priv.passcode) && (
             <p className="text-xs text-gray-600 mt-1">
               {priv.meetingId && <>Meeting ID: <strong>{priv.meetingId}</strong></>}

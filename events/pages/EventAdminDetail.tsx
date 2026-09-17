@@ -38,7 +38,7 @@ interface MailForm {
 const defaultReminderMessage = (ev: SprEvent, priv: EventPrivateDetails | null): string => {
   const where = ev.mode === 'offline'
     ? `Venue: ${ev.venueName}${ev.venueAddress ? `, ${ev.venueAddress}` : ''}.`
-    : `It is online${ev.platform ? ` on ${ev.platform}` : ''} — your personal joining link is below${priv?.joinUrl ? '' : ' (we will share it before the session)'}.`;
+    : `It is online${ev.platform ? ` on ${ev.platform}` : ''} — the Join Meeting button is below${priv?.joinUrl ? '' : ' (we will share it before the session)'}.`;
   return `A quick reminder that ${ev.title} is coming up on ${formatISTRange(ev.startAt, ev.endAt)}.\n\n${where}\n\nPlease join 5 minutes early so we can start on time. Bring your questions — there is a live Q&A at the end.\n\nSee you there!\nTeam SPR Techforge`;
 };
 
@@ -527,7 +527,7 @@ export const EventAdminDetail: React.FC = () => {
                 <p><strong>Mode:</strong> {ev.mode === 'online' ? `Online${ev.platform ? ` (${ev.platform})` : ''}` : ev.mode === 'offline' ? 'In person' : 'Hybrid'}</p>
                 {(ev.mode !== 'online') && ev.venueName && <p><strong>Venue:</strong> {ev.venueName}, {ev.venueAddress}</p>}
                 {(ev.mode !== 'offline') && priv && (
-                  <p><strong>Join link (private):</strong> {priv.joinUrl ? <span className="font-mono text-xs break-all">{priv.joinUrl}</span> : <span className="text-red-600">not set!</span>}
+                  <p className="flex items-center gap-2 flex-wrap"><strong>Join link (private):</strong> {priv.joinUrl ? <><a href={priv.joinUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">▶ Join Meeting{ev.platform ? ` on ${ev.platform}` : ''}</a><CopyButton text={priv.joinUrl} label="Copy link" /></> : <span className="text-red-600">not set!</span>}
                     {priv.meetingId && <> · ID: {priv.meetingId}</>}{priv.passcode && <> · Passcode: {priv.passcode}</>}</p>
                 )}
                 <p><strong>Registration closes:</strong> {ev.registrationClosesAt ? formatISTDateTime(ev.registrationClosesAt) : 'When the event starts'}</p>

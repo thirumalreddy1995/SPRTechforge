@@ -165,7 +165,7 @@ export const Login: React.FC = () => {
           {/* Card Header */}
           <div className="bg-gradient-to-r from-slate-900 to-blue-900 px-5 py-6 sm:px-8 sm:py-7 text-center">
             <div className="flex justify-center mb-4">
-              <Logo size="lg" />
+              <Logo size="lg" inverse />
             </div>
             <p className="text-blue-200 text-sm font-medium">
               {showChangePassword ? 'Secure your account' : 'Staff & Management Portal'}
