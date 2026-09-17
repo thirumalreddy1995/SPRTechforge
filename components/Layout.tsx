@@ -169,7 +169,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <Logo size="sm" inverse={true} />
           </div>
           {isSidebarCollapsed && (
-             <div className="mx-auto bg-gradient-to-br from-blue-600 to-blue-800 w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-900/50">SPR</div>
+             <div className="mx-auto"><Logo size="sm" inverse wordmark={false} /></div>
           )}
           <div className={`flex items-center gap-1.5 ${isSidebarCollapsed ? 'hidden' : 'flex'}`}>
             <NotificationBell />
