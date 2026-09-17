@@ -214,7 +214,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
       {/* ══════════ NAV ══════════ */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled || mobileOpen ? 'bg-white/95 backdrop-blur-md shadow-lg py-2 border-b border-gray-100' : 'bg-transparent py-4'}`} aria-label="Main">
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled || mobileOpen ? 'bg-white lg:bg-white/95 lg:backdrop-blur-md shadow-lg py-2 border-b border-gray-100' : 'bg-transparent py-4'}`} aria-label="Main">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="SPR TechForge home"><Logo size="sm" inverse={!(scrolled || mobileOpen)} /></button>
           <div className="hidden lg:flex items-center gap-7">
@@ -563,7 +563,7 @@ export const LandingPage: React.FC = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="border-t border-white/5 pt-8 pb-16 md:pb-0 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-600 text-xs font-medium">&copy; {new Date().getFullYear()} SPR TechForge Pvt Ltd. All rights reserved.</p>
             <div className="flex gap-6 text-xs font-black uppercase tracking-[0.3em] text-gray-600">
               <button onClick={() => setOpenModal('privacy')} className="hover:text-white">Privacy</button>
