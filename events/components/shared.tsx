@@ -104,7 +104,7 @@ export const DetailRow: React.FC<{ icon: React.ReactNode; children: React.ReactN
 );
 
 /** Support line shown in public footers. */
-export const CONTACT = { adminEmail: 'admin@sprtechforge.com', hrEmail: 'hr@sprtechforge.com', phoneDisplay: '+91 82972 76500', phoneTel: '+918297276500' };
+export const CONTACT = { adminEmail: 'admin@sprtechforge.com', hrEmail: 'hr@sprtechforge.com', phoneDisplay: '+91 82972 76500', phoneTel: '+918297276500', mapUrl: 'https://maps.app.goo.gl/diXNusi9LLbdN2ZdA', address: '202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085' };
 export const PublicFooter: React.FC = () => (
   <footer className="text-center text-xs text-gray-400 mt-10 space-y-1.5 pb-4">
     <p>SPR TechForge · Software Testing Training &amp; Careers</p>
@@ -113,6 +113,7 @@ export const PublicFooter: React.FC = () => (
       {' · '}<a className="text-blue-600 font-semibold" href={`mailto:${CONTACT.hrEmail}`}>{CONTACT.hrEmail}</a>
       {' · '}<a className="text-blue-600 font-semibold" href={`tel:${CONTACT.phoneTel}`}>{CONTACT.phoneDisplay}</a>
     </p>
+    <p><a className="text-blue-600 font-semibold" href={CONTACT.mapUrl} target="_blank" rel="noopener noreferrer">📍 {CONTACT.address}</a></p>
   </footer>
 );
 
