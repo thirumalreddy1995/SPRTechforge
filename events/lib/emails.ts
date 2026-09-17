@@ -22,15 +22,27 @@ const wrap = (ev: SprEvent, inner: string): string => {
     : '';
   return `<div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:15px;line-height:1.6;">
     ${banner}${inner}
-    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">SPR Techforge · Software Testing Training &amp; Careers</p>
+    <div style="margin-top:24px;padding:14px 16px;background:#f3f4f6;border-radius:8px;font-size:13px;color:#374151;">
+      <p style="margin:0 0 6px 0;"><strong>Need help joining or have a question?</strong></p>
+      <p style="margin:0;">Call / WhatsApp: <a href="tel:+918297276500" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">+91 82972 76500</a> &nbsp;·&nbsp; <a href="tel:+918217651466" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">+91 82176 51466</a></p>
+      <p style="margin:0;">Email: <a href="mailto:admin@sprtechforge.com" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">admin@sprtechforge.com</a> &nbsp;·&nbsp; <a href="mailto:hr@sprtechforge.com" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">hr@sprtechforge.com</a></p>
+    </div>
+    <p style="margin:18px 0 0 0;"><img src="https://sprtechforge.com/logo.png" alt="SPR TechForge" height="40" style="height:40px;width:auto;display:block;"/></p>
+    <p style="color:#9ca3af;font-size:12px;margin-top:8px;">SPR TechForge Pvt Ltd · 202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085 · <a href="https://sprtechforge.com" style="color:#9ca3af;">sprtechforge.com</a></p>
   </div>`;
 };
+
+/** A real button for the meeting link — the raw Teams/Meet URL is long and off-putting in an email. */
+const joinButton = (url: string, platform: string): string =>
+  `<p style="margin:14px 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">▶ Join Meeting${platform ? ` on ${escapeHtml(platform)}` : ''}</a><br/>
+  <span style="color:#6b7280;font-size:12px;">Button not working? Copy this link into your browser: <a href="${escapeHtml(url)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(url)}</a></span></p>`;
 
 const whereBlock = (ev: SprEvent, priv: EventPrivateDetails | null, forConfirmed: boolean): string => {
   const rows: string[] = [];
   if (ev.mode !== 'offline') {
     if (forConfirmed && priv?.joinUrl) {
-      rows.push(`<p><strong>Join online:</strong> <a href="${escapeHtml(priv.joinUrl)}">${escapeHtml(priv.joinUrl)}</a>${ev.platform ? ` (${escapeHtml(ev.platform)})` : ''}</p>`);
+      rows.push(`<p style="margin-bottom:0;"><strong>How to join:</strong> Online${ev.platform ? ` on ${escapeHtml(ev.platform)}` : ''} — click the button a few minutes before the start time.</p>`);
+      rows.push(joinButton(priv.joinUrl, ev.platform));
       if (priv.meetingId) rows.push(`<p><strong>Meeting ID:</strong> ${escapeHtml(priv.meetingId)}${priv.passcode ? ` · <strong>Passcode:</strong> ${escapeHtml(priv.passcode)}` : ''}</p>`);
     } else {
       rows.push(`<p><strong>Mode:</strong> Online${ev.platform ? ` (${escapeHtml(ev.platform)})` : ''}</p>`);

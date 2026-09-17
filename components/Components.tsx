@@ -423,86 +423,43 @@ export const ToastOverlay: React.FC = () => {
   );
 };
 
-export const Logo: React.FC<{ size?: 'sm' | 'lg'; inverse?: boolean }> = ({ size = 'sm', inverse = false }) => {
-  const isLg = size === 'lg';
-  const uid = isLg ? 'lg' : 'sm'; // unique gradient IDs per size to avoid SVG ID collision
+/** Public URL of the real company logo (public/logo.png). Vite's base is './', so this works on GitHub Pages and Firebase Hosting alike. */
+export const LOGO_URL = `${((import.meta as any).env?.BASE_URL as string || './')}logo.png`;
 
+/**
+ * The SPR TechForge logo — the real artwork (metallic oval with "SPR"), not a
+ * drawn approximation. `inverse` switches the wordmark to light text for dark
+ * headers; the image itself has a transparent background so it works on both.
+ */
+export const Logo: React.FC<{ size?: 'sm' | 'lg'; inverse?: boolean; wordmark?: boolean }> = ({ size = 'sm', inverse = false, wordmark = true }) => {
+  const isLg = size === 'lg';
+  const height = isLg ? 72 : 44;
   return (
     <div className={`flex items-center ${isLg ? 'gap-4' : 'gap-2.5'} select-none`}>
-      {/* Icon mark */}
-      <svg
-        width={isLg ? 72 : 44}
-        height={isLg ? 72 : 44}
-        viewBox="0 0 72 72"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id={`bgGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={inverse ? '#3b82f6' : '#1e3a8a'} />
-            <stop offset="100%" stopColor={inverse ? '#1d4ed8' : '#0f172a'} />
-          </linearGradient>
-          <linearGradient id={`arcGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fbbf24" />
-            <stop offset="100%" stopColor="#f97316" />
-          </linearGradient>
-          <linearGradient id={`textGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor={inverse ? '#bfdbfe' : '#93c5fd'} />
-          </linearGradient>
-        </defs>
-
-        {/* Background circle */}
-        <circle cx="36" cy="36" r="34" fill={`url(#bgGrad-${uid})`} />
-
-        {/* Orbit arc — top half, wraps over text */}
-        <path
-          d="M10 34 A26 26 0 0 1 62 34"
-          stroke={`url(#arcGrad-${uid})`}
-          strokeWidth="4.5"
-          fill="none"
-          strokeLinecap="round"
-        />
-
-        {/* SPR text */}
-        <text
-          x="36"
-          y="47"
-          textAnchor="middle"
-          fontSize="22"
-          fontWeight="900"
-          fontStyle="italic"
-          fill={`url(#textGrad-${uid})`}
-          fontFamily="'Arial Black', Arial, sans-serif"
-        >
-          SPR
-        </text>
-
-        {/* Bottom accent swoosh */}
-        <path
-          d="M12 50 Q36 62 60 50"
-          stroke={`url(#arcGrad-${uid})`}
-          strokeWidth="3"
-          fill="none"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-      </svg>
-
-      {/* Wordmark */}
-      <div className={`flex flex-col leading-none ${isLg ? 'gap-1' : 'gap-0.5'}`}>
-        <span
-          className={`font-black tracking-tight ${isLg ? 'text-3xl' : 'text-xl'} ${inverse ? 'text-white' : 'text-spr-900'}`}
-          style={{ letterSpacing: '-0.02em' }}
-        >
-          SPR
-        </span>
-        <span
-          className={`font-bold tracking-[0.18em] uppercase ${isLg ? 'text-base' : 'text-[10px]'} ${inverse ? 'text-blue-200' : 'text-spr-600'}`}
-        >
-          Techforge
-        </span>
-      </div>
+      <img
+        src={LOGO_URL}
+        alt="SPR TechForge"
+        height={height}
+        style={{ height, width: 'auto' }}
+        className="block shrink-0"
+        decoding="async"
+        draggable={false}
+      />
+      {wordmark && (
+        <div className={`flex flex-col leading-none ${isLg ? 'gap-1' : 'gap-0.5'}`}>
+          <span
+            className={`font-black tracking-tight ${isLg ? 'text-3xl' : 'text-xl'} ${inverse ? 'text-white' : 'text-spr-900'}`}
+            style={{ letterSpacing: '-0.02em' }}
+          >
+            SPR
+          </span>
+          <span
+            className={`font-bold tracking-[0.18em] uppercase ${isLg ? 'text-base' : 'text-[10px]'} ${inverse ? 'text-blue-200' : 'text-spr-600'}`}
+          >
+            TechForge
+          </span>
+        </div>
+      )}
     </div>
   );
 };

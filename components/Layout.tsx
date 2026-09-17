@@ -166,10 +166,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <aside className={`bg-slate-900 border-r border-slate-800/80 flex-shrink-0 fixed md:static inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-24' : 'w-64'} ${mobileMenuOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-5 border-b border-slate-800 hidden md:flex items-center justify-between overflow-hidden relative">
           <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
-            <Logo size="sm" inverse={true} />
+            <Logo size="sm" inverse wordmark={false} />
           </div>
           {isSidebarCollapsed && (
-             <div className="mx-auto bg-gradient-to-br from-blue-600 to-blue-800 w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-lg shadow-blue-900/50">SPR</div>
+             <div className="mx-auto"><Logo size="sm" inverse wordmark={false} /></div>
           )}
           <div className={`flex items-center gap-1.5 ${isSidebarCollapsed ? 'hidden' : 'flex'}`}>
             <NotificationBell />

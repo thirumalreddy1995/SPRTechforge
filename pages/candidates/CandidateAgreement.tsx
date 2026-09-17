@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { Button, Logo } from '../../components/Components';
+import { Button, LOGO_URL } from '../../components/Components';
 
 export const CandidateAgreement: React.FC = () => {
   const { candidates, markAgreementSent, markAgreementAccepted, isCloudEnabled } = useApp();
@@ -121,11 +121,7 @@ SPR Techforge Pvt Ltd`;
       <div className="max-w-3xl mx-auto print:w-full">
         <div className="flex items-center justify-between mb-8 border-b-2 border-indigo-600 pb-4">
            <div className="flex items-center gap-3">
-               <div className="w-12 h-12 flex items-center justify-center bg-indigo-600 rounded-lg">
-                   <svg className="text-white w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                   </svg>
-               </div>
+               <img src={LOGO_URL} alt="SPR TechForge" style={{ height: 56, width: 'auto' }} />
                <div>
                    <h1 className="text-2xl font-bold text-indigo-900">SPR Techforge Pvt Ltd</h1>
                    <p className="text-sm text-gray-500">Excellence in Training & Placement</p>
