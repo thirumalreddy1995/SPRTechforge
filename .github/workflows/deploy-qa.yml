@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - QA
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -56,6 +57,7 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID_QA }}
           VITE_EMAIL_ENDPOINT: ${{ secrets.EMAIL_ENDPOINT_QA }}
           VITE_EMAIL_SHARED_SECRET: ${{ secrets.EMAIL_SHARED_SECRET_QA }}
+          VITE_SITE_ORIGIN: https://sprtechforge-qa.web.app
         run: npm run build
 
       - name: Deploy to Firebase Hosting (QA)
