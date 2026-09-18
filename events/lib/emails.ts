@@ -13,12 +13,19 @@ const BANNER_CID = 'event-banner';
 
 export const isEventMailerConfigured = isEmailConfigured;
 
+/** Public page for the event on the host the email is sent from (prod or QA). */
+const eventPageUrl = (ev: SprEvent): string => `${window.location.origin}/e/${ev.slug}/`;
+/** Where the deploy publishes the event banner as a plain JPEG (scripts/build-share-pages.mjs). */
+const hostedBannerUrl = (ev: SprEvent): string => `${eventPageUrl(ev)}banner.jpg`;
+
 const wrap = (ev: SprEvent, inner: string): string => {
+  // data: banners render as cid:… here; sendEventEmail swaps that for the hosted
+  // JPEG when it exists, so the picture is a normal linked image, not an attachment.
   const bannerSrc = ev.bannerUrl
     ? (ev.bannerUrl.startsWith('data:') ? `cid:${BANNER_CID}` : ev.bannerUrl)
     : '';
   const banner = bannerSrc
-    ? `<img src="${bannerSrc}" alt="${escapeHtml(ev.title)}" style="width:100%;max-width:600px;height:auto;display:block;border-radius:8px;margin:0 auto 16px auto;"/>`
+    ? `<a href="${escapeHtml(eventPageUrl(ev))}" style="display:block;text-decoration:none;"><img src="${bannerSrc}" alt="${escapeHtml(ev.title)}" style="width:100%;max-width:600px;height:auto;display:block;border-radius:8px;margin:0 auto 16px auto;border:0;"/></a>`
     : '';
   return `<div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:15px;line-height:1.6;">
     ${banner}${inner}
@@ -133,16 +140,38 @@ export interface EventEmailOptions {
   fromName?: string;
 }
 
-/** Sends one event email. Banner is CID-embedded when it's an inline data: URL. */
+// Hosted-banner availability per event, remembered for the session. The JPEG appears
+// on the next scheduled deploy after publishing (≤30 min); until then we embed.
+const hostedBannerCache = new Map<string, Promise<boolean>>();
+const hasHostedBanner = (ev: SprEvent): Promise<boolean> => {
+  if (!ev.slug) return Promise.resolve(false);
+  const cached = hostedBannerCache.get(ev.slug);
+  if (cached) return cached;
+  const check: Promise<boolean> = fetch(hostedBannerUrl(ev), { method: 'HEAD', cache: 'no-store' })
+    .then(r => r.ok && (r.headers.get('content-type') || '').toLowerCase().startsWith('image/'))
+    .catch(() => false);
+  hostedBannerCache.set(ev.slug, check);
+  check.then(ok => { if (!ok) hostedBannerCache.delete(ev.slug); }); // retry next time if not published yet
+  return check;
+};
+
+/**
+ * Sends one event email. A data: banner is referenced as a hosted JPEG when the
+ * site has published it (a clickable image, no attachment); otherwise it is
+ * CID-embedded so the email still shows the picture.
+ */
 export const sendEventEmail = async (ev: SprEvent, to: string, subject: string, html: string, opts: EventEmailOptions = {}): Promise<void> => {
+  const inline = !!ev.bannerUrl && ev.bannerUrl.startsWith('data:');
+  const useHosted = inline && await hasHostedBanner(ev);
+  const body = useHosted ? html.split(`cid:${BANNER_CID}`).join(hostedBannerUrl(ev)) : html;
   await emailService.sendEmail({
     to,
     subject,
-    body: html,
+    body,
     isHtml: true,
     from: opts.from,
     fromName: opts.fromName || 'SPR Techforge',
-    inlineImages: ev.bannerUrl && ev.bannerUrl.startsWith('data:')
+    inlineImages: inline && !useHosted
       ? [{ key: BANNER_CID, url: ev.bannerUrl, name: 'banner' }]
       : undefined,
   });
