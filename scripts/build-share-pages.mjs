@@ -17,14 +17,17 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const DIST = path.resolve('dist');
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
-const apiKey = process.env.VITE_FIREBASE_API_KEY;
+// The production GitHub Actions job has no Firebase secrets: the app itself falls
+// back to this project (services/cloud.ts), so the share pages must do the same.
+const PROD_FALLBACK = { projectId: 'sprtechforge', apiKey: 'AIzaSyDWiI7gQ-sCLiMfoNPAmbqrT_XNAH2SxL8' };
 const origin = (process.env.VITE_SITE_ORIGIN || '').replace(/\/$/, '');
-
-if (!projectId || !apiKey || !origin) {
-  console.log('[share-pages] skipped — VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_API_KEY and VITE_SITE_ORIGIN are required.');
+if (!origin) {
+  console.log('[share-pages] skipped — set VITE_SITE_ORIGIN (CI does) to generate per-event link-preview pages.');
   process.exit(0);
 }
+const projectId = process.env.VITE_FIREBASE_PROJECT_ID || PROD_FALLBACK.projectId;
+const apiKey = process.env.VITE_FIREBASE_API_KEY || PROD_FALLBACK.apiKey;
+if (!process.env.VITE_FIREBASE_PROJECT_ID) console.log('[share-pages] no VITE_FIREBASE_PROJECT_ID — using the production project, like the app does.');
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
