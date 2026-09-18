@@ -26,6 +26,7 @@ const wrap = (ev: SprEvent, inner: string): string => {
       <p style="margin:0 0 6px 0;"><strong>Need help joining or have a question?</strong></p>
       <p style="margin:0;">Call / WhatsApp: <a href="tel:+918297276500" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">+91 82972 76500</a> &nbsp;·&nbsp; <a href="tel:+918217651466" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">+91 82176 51466</a></p>
       <p style="margin:0;">Email: <a href="mailto:admin@sprtechforge.com" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">admin@sprtechforge.com</a> &nbsp;·&nbsp; <a href="mailto:hr@sprtechforge.com" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">hr@sprtechforge.com</a></p>
+      <p style="margin:6px 0 0 0;">Website: <a href="https://sprtechforge.com" style="color:#1d4ed8;text-decoration:none;font-weight:bold;">sprtechforge.com</a> — courses, services and placement support</p>
     </div>
     <p style="margin:18px 0 0 0;"><img src="https://sprtechforge.com/logo.png" alt="SPR TechForge" height="40" style="height:40px;width:auto;display:block;"/></p>
     <p style="color:#9ca3af;font-size:12px;margin-top:8px;">SPR TechForge Pvt Ltd · <a href="https://maps.app.goo.gl/diXNusi9LLbdN2ZdA" style="color:#9ca3af;">202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085</a> · <a href="https://sprtechforge.com" style="color:#9ca3af;">sprtechforge.com</a></p>
@@ -68,6 +69,7 @@ export const confirmationEmailHtml = (ev: SprEvent, reg: EventRegistration, priv
     <p><strong>Your registration code:</strong> <span style="font-family:monospace;font-size:18px;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span><br/>
     <span style="color:#6b7280;font-size:13px;">Keep this handy — it's used for check-in.</span></p>
     ${gcal && !isWaitlisted ? `<p><a href="${gcal}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">Add to Google Calendar</a></p>` : ''}
+    <p style="margin-top:18px;">While you wait for the session, learn more about SPR TechForge — our software testing courses, QA services and placement support — at <a href="https://sprtechforge.com" style="color:#1d4ed8;font-weight:bold;">sprtechforge.com</a>.</p>
   `);
 };
 

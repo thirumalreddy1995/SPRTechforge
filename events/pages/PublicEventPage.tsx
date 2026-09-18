@@ -22,7 +22,7 @@ import {
 import { youtubeEmbedUrl } from '../lib/video';
 import { COUNTRIES, DEFAULT_DIAL } from '../lib/countries';
 import { icsDataUri, googleCalendarUrl } from '../lib/ics';
-import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText, IconCalendar, IconClock, IconVideo, IconPin, IconMic, DetailRow, PublicFooter } from '../components/shared';
+import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText, IconCalendar, IconClock, IconVideo, IconPin, IconMic, DetailRow, PublicFooter, CONTACT } from '../components/shared';
 import { confirmationEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
 
 const MIN_FILL_TIME_MS = 3000; // bots submit instantly; humans don't
@@ -421,6 +421,7 @@ export const PublicEventPage: React.FC = () => {
         {reg.status === 'confirmed' && ics && <a href={ics} download={`${ev.slug}.ics`} className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-bold hover:bg-gray-50">Download .ics</a>}
         <a href={whatsAppShareUrl(shareText)} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700">Invite a friend on WhatsApp</a>
       </div>
+      <p className="text-center text-sm text-gray-600 mt-5">While you wait, learn more about SPR TechForge — our courses, services and placement support — at <a href={CONTACT.website} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 underline">sprtechforge.com</a>.</p>
     </div>
   );
 
