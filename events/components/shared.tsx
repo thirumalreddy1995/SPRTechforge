@@ -104,10 +104,10 @@ export const DetailRow: React.FC<{ icon: React.ReactNode; children: React.ReactN
 );
 
 /** Support line shown in public footers. */
-export const CONTACT = { adminEmail: 'admin@sprtechforge.com', hrEmail: 'hr@sprtechforge.com', phoneDisplay: '+91 82972 76500', phoneTel: '+918297276500', mapUrl: 'https://maps.app.goo.gl/diXNusi9LLbdN2ZdA', address: '202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085' };
+export const CONTACT = { adminEmail: 'admin@sprtechforge.com', hrEmail: 'hr@sprtechforge.com', phoneDisplay: '+91 82972 76500', phoneTel: '+918297276500', mapUrl: 'https://maps.app.goo.gl/diXNusi9LLbdN2ZdA', website: 'https://sprtechforge.com', address: '202, Above Union Bank, Near Forum Sujana Mall, KPHB 6th Phase, Kukatpally, Hyderabad 500085' };
 export const PublicFooter: React.FC = () => (
   <footer className="text-center text-xs text-gray-400 mt-10 space-y-1.5 pb-4">
-    <p>SPR TechForge · Software Testing Training &amp; Careers</p>
+    <p>SPR TechForge · Software Testing Training &amp; Careers · <a className="text-blue-600 font-semibold" href={CONTACT.website} target="_blank" rel="noopener noreferrer">Visit sprtechforge.com</a></p>
     <p>
       Need help? <a className="text-blue-600 font-semibold" href={`mailto:${CONTACT.adminEmail}`}>{CONTACT.adminEmail}</a>
       {' · '}<a className="text-blue-600 font-semibold" href={`mailto:${CONTACT.hrEmail}`}>{CONTACT.hrEmail}</a>
