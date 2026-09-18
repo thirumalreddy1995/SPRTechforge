@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { LandingPage } from './pages/LandingPage';
 import { SeminarProvider } from './seminar/context/SeminarContext';
 import { isMasterUser } from './utils';
+import { hardReload, loadChunk, useFreshBuild } from './lib/freshBuild';
 
 // Public, no-login pages stay in the main bundle — the shared registration
 // link must paint as fast as possible for someone opening it on a phone.
@@ -15,8 +16,9 @@ import { PublicEventPage } from './events/pages/PublicEventPage';
 // Everything behind a login is code-split: a public visitor never downloads
 // finance, chat, training or admin screens. `named` adapts the project's
 // named exports to React.lazy's default-export contract.
+// loadChunk() reloads once if the chunk vanished because a newer build was deployed.
 const named = <T extends Record<string, any>>(loader: () => Promise<T>, key: keyof T) =>
-  lazy(async () => ({ default: (await loader())[key] as React.ComponentType<any> }));
+  lazy(async () => ({ default: (await loadChunk(loader))[key] as React.ComponentType<any> }));
 
 // The staff shell (sidebar, notification bell) is only needed after login.
 const Layout = named(() => import('./components/Layout'), 'Layout');
@@ -189,12 +191,38 @@ const AppRoutes = () => {
   );
 };
 
+/**
+ * Last line of defence: if a screen fails to load even after the automatic
+ * reload (see lib/freshBuild.ts), show a short message with a Reload button
+ * instead of an empty white page.
+ */
+class LoadErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) { console.error('Screen failed to load', err); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 text-center">
+        <div className="max-w-sm">
+          <h1 className="text-xl font-black text-gray-900 mb-2">This page could not be loaded</h1>
+          <p className="text-sm text-gray-600 mb-5">The site was just updated or the connection dropped. Reloading usually fixes it.</p>
+          <button onClick={() => { void hardReload(); }} className="px-5 py-3 rounded-xl bg-blue-700 text-white font-bold">Reload</button>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
+  useFreshBuild();
   return (
     <AppProvider>
       <HashRouter>
         <ToastOverlay />
-        <AppRoutes />
+        <LoadErrorBoundary>
+          <AppRoutes />
+        </LoadErrorBoundary>
       </HashRouter>
     </AppProvider>
   );
