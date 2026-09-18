@@ -51,7 +51,9 @@
           var m = /^#\/events\/([a-z0-9-]+)\/?(\?.*)?$/.exec(location.hash || '');
           if (!m || m[1] === 'manage') return;
           var pid = '', key = '';
-          if (!pid || !key || pid.charAt(0) === '%' || key.charAt(0) === '%') return;
+          // The production build runs without these env values and the app falls back
+          // to the main project (services/cloud.ts); prefetch from the same place.
+          if (!pid || !key || pid.charAt(0) === '%' || key.charAt(0) === '%') { pid = 'sprtechforge'; key = 'AIzaSyDWiI7gQ-sCLiMfoNPAmbqrT_XNAH2SxL8'; }
           var url = 'https://firestore.googleapis.com/v1/projects/' + pid + '/databases/(default)/documents:runQuery?key=' + key;
           var body = JSON.stringify({ structuredQuery: { from: [{ collectionId: 'events_events' }], where: { fieldFilter: { field: { fieldPath: 'slug' }, op: 'EQUAL', value: { stringValue: m[1] } } }, limit: 1 } });
           window.__SPR_EVENT_PREFETCH = {
@@ -62,8 +64,8 @@
         } catch (e) { /* prefetch is best-effort */ }
       })();
     </script>
-    <script type="module" crossorigin src="./assets/index-BcsLCIgZ.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/vendor-react-Eim65GkY.js">
+    <script type="module" crossorigin src="./assets/index-BtH0gYAk.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-react-o8fXROrd.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-firebase-ebGj7WcS.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-firebase-lite-BvIImohA.js">
     <link rel="stylesheet" crossorigin href="./assets/index-D7QCPpBu.css">
