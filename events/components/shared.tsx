@@ -118,8 +118,15 @@ export const PublicFooter: React.FC = () => (
 );
 
 /** The public registration URL for an event (HashRouter-aware). */
+/**
+ * Share link for an event. Points at the static /e/<slug>/ page (generated at
+ * deploy time by scripts/build-share-pages.mjs) so WhatsApp/LinkedIn previews
+ * show the event's own banner; that page forwards visitors to /#/events/<slug>.
+ * Before the site has been rebuilt for a new event, 404.html / index.html do
+ * the same forwarding, so the link always works.
+ */
 export const publicEventUrl = (slug: string): string =>
-  `${window.location.origin}${window.location.pathname}#/events/${slug}`;
+  `${window.location.origin}/e/${slug}/`;
 
 export const whatsAppShareUrl = (text: string): string =>
   `https://wa.me/?text=${encodeURIComponent(text)}`;

@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - master  # Production — deploys to sprtechforge.com
+  schedule:
+    # Rebuild every 30 minutes so events published since the last deploy get
+    # their own link-preview page (dist/e/<slug>/). Cheap: ~1 minute of CI.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write   # Needed to push to gh-pages branch
@@ -22,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
@@ -38,6 +43,7 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
           VITE_EMAIL_ENDPOINT: ${{ secrets.EMAIL_ENDPOINT }}
           VITE_EMAIL_SHARED_SECRET: ${{ secrets.EMAIL_SHARED_SECRET }}
+          VITE_SITE_ORIGIN: https://sprtechforge.com
         run: npm run build
 
       - name: Copy CNAME file

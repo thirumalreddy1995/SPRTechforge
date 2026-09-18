@@ -490,6 +490,7 @@ export const EventAdminDetail: React.FC = () => {
                 <span className="font-mono text-xs text-gray-800 break-all flex-1">{url}</span>
                 <CopyButton text={url} />
               </div>
+              <p className="text-xs text-gray-500 mb-3">WhatsApp and LinkedIn previews show this event's own banner, title and date. For a newly published event the preview switches from the company poster to the event banner within about 30 minutes (the site rebuilds on a schedule); the link itself works immediately.</p>
               <div className="flex gap-2 flex-wrap">
                 <a href={whatsAppShareUrl(shareText)} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">Share on WhatsApp</a>
                 <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-sm font-bold">Share on LinkedIn</a>
