@@ -22,13 +22,18 @@ export interface SitePhoto {
   createdAt: string;
 }
 
+/**
+ * A testimonial is one designed image card (student photo, name, package,
+ * company) uploaded by the admin. name/role/quote/rating are legacy fields kept
+ * for old records and used only as alt text; the website shows photoUrl only.
+ */
 export interface SiteTestimonial {
   id: string;
-  name: string;
-  role: string;         // "QA Engineer at Infosys" / "Batch 12 · Placed"
-  quote: string;
-  photoUrl: string;
-  rating: number;       // 1–5
+  name: string;         // alt text / file name
+  role: string;         // legacy, unused on the website
+  quote: string;        // legacy, unused on the website
+  photoUrl: string;     // the card image — required to be displayed
+  rating: number;       // legacy
   order: number;
   approved: boolean;    // only approved ones show on the website
   createdAt: string;

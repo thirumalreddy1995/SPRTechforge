@@ -46,7 +46,6 @@ export const WebsiteContent: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null);
 
   const [bannerEdit, setBannerEdit] = useState<SiteBanner | null>(null);
-  const [testiEdit, setTestiEdit] = useState<SiteTestimonial | null>(null);
   const bannerFile = useRef<HTMLInputElement>(null);
   const photoFile = useRef<HTMLInputElement>(null);
   const testiFile = useRef<HTMLInputElement>(null);
@@ -92,14 +91,20 @@ export const WebsiteContent: React.FC = () => {
     } catch (e) { fail(e); } finally { setBusy(null); if (photoFile.current) photoFile.current.value = ''; }
   };
 
-  // ---------- testimonials ----------
-  const newTestimonial = (): SiteTestimonial => ({ id: `testi-${generateId()}`, name: '', role: '', quote: '', photoUrl: '', rating: 5, order: testimonials.reduce((m, t) => Math.max(m, t.order), 0) + 1, approved: true, createdAt: new Date().toISOString() });
-  const saveTestiEdit = async () => {
-    if (!testiEdit) return;
-    if (!testiEdit.name.trim() || !testiEdit.quote.trim()) { showToast('Name and quote are required', 'error'); return; }
-    setBusy('testi');
-    try { await saveTestimonial({ ...testiEdit, name: testiEdit.name.trim(), role: testiEdit.role.trim(), quote: testiEdit.quote.trim() }); setTestiEdit(null); showToast('Testimonial saved', 'success'); }
-    catch (e) { fail(e); } finally { setBusy(null); }
+  // ---------- testimonials (image cards) ----------
+  const addTestimonialImages = async (files: File[]) => {
+    setBusy('testimonials');
+    let order = testimonials.reduce((m, t) => Math.max(m, t.order), 0);
+    let n = 0;
+    try {
+      for (const f of files) {
+        if (!/^image\//.test(f.type)) continue;
+        const url = await upload(f, 'testimonials', 1200);
+        await saveTestimonial({ id: `testi-${generateId()}`, name: f.name.replace(/\.[a-z0-9]+$/i, ''), role: '', quote: '', photoUrl: url, rating: 5, order: ++order, approved: true, createdAt: new Date().toISOString() });
+        n++;
+      }
+      showToast(`${n} testimonial${n === 1 ? '' : 's'} added to the website`, 'success');
+    } catch (e) { fail(e); } finally { setBusy(null); if (testiFile.current) testiFile.current.value = ''; }
   };
 
   // ---------- settings ----------
@@ -187,32 +192,29 @@ export const WebsiteContent: React.FC = () => {
         </Card>
       )}
 
-      {/* ---------- TESTIMONIALS ---------- */}
+      {/* ---------- TESTIMONIALS (image cards only) ---------- */}
       {tab === 'testimonials' && (
-        <Card title="Student testimonials" action={<Button onClick={() => setTestiEdit(newTestimonial())}>+ Add testimonial</Button>}>
-          <p className="text-sm text-gray-600 mb-4">Only approved testimonials appear on the website. Keep quotes short (2–3 sentences) and add where the student was placed.</p>
-          {testimonials.length === 0 ? <p className="text-sm text-gray-400 italic">No testimonials yet.</p> : (
-            <div className="space-y-3">
+        <Card title="Student success stories" action={<><input ref={testiFile} type="file" accept="image/*" multiple className="hidden" onChange={e => { const f = Array.from(e.target.files || []); if (f.length) addTestimonialImages(f); }} /><Button onClick={() => testiFile.current?.click()} disabled={busy === 'testimonials'}>{busy === 'testimonials' ? 'Uploading…' : '+ Upload testimonial'}</Button></>}>
+          <p className="text-sm text-gray-600 mb-4">Each testimonial is one designed image (student photo, name, package, company). Upload the finished card; it appears in the "Students success stories" carousel on the website. Portrait or square images work best — every card is shown at the same size.</p>
+          {testimonials.length === 0 ? <p className="text-sm text-gray-400 italic">No testimonials yet. Upload the first card.</p> : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {testimonials.map((t, i) => (
-                <div key={t.id} className={`flex gap-4 border rounded-xl p-3 ${t.approved ? 'border-gray-200' : 'border-dashed border-gray-300 opacity-70'}`}>
-                  <div className="w-12 h-12 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 overflow-hidden">
-                    {t.photoUrl ? <img src={t.photoUrl} alt="" className="w-full h-full object-cover" /> : t.name.charAt(0)}
+                <div key={t.id} className={`border rounded-xl overflow-hidden flex flex-col ${t.approved ? 'border-gray-200' : 'border-dashed border-gray-300 opacity-70'}`}>
+                  <div className="aspect-[4/5] bg-gray-50 flex items-center justify-center overflow-hidden">
+                    {t.photoUrl ? <img src={t.photoUrl} alt={t.name} className="w-full h-full object-contain" /> : <span className="text-xs text-gray-400 px-3 text-center">No image — text-only testimonials are no longer shown. Replace or delete.</span>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900">{t.name} <span className="text-gray-400 font-normal text-sm">· {t.role}</span> <span className="text-amber-500 text-sm">{'★'.repeat(t.rating)}</span></p>
-                    <p className="text-sm text-gray-700 mt-1 line-clamp-3">“{t.quote}”</p>
-                    <p className="text-xs text-gray-400 mt-1">{t.approved ? 'Approved — visible on website' : 'Not approved — hidden'}</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5 text-xs shrink-0">
-                    <label className={`px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer text-center ${busy === `testiphoto-${t.id}` ? 'opacity-60 pointer-events-none' : ''}`}>
-                      {busy === `testiphoto-${t.id}` ? 'Uploading…' : (t.photoUrl ? 'Change photo' : 'Add photo')}
-                      <input type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setBusy(`testiphoto-${t.id}`); try { const url = await upload(f, 'testimonials', 400); await updateTestimonial(t.id, { photoUrl: url }); showToast('Photo updated', 'success'); } catch (err) { fail(err); } finally { setBusy(null); } }} />
-                    </label>
-                    <button onClick={() => setTestiEdit(t)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">Edit details</button>
-                    <button onClick={() => updateTestimonial(t.id, { approved: !t.approved }).catch(fail)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">{t.approved ? 'Hide' : 'Approve'}</button>
-                    <button onClick={() => swapOrder(testimonials, t.id, -1, updateTestimonial).catch(fail)} disabled={i === 0} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40">↑</button>
-                    <button onClick={() => swapOrder(testimonials, t.id, 1, updateTestimonial).catch(fail)} disabled={i === testimonials.length - 1} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40">↓</button>
-                    <button onClick={() => { if (window.confirm('Delete this testimonial?')) deleteTestimonial(t.id).catch(fail); }} className="px-2 py-1 rounded-lg text-red-600 hover:bg-red-50">Delete</button>
+                  <div className="p-2 flex flex-wrap gap-1.5 text-xs justify-between items-center">
+                    <span className="text-gray-400">{t.approved ? 'Visible' : 'Hidden'}</span>
+                    <div className="flex gap-1">
+                      <label className={`px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer ${busy === `testiphoto-${t.id}` ? 'opacity-60 pointer-events-none' : ''}`} title="Replace image">
+                        {busy === `testiphoto-${t.id}` ? '…' : 'Replace'}
+                        <input type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setBusy(`testiphoto-${t.id}`); try { const url = await upload(f, 'testimonials', 1200); await updateTestimonial(t.id, { photoUrl: url, name: t.name || f.name }); showToast('Testimonial image replaced', 'success'); } catch (err) { fail(err); } finally { setBusy(null); } }} />
+                      </label>
+                      <button onClick={() => updateTestimonial(t.id, { approved: !t.approved }).catch(fail)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">{t.approved ? 'Hide' : 'Show'}</button>
+                      <button onClick={() => swapOrder(testimonials, t.id, -1, updateTestimonial).catch(fail)} disabled={i === 0} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40" title="Move left">←</button>
+                      <button onClick={() => swapOrder(testimonials, t.id, 1, updateTestimonial).catch(fail)} disabled={i === testimonials.length - 1} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40" title="Move right">→</button>
+                      <button onClick={() => { if (window.confirm('Delete this testimonial?')) deleteTestimonial(t.id).catch(fail); }} className="px-2 py-1 rounded-lg text-red-600 hover:bg-red-50">Delete</button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -285,33 +287,6 @@ export const WebsiteContent: React.FC = () => {
         )}
       </Modal>
 
-      {/* ---------- testimonial editor ---------- */}
-      <Modal isOpen={!!testiEdit} onClose={() => setTestiEdit(null)} title={testiEdit && testimonials.some(t => t.id === testiEdit.id) ? 'Edit testimonial' : 'New testimonial'} size="lg">
-        {testiEdit && (
-          <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Student name" value={testiEdit.name} onChange={e => setTestiEdit({ ...testiEdit, name: e.target.value })} placeholder="Priya Sharma" />
-              <Input label="Role / placement" value={testiEdit.role} onChange={e => setTestiEdit({ ...testiEdit, role: e.target.value })} placeholder="QA Engineer at Infosys · Batch 12" />
-            </div>
-            <TextArea label="Quote" rows={4} value={testiEdit.quote} onChange={e => setTestiEdit({ ...testiEdit, quote: e.target.value })} placeholder="What did the training change for them?" maxLength={400} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-              <Select label="Rating" value={String(testiEdit.rating)} onChange={e => setTestiEdit({ ...testiEdit, rating: parseInt(e.target.value, 10) })}>
-                {[5, 4, 3].map(r => <option key={r} value={r}>{'★'.repeat(r)}</option>)}
-              </Select>
-              <div className="mb-4 flex items-center gap-3">
-                <input ref={testiFile} type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; if (!f) return; setBusy('testiimg'); try { const url = await upload(f, 'testimonials', 400); setTestiEdit(t => t ? { ...t, photoUrl: url } : t); } catch (err) { fail(err); } finally { setBusy(null); } }} />
-                <Button variant="secondary" onClick={() => testiFile.current?.click()} disabled={busy === 'testiimg'}>{busy === 'testiimg' ? 'Uploading…' : testiEdit.photoUrl ? 'Replace photo' : 'Add photo (optional)'}</Button>
-                {testiEdit.photoUrl && <img src={testiEdit.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />}
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4"><input type="checkbox" className="w-4 h-4" checked={testiEdit.approved} onChange={e => setTestiEdit({ ...testiEdit, approved: e.target.checked })} /> Approved — show on website</label>
-            <div className="flex gap-2 justify-end border-t border-gray-100 pt-4">
-              <Button variant="secondary" onClick={() => setTestiEdit(null)}>Cancel</Button>
-              <Button onClick={saveTestiEdit} disabled={busy === 'testi' || busy === 'testiimg'}>{busy === 'testi' ? 'Saving…' : 'Save testimonial'}</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };
