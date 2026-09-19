@@ -204,7 +204,11 @@ export const WebsiteContent: React.FC = () => {
                     <p className="text-xs text-gray-400 mt-1">{t.approved ? 'Approved — visible on website' : 'Not approved — hidden'}</p>
                   </div>
                   <div className="flex flex-col gap-1.5 text-xs shrink-0">
-                    <button onClick={() => setTestiEdit(t)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">Edit</button>
+                    <label className={`px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer text-center ${busy === `testiphoto-${t.id}` ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {busy === `testiphoto-${t.id}` ? 'Uploading…' : (t.photoUrl ? 'Change photo' : 'Add photo')}
+                      <input type="file" accept="image/*" className="hidden" onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setBusy(`testiphoto-${t.id}`); try { const url = await upload(f, 'testimonials', 400); await updateTestimonial(t.id, { photoUrl: url }); showToast('Photo updated', 'success'); } catch (err) { fail(err); } finally { setBusy(null); } }} />
+                    </label>
+                    <button onClick={() => setTestiEdit(t)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">Edit details</button>
                     <button onClick={() => updateTestimonial(t.id, { approved: !t.approved }).catch(fail)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">{t.approved ? 'Hide' : 'Approve'}</button>
                     <button onClick={() => swapOrder(testimonials, t.id, -1, updateTestimonial).catch(fail)} disabled={i === 0} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40">↑</button>
                     <button onClick={() => swapOrder(testimonials, t.id, 1, updateTestimonial).catch(fail)} disabled={i === testimonials.length - 1} className="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-40">↓</button>

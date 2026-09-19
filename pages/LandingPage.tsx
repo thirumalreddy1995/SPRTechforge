@@ -144,10 +144,10 @@ export const LandingPage: React.FC = () => {
       <p className="text-amber-300 text-[11px] font-black uppercase tracking-[0.25em] mb-4">What you will master</p>
       <div className="grid grid-cols-2 gap-2.5">
         {TRACKS.map(t => (
-          <div key={t.title} className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+          <button key={t.title} type="button" onClick={() => scrollTo('training')} aria-label={`${t.title} — see the training track`} className="flex items-center gap-2.5 bg-white/5 hover:bg-white/15 border border-white/10 rounded-xl px-3 py-2.5 text-left transition-colors">
             <span className={`w-8 h-8 ${t.accent} rounded-lg flex items-center justify-center shrink-0`}><Icon d={t.icon} className="w-4 h-4" /></span>
             <span className="text-sm font-bold text-white/90 leading-tight">{t.title}</span>
-          </div>
+          </button>
         ))}
       </div>
       <p className="text-blue-100/70 text-xs mt-4">Live projects · Working-engineer trainers · Placement support</p>
@@ -156,11 +156,11 @@ export const LandingPage: React.FC = () => {
   const servicesPanel = (
     <div className="grid grid-cols-2 gap-4">
       {[['Testing & QA services', 'Web · Mobile · API · Desktop', I.check, 'bg-blue-600'], ['Application development', 'Web apps · Mobile · Portals', I.build, 'bg-emerald-600'], ['Automation frameworks', 'Selenium · Playwright · Appium', I.code, 'bg-indigo-600'], ['Performance & security', 'JMeter · Burp · OWASP', I.shield, 'bg-amber-500']].map(([t, d, icon, color]) => (
-        <div key={t as string} className={`${glass} p-5`}>
+        <button key={t as string} type="button" onClick={() => scrollTo('services')} aria-label={`${t} — see our services`} className={`${glass} p-5 text-left hover:bg-white/[0.14] transition-colors`}>
           <span className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3`}><Icon d={icon as string} className="w-5 h-5" /></span>
           <p className="font-black text-white">{t}</p>
           <p className="text-blue-100/70 text-xs mt-1">{d}</p>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -450,7 +450,7 @@ export const LandingPage: React.FC = () => {
             <div className="space-y-5">
               {CONTACT_DEFAULTS.phones.map(p => (
                 <div key={p.tel} className="flex items-center gap-4">
-                  <div className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0"><Icon d={I.phone} className="w-5 h-5" /></div>
+                  <a href={`tel:${p.tel}`} aria-label={`Call ${p.display}`} className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0 hover:bg-blue-700 hover:text-white transition-colors"><Icon d={I.phone} className="w-5 h-5" /></a>
                   <div className="flex items-center gap-3 flex-wrap">
                     <a href={`tel:${p.tel}`} className="font-black text-gray-900 hover:text-blue-700">{p.display}</a>
                     <a href={`https://wa.me/${p.wa}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">WhatsApp</a>
@@ -459,7 +459,7 @@ export const LandingPage: React.FC = () => {
               ))}
               {[[CONTACT_DEFAULTS.emails[0], 'General & admissions'], [CONTACT_DEFAULTS.emails[1], 'HR, careers & training']].map(([email, label]) => (
                 <div key={email} className="flex items-center gap-4">
-                  <div className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0"><Icon d={I.mail} className="w-5 h-5" /></div>
+                  <a href={`mailto:${email}`} aria-label={`Email ${email}`} className="w-11 h-11 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-blue-700 shrink-0 hover:bg-blue-700 hover:text-white transition-colors"><Icon d={I.mail} className="w-5 h-5" /></a>
                   <div><a href={`mailto:${email}`} className="font-black text-gray-900 hover:text-blue-700 break-all">{email}</a><p className="text-xs text-gray-500">{label}</p></div>
                 </div>
               ))}

@@ -1,8 +1,9 @@
-// "Life at SPR TechForge" photo grid with a simple lightbox. Renders nothing
-// when there are no photos (the section hides itself).
+// "Life at SPR TechForge" photos: a horizontal carousel of same-sized tiles
+// with a simple lightbox. Renders nothing when there are no photos.
 
 import React, { useEffect, useState } from 'react';
 import { SitePhoto } from '../types';
+import { HorizontalCarousel } from './HorizontalCarousel';
 
 export const SiteGallery: React.FC<{ photos: SitePhoto[] }> = ({ photos }) => {
   const [open, setOpen] = useState<number | null>(null);
@@ -18,24 +19,24 @@ export const SiteGallery: React.FC<{ photos: SitePhoto[] }> = ({ photos }) => {
   }, [open, photos.length]);
 
   if (photos.length === 0) return null;
-  const shown = photos.slice(0, 12);
+  const shown = photos.slice(0, 16);
 
   return (
-    <section id="gallery" className="py-24 bg-white">
+    <section id="gallery" className="py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="inline-block text-blue-600 font-black uppercase tracking-[0.3em] text-xs mb-3">Gallery</span>
           <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight">Life at SPR TechForge</h2>
           <p className="text-gray-500 mt-4 max-w-2xl mx-auto font-medium">Classrooms, project demos, seminars and celebrations.</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        <HorizontalCarousel cardClass="w-[260px] sm:w-[300px]" ariaLabel="Photo gallery" autoplayMs={4000}>
           {shown.map((p, i) => (
-            <button key={p.id} onClick={() => setOpen(i)} className={`group relative overflow-hidden rounded-2xl bg-gray-100 ${i % 5 === 0 ? 'col-span-2 row-span-2' : ''}`} aria-label={p.caption || `Photo ${i + 1}`}>
-              <img src={p.imageUrl} alt={p.caption} loading="lazy" className="w-full h-full object-cover aspect-square group-hover:scale-105 transition-transform duration-500" />
-              {p.caption && <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-xs sm:text-sm font-semibold px-3 pb-3 pt-8 text-left opacity-0 group-hover:opacity-100 transition-opacity">{p.caption}</span>}
+            <button key={p.id} type="button" onClick={() => setOpen(i)} className="group relative block w-full overflow-hidden rounded-2xl bg-gray-100 aspect-[4/3]" aria-label={p.caption || `Photo ${i + 1}`}>
+              <img src={p.imageUrl} alt={p.caption} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              {p.caption && <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-xs sm:text-sm font-semibold px-3 pb-3 pt-8 text-left">{p.caption}</span>}
             </button>
           ))}
-        </div>
+        </HorizontalCarousel>
       </div>
       {open !== null && shown[open] && (
         <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setOpen(null)} role="dialog" aria-modal="true">
