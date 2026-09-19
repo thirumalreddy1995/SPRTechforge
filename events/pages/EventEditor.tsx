@@ -53,6 +53,7 @@ const newEvent = (userId: string): SprEvent => {
     venueName: '',
     venueAddress: '',
     venueMapUrl: '',
+    whatsappGroupUrl: '',
     startAt: '',
     endAt: '',
     timezone: 'Asia/Kolkata',
@@ -343,6 +344,11 @@ export const EventEditor: React.FC = () => {
             <Input label="Google Maps link (optional)" value={form.venueMapUrl} onChange={e => set({ venueMapUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
           </div>
         )}
+        <div className="border border-emerald-100 bg-emerald-50/50 rounded-xl p-4 mt-4">
+          <p className="text-xs font-bold text-emerald-700 uppercase mb-1">WhatsApp community (shown after registration and in emails)</p>
+          <p className="text-xs text-gray-600 mb-3">Registrants get a "Join on WhatsApp" button so you can send reminders, the joining link and the recording. Leave empty to use the site-wide community link from Admin → Website Content → Numbers &amp; links.</p>
+          <Input label="WhatsApp group / community invite link (optional)" value={form.whatsappGroupUrl || ''} onChange={e => set({ whatsappGroupUrl: e.target.value.trim() })} placeholder="https://chat.whatsapp.com/…" />
+        </div>
       </Card>
     </div>
   );

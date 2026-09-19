@@ -114,6 +114,25 @@ The latest QA workflow will inject the secrets at build time and bake them into 
 
 ---
 
+## Email outbox (queue) — do this before any campaign
+
+Mails triggered by visitors (registration confirmations) and bulk mails (reminders)
+are **queued on the bridge** and sent by a worker at 24/minute (Outlook allows 30),
+with three retries. Without this, a reel that drives 200 sign-ups in an hour would
+make confirmations fail at the mailbox's rate limit.
+
+1. Paste the latest `apps-script/Code.gs` into the Apps Script project (replace all).
+2. In the editor pick the function **setupOutbox** in the toolbar dropdown and click **Run**.
+   Authorise when asked (it needs Google Sheets, to store the queue, and Triggers, to run every minute).
+   The log shows the URL of the sheet **"SPR TechForge — Email Outbox"**, created in the script owner's Drive.
+3. **Deploy → Manage deployments → pencil → Version: New version → Deploy** (URL unchanged).
+4. In the app: **Admin → Communication Settings → Email outbox** should show *Worker trigger: installed* with counts.
+
+Optional Script Property `OUTBOX_PER_MINUTE` (default 24). Sent/failed rows are pruned after 7 days once the sheet grows past 3,000 rows.
+"Send queued now" and "Retry failed" on the same admin card call the bridge directly.
+
+---
+
 ## Send from Outlook / Microsoft 365 (admin@sprtechforge.com)
 
 Do sections 1–5 first (any Google account works as the script owner — it no longer has to be the sending address). Then:

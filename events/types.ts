@@ -85,6 +85,8 @@ export interface SprEvent {
   venueName: string;
   venueAddress: string;
   venueMapUrl: string;
+  /** Public WhatsApp group/community invite (https://chat.whatsapp.com/…). Shown after registration and in emails. '' = use the site-wide community link. */
+  whatsappGroupUrl?: string;
 
   startAt: string;              // UTC ISO
   endAt: string;                // UTC ISO

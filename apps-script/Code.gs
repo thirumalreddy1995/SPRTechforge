@@ -19,6 +19,9 @@
  *   MS_CLIENT_ID      graph — Application (client) ID
  *   MS_CLIENT_SECRET  graph — client secret VALUE (not its ID)
  *   MS_SENDER         graph — default mailbox to send from, e.g. admin@sprtechforge.com
+ *   OUTBOX_PER_MINUTE optional — how many queued mails the outbox sends per
+ *                      minute (default 24; Outlook allows 30, Gmail has only a
+ *                      daily cap). OUTBOX_SHEET_ID is written automatically.
  *
  * Endpoints:
  *   GET  ?action=ping&secret=...
@@ -26,14 +29,29 @@
  *        also proves a Microsoft token can be obtained.
  *   GET  ?action=list&secret=...&limit=50
  *        Recent inbox messages (Gmail inbox, or the graph sender's Outlook inbox).
+ *   GET  ?action=outbox&secret=...[&flush=1][&retryFailed=1]
+ *        Outbox status { pending, sending, sent24h, failed24h, oldestPendingSec,
+ *        perMinute, triggerInstalled, sheetUrl }. flush=1 sends a batch right
+ *        now; retryFailed=1 puts failed rows back in the queue.
  *   POST ?secret=...
  *        Body: { to, cc?, subject, body, isHtml?, from?, fromName?,
  *                attachments?: [{url|data,name,mimeType}],
- *                inlineImages?: [{key,url|data,name,mimeType}] }
+ *                inlineImages?: [{key,url|data,name,mimeType}],
+ *                queue?: true, key?: string }
+ *        queue:true stores the mail in the OUTBOX (a Google Sheet this script
+ *        creates) and returns { ok, queued:true, id } immediately; a
+ *        once-a-minute trigger then sends at most OUTBOX_PER_MINUTE messages,
+ *        retrying failures. This is what absorbs registration bursts without
+ *        tripping Outlook's 30-messages-per-minute limit. `key` makes the
+ *        enqueue idempotent while that key is still pending (client retries).
  *        `from` picks the sending mailbox (graph) or a "Send mail as" alias
  *        (gmail). Attachments/inline images carry a fetchable `url` or a
  *        base64 `data` payload. inlineImages are CID attachments referenced in
  *        the HTML body as <img src="cid:KEY">.
+ *
+ * First-time outbox setup: in the Apps Script editor run setupOutbox() once
+ * (authorise Sheets + Triggers when asked). It creates the sheet and the
+ * every-minute trigger. Then redeploy (Manage deployments > Edit > New version).
  *
  * Deploy: Deploy > New deployment > Web app; Execute as: Me; Who has access:
  * Anyone. Re-deploy after edits via Manage deployments > Edit > New version so
@@ -109,6 +127,11 @@ function doGet(e) {
         return jsonResponse_({ ok: true, provider: provider, sender: defaultSender_() });
       }
       return jsonResponse_({ ok: true, provider: provider, sender: defaultSender_(), quotaRemaining: MailApp.getRemainingDailyQuota() });
+    }
+    if (action === 'outbox') {
+      if (params.retryFailed === '1') outboxRetryFailed_();
+      if (params.flush === '1') processOutbox();
+      return jsonResponse_(Object.assign({ ok: true }, outboxStatus_()));
     }
     if (action !== 'list') return jsonResponse_({ ok: false, error: 'Unknown action' });
 
@@ -266,16 +289,16 @@ function doPost(e) {
       return jsonResponse_({ ok: false, error: 'to, subject, and body are required' });
     }
 
+    if (data.queue) {
+      const q = enqueue_(data);
+      if (q.ok) return jsonResponse_({ ok: true, queued: true, id: q.id, duplicate: !!q.duplicate, pending: q.pending });
+      // Too big for the sheet (or sheet unavailable): fall through and send now.
+    }
+
     const blobs = collectBlobs_(data);
     if (blobs.error) return jsonResponse_({ ok: false, error: blobs.error });
 
-    const provider = mailProvider_();
-    if (provider === 'graph') {
-      const sentFrom = sendViaGraph_(data, blobs);
-      return jsonResponse_({ ok: true, provider: provider, sentTo: joinList_(data.to), sentFrom: sentFrom });
-    }
-    const sentFromGmail = sendViaGmail_(data, blobs);
-    return jsonResponse_({ ok: true, provider: provider, sentTo: joinList_(data.to), sentFrom: sentFromGmail, quotaRemaining: MailApp.getRemainingDailyQuota() });
+    return jsonResponse_(sendNow_(data, blobs));
   } catch (err) {
     return jsonResponse_({ ok: false, error: String(err && err.message || err) });
   }
@@ -429,4 +452,225 @@ function sendViaGraph_(data, blobs) {
     saveToSentItems: true,
   });
   return from;
+}
+
+// ---------------------------------------------------------------------------
+// Immediate send (shared by direct POSTs and the outbox worker)
+// ---------------------------------------------------------------------------
+
+function sendNow_(data, blobs) {
+  const provider = mailProvider_();
+  if (provider === 'graph') {
+    const sentFrom = sendViaGraph_(data, blobs);
+    return { ok: true, provider: provider, sentTo: joinList_(data.to), sentFrom: sentFrom };
+  }
+  const sentFromGmail = sendViaGmail_(data, blobs);
+  return { ok: true, provider: provider, sentTo: joinList_(data.to), sentFrom: sentFromGmail, quotaRemaining: MailApp.getRemainingDailyQuota() };
+}
+
+// ---------------------------------------------------------------------------
+// OUTBOX — durable queue in a Google Sheet, drained by a 1-minute trigger
+// ---------------------------------------------------------------------------
+//
+// Why a sheet: it is the only zero-setup durable store Apps Script offers, it
+// survives redeploys, and the owner can open it to see exactly what went out.
+// A cell holds at most 50,000 characters, so the JSON payload is split across
+// PAYLOAD_CHUNKS columns (about 360 KB per mail — plenty for HTML plus one
+// inline banner; bigger mails are sent immediately instead of queued).
+
+const OUTBOX_SHEET_NAME = 'Outbox';
+const OUTBOX_DEFAULT_PER_MINUTE = 24;   // Outlook: 30/min. Leave headroom for admin sends.
+const OUTBOX_MAX_ATTEMPTS = 4;
+const OUTBOX_CHUNK = 45000;
+const OUTBOX_PAYLOAD_CHUNKS = 8;
+const OUTBOX_KEEP_DAYS = 7;
+const OUTBOX_PRUNE_ABOVE_ROWS = 3000;
+// Columns (1-based)
+const OC = { id: 1, createdAt: 2, status: 3, attempts: 4, nextAttemptAt: 5, lastError: 6, to: 7, subject: 8, sentAt: 9, key: 10, chunks: 11, payload: 12 /* ..12+7 */ };
+const OUTBOX_HEADER = ['id', 'createdAt', 'status', 'attempts', 'nextAttemptAt', 'lastError', 'to', 'subject', 'sentAt', 'key', 'chunks', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+
+function outboxPerMinute_() {
+  const n = parseInt(props_().getProperty('OUTBOX_PER_MINUTE'), 10);
+  return n > 0 ? Math.min(n, 60) : OUTBOX_DEFAULT_PER_MINUTE;
+}
+
+/** The Outbox sheet, created (and remembered in OUTBOX_SHEET_ID) on first use. */
+function outboxSheet_() {
+  const p = props_();
+  var id = p.getProperty('OUTBOX_SHEET_ID');
+  var ss = null;
+  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (gone) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create('SPR TechForge — Email Outbox');
+    p.setProperty('OUTBOX_SHEET_ID', ss.getId());
+  }
+  var sh = ss.getSheetByName(OUTBOX_SHEET_NAME);
+  if (!sh) {
+    sh = ss.getSheets()[0];
+    sh.setName(OUTBOX_SHEET_NAME);
+    sh.getRange(1, 1, 1, OUTBOX_HEADER.length).setValues([OUTBOX_HEADER]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+/** Makes sure processOutbox runs every minute. Safe to call often. */
+function ensureOutboxTrigger_() {
+  const triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'processOutbox') return true;
+  }
+  ScriptApp.newTrigger('processOutbox').timeBased().everyMinutes(1).create();
+  return true;
+}
+
+/** Run this once from the editor after pasting the script: authorises Sheets + Triggers and creates both. */
+function setupOutbox() {
+  const sh = outboxSheet_();
+  ensureOutboxTrigger_();
+  Logger.log('Outbox ready. Sheet: ' + sh.getParent().getUrl() + ' — sending up to ' + outboxPerMinute_() + ' mails/minute.');
+}
+
+function outboxLock_(fn, waitMs) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(waitMs || 20000);
+  try { return fn(); } finally { lock.releaseLock(); }
+}
+
+/** Stores one mail. Returns { ok, id, duplicate?, pending } or { ok:false, error }. */
+function enqueue_(data) {
+  const payload = JSON.stringify({
+    to: data.to, cc: data.cc, subject: data.subject, body: data.body, isHtml: !!data.isHtml,
+    from: data.from, fromName: data.fromName, attachments: data.attachments || [], inlineImages: data.inlineImages || [],
+  });
+  if (payload.length > OUTBOX_CHUNK * OUTBOX_PAYLOAD_CHUNKS) return { ok: false, error: 'too large for the outbox' };
+  const chunks = [];
+  for (var i = 0; i < payload.length; i += OUTBOX_CHUNK) chunks.push(payload.slice(i, i + OUTBOX_CHUNK));
+  while (chunks.length < OUTBOX_PAYLOAD_CHUNKS) chunks.push('');
+
+  try {
+    return outboxLock_(function () {
+      const sh = outboxSheet_();
+      const key = String(data.key || '').slice(0, 200);
+      const last = sh.getLastRow();
+      var pending = 0;
+      if (last > 1) {
+        // Only the status + key columns are read: cheap even with thousands of rows.
+        const rows = sh.getRange(2, OC.status, last - 1, OC.key - OC.status + 1).getValues();
+        for (var r = 0; r < rows.length; r++) {
+          const st = rows[r][0];
+          if (st === 'pending' || st === 'sending') {
+            pending++;
+            if (key && rows[r][OC.key - OC.status] === key) {
+              return { ok: true, id: String(sh.getRange(r + 2, OC.id).getValue()), duplicate: true, pending: pending };
+            }
+          }
+        }
+      }
+      const id = Utilities.getUuid();
+      const now = new Date().toISOString();
+      sh.appendRow([id, now, 'pending', 0, now, '', joinList_(data.to), String(data.subject).slice(0, 200), '', key, chunks.filter(String).length].concat(chunks));
+      try { ensureOutboxTrigger_(); } catch (trig) { /* setupOutbox() from the editor fixes authorisation */ }
+      return { ok: true, id: id, pending: pending + 1 };
+    }, 25000);
+  } catch (err) {
+    return { ok: false, error: String(err && err.message || err) };
+  }
+}
+
+/** Time-driven (every minute). Sends the oldest due mails, at most OUTBOX_PER_MINUTE. */
+function processOutbox() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return; // previous run still going — skip this minute
+  try {
+    const sh = outboxSheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return;
+    const limit = outboxPerMinute_();
+    const nowMs = Date.now();
+    const meta = sh.getRange(2, OC.id, last - 1, OC.nextAttemptAt).getValues(); // id..nextAttemptAt
+    const due = [];
+    for (var r = 0; r < meta.length && due.length < limit; r++) {
+      const status = meta[r][OC.status - 1];
+      const next = Date.parse(meta[r][OC.nextAttemptAt - 1]) || 0;
+      if (status === 'pending' && next <= nowMs) due.push(r + 2);
+    }
+    if (!due.length) { pruneOutbox_(sh, last); return; }
+
+    // Claim first so an overlapping run (should not happen under the lock) cannot double-send.
+    due.forEach(function (row) { sh.getRange(row, OC.status).setValue('sending'); });
+    SpreadsheetApp.flush();
+
+    due.forEach(function (row) {
+      const rowVals = sh.getRange(row, 1, 1, OUTBOX_HEADER.length).getValues()[0];
+      const attempts = (parseInt(rowVals[OC.attempts - 1], 10) || 0) + 1;
+      try {
+        const json = rowVals.slice(OC.payload - 1, OC.payload - 1 + OUTBOX_PAYLOAD_CHUNKS).join('');
+        const data = JSON.parse(json);
+        const blobs = collectBlobs_(data);
+        if (blobs.error) throw new Error(blobs.error);
+        sendNow_(data, blobs);
+        sh.getRange(row, OC.status, 1, 4).setValues([['sent', attempts, '', '']]);
+        sh.getRange(row, OC.sentAt).setValue(new Date().toISOString());
+        // Free the payload cells once sent — keeps the sheet small.
+        sh.getRange(row, OC.payload, 1, OUTBOX_PAYLOAD_CHUNKS).clearContent();
+      } catch (err) {
+        const msg = String(err && err.message || err).slice(0, 500);
+        const giveUp = attempts >= OUTBOX_MAX_ATTEMPTS || /ErrorInvalidRecipients|InvalidRecipient|5\.1\.1|Invalid email/i.test(msg);
+        // Backoff: 2, 4, 8 minutes.
+        const nextAt = new Date(Date.now() + Math.pow(2, attempts) * 60000).toISOString();
+        sh.getRange(row, OC.status, 1, 4).setValues([[giveUp ? 'failed' : 'pending', attempts, giveUp ? '' : nextAt, msg]]);
+      }
+    });
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Failed rows go back to pending (admin "Retry failed"). */
+function outboxRetryFailed_() {
+  outboxLock_(function () {
+    const sh = outboxSheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return;
+    const st = sh.getRange(2, OC.status, last - 1, 1).getValues();
+    const now = new Date().toISOString();
+    for (var r = 0; r < st.length; r++) {
+      if (st[r][0] === 'failed') sh.getRange(r + 2, OC.status, 1, 3).setValues([['pending', 0, now]]);
+    }
+  });
+}
+
+function outboxStatus_() {
+  const sh = outboxSheet_();
+  const last = sh.getLastRow();
+  const out = { pending: 0, sending: 0, sent24h: 0, failed24h: 0, failed: 0, oldestPendingSec: 0, perMinute: outboxPerMinute_(), triggerInstalled: false, sheetUrl: sh.getParent().getUrl(), recentFailures: [] };
+  try { out.triggerInstalled = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'processOutbox'; }); } catch (e) { /* no permission yet */ }
+  if (last < 2) return out;
+  const rows = sh.getRange(2, OC.id, last - 1, OC.sentAt).getValues();
+  const dayAgo = Date.now() - 86400000;
+  var oldest = 0;
+  for (var r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    const status = row[OC.status - 1];
+    const created = Date.parse(row[OC.createdAt - 1]) || 0;
+    if (status === 'pending') { out.pending++; if (!oldest || created < oldest) oldest = created; }
+    else if (status === 'sending') out.sending++;
+    else if (status === 'sent') { if ((Date.parse(row[OC.sentAt - 1]) || 0) >= dayAgo) out.sent24h++; }
+    else if (status === 'failed') { out.failed++; if (created >= dayAgo) { out.failed24h++; if (out.recentFailures.length < 5) out.recentFailures.push({ to: row[OC.to - 1], subject: row[OC.subject - 1], error: row[OC.lastError - 1] }); } }
+  }
+  out.oldestPendingSec = oldest ? Math.round((Date.now() - oldest) / 1000) : 0;
+  return out;
+}
+
+/** Drops sent/failed rows older than OUTBOX_KEEP_DAYS once the sheet gets big. */
+function pruneOutbox_(sh, last) {
+  if (last < OUTBOX_PRUNE_ABOVE_ROWS) return;
+  const rows = sh.getRange(2, OC.createdAt, last - 1, 2).getValues(); // createdAt, status
+  const cutoff = Date.now() - OUTBOX_KEEP_DAYS * 86400000;
+  for (var r = rows.length - 1; r >= 0; r--) {
+    const st = rows[r][1];
+    if ((st === 'sent' || st === 'failed') && (Date.parse(rows[r][0]) || 0) < cutoff) sh.deleteRow(r + 2);
+  }
 }

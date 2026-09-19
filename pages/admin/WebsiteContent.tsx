@@ -112,7 +112,7 @@ export const WebsiteContent: React.FC = () => {
     setBusy('settings');
     try {
       const urlOk = (u: string) => !u || /^https?:\/\//i.test(u);
-      if (![settings.linkedinUrl, settings.twitterUrl, settings.youtubeUrl, settings.instagramUrl, settings.mapUrl].every(urlOk)) { showToast('Links must start with http:// or https://', 'error'); return; }
+      if (![settings.linkedinUrl, settings.twitterUrl, settings.youtubeUrl, settings.instagramUrl, settings.mapUrl, settings.whatsappCommunityUrl].every(urlOk)) { showToast('Links must start with http:// or https://', 'error'); return; }
       await saveStats(stats);
       await saveSettings({ ...settings, whatsappNumber: settings.whatsappNumber.replace(/\D/g, '') });
       showToast('Website numbers and links saved', 'success');
@@ -241,6 +241,7 @@ export const WebsiteContent: React.FC = () => {
               <Input label="LinkedIn URL (leave empty to hide)" value={settings.linkedinUrl} onChange={e => setSettings({ ...settings, linkedinUrl: e.target.value })} placeholder="https://www.linkedin.com/company/…" />
               <Input label="X / Twitter URL (leave empty to hide)" value={settings.twitterUrl} onChange={e => setSettings({ ...settings, twitterUrl: e.target.value })} placeholder="https://x.com/…" />
               <Input label="WhatsApp number (with country code, digits only)" value={settings.whatsappNumber} onChange={e => setSettings({ ...settings, whatsappNumber: e.target.value })} placeholder="918297276500" />
+              <Input label="WhatsApp community / group invite link (shown to event registrants; optional)" value={settings.whatsappCommunityUrl} onChange={e => setSettings({ ...settings, whatsappCommunityUrl: e.target.value.trim() })} placeholder="https://chat.whatsapp.com/…" />
               <Input label="Google Maps link (optional)" value={settings.mapUrl} onChange={e => setSettings({ ...settings, mapUrl: e.target.value })} placeholder="https://maps.app.goo.gl/…" />
               <Input label="Address line 1" value={settings.addressLine1} onChange={e => setSettings({ ...settings, addressLine1: e.target.value })} />
               <Input label="Address line 2" value={settings.addressLine2} onChange={e => setSettings({ ...settings, addressLine2: e.target.value })} />

@@ -42,6 +42,10 @@ interface SendResponse {
   provider?: string;
   /** Mailbox the bridge will send from when no `from` is given. */
   sender?: string;
+  /** Set when the mail was accepted into the outbox rather than sent inline. */
+  queued?: boolean;
+  id?: string;
+  duplicate?: boolean;
   error?: string;
 }
 
@@ -71,6 +75,30 @@ export interface SendEmailInput {
   fromName?: string;
   attachments?: EmailAttachment[];
   inlineImages?: InlineImageInput[];
+  /**
+   * Hand the mail to the bridge's OUTBOX instead of sending inline. The bridge
+   * answers "queued" at once and a server-side worker sends at a safe rate
+   * (below Outlook's 30/min) with retries — use for anything triggered by
+   * visitors (registration confirmations) or sent in bulk (reminders).
+   */
+  queue?: boolean;
+  /** Idempotency key: the same key is not queued twice while still pending. */
+  key?: string;
+}
+
+export interface OutboxStatus {
+  ok: boolean;
+  error?: string;
+  pending?: number;
+  sending?: number;
+  sent24h?: number;
+  failed24h?: number;
+  failed?: number;
+  oldestPendingSec?: number;
+  perMinute?: number;
+  triggerInstalled?: boolean;
+  sheetUrl?: string;
+  recentFailures?: { to: string; subject: string; error: string }[];
 }
 
 export interface EmailDiagnostics {
@@ -187,7 +215,7 @@ export const emailService = {
     return (data.messages || []).map(toMessage);
   },
 
-  async sendEmail(input: SendEmailInput): Promise<{ quotaRemaining?: number }> {
+  async sendEmail(input: SendEmailInput): Promise<{ quotaRemaining?: number; queued?: boolean }> {
     if (!isEmailConfigured()) throw notConfiguredError();
     const cfg = getEmailBridgeConfig();
     const url = `${cfg.endpoint}?secret=${encodeURIComponent(cfg.secret)}`;
@@ -203,6 +231,7 @@ export const emailService = {
     const fromName = (input.fromName || cfg.senderName || '').trim();
     if (from) body.from = from;
     if (fromName) body.fromName = fromName;
+    if (input.queue) { body.queue = true; if (input.key) body.key = input.key.slice(0, 200); }
     if (input.inlineImages && input.inlineImages.length) {
       body.inlineImages = input.inlineImages.map(img => toWireRef(img));
     }
@@ -214,7 +243,20 @@ export const emailService = {
       body: JSON.stringify(body),
     });
     if (!data.ok) throw new Error(friendlyBridgeError(data.error));
-    return { quotaRemaining: data.quotaRemaining };
+    return { quotaRemaining: data.quotaRemaining, queued: !!data.queued };
+  },
+
+  /** Outbox counters from the bridge; `flush` sends a batch now, `retryFailed` re-queues failed mails. */
+  async outboxStatus(opts: { flush?: boolean; retryFailed?: boolean } = {}): Promise<OutboxStatus> {
+    if (!isEmailConfigured()) return { ok: false, error: 'Email bridge is not configured.' };
+    const cfg = getEmailBridgeConfig();
+    try {
+      const data = await requestBridge<OutboxStatus>(`${cfg.endpoint}?action=outbox&secret=${encodeURIComponent(cfg.secret)}${opts.flush ? '&flush=1' : ''}${opts.retryFailed ? '&retryFailed=1' : ''}`);
+      if (!data.ok) return { ok: false, error: /unknown action/i.test(data.error || '') ? 'The deployed bridge is an older version without the outbox. Paste the latest apps-script/Code.gs, run setupOutbox() once, and redeploy a new version.' : friendlyBridgeError(data.error) };
+      return data;
+    } catch (e: any) {
+      return { ok: false, error: String(e?.message || e) };
+    }
   },
 
   /**
