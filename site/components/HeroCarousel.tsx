@@ -55,7 +55,7 @@ export const HeroCarousel: React.FC<{ slides: HeroSlide[] }> = ({ slides }) => {
       aria-roledescription="carousel" aria-label="Highlights"
     >
       {slides.map((s, i) => (
-        <div key={s.id} className={`absolute inset-0 transition-opacity duration-1000 ${i === index ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`} aria-hidden={i !== index}>
+        <div key={s.id} className={`transition-opacity duration-1000 ${i === index ? 'relative opacity-100 z-10' : 'absolute inset-0 opacity-0 z-0 pointer-events-none'}`} aria-hidden={i !== index}>
           {s.imageUrl ? (
             <>
               <img src={s.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} draggable={false} />
@@ -68,7 +68,7 @@ export const HeroCarousel: React.FC<{ slides: HeroSlide[] }> = ({ slides }) => {
               <div className="absolute bottom-[-20%] left-[-5%] w-[600px] h-[600px] bg-amber-500/10 blur-[140px] rounded-full" />
             </div>
           )}
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[600px] md:min-h-[680px] lg:min-h-[740px] flex items-center pt-32 md:pt-28 pb-24 gap-12">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[600px] md:min-h-[680px] lg:min-h-[740px] flex items-center pt-32 md:pt-28 pb-28 md:pb-24 gap-12">
             <div className={`max-w-3xl ${s.aside && !s.imageUrl ? 'lg:w-[58%] lg:shrink-0' : ''}`}>
               {s.eyebrow && (
                 <div className="inline-flex items-center gap-2.5 bg-white/10 border border-white/15 px-4 py-2 rounded-full mb-6 backdrop-blur-sm">

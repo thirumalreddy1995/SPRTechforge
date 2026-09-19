@@ -142,5 +142,12 @@ for (const ev of events) {
 }
 console.log(`[share-pages] ${made} page(s) written for ${origin}`);
 
+// sitemap.xml: home plus one entry per event share page (hash routes are not crawlable).
+const today = new Date().toISOString().slice(0, 10);
+const urls = [{ loc: `${origin}/`, priority: '1.0', changefreq: 'weekly' }, ...events.filter(e => e.slug && e.status === 'published').map(e => ({ loc: `${origin}/e/${e.slug}/`, priority: '0.8', changefreq: 'daily' }))];
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${today}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join('\n')}\n</urlset>\n`;
+await writeFile(path.join(DIST, 'sitemap.xml'), sitemap);
+console.log(`[share-pages] sitemap.xml with ${urls.length} url(s)`);
+
 // Keep the site's own OG image untouched — the company poster is correct for the home page.
 await readFile(path.join(DIST, 'og-image.png')).catch(() => console.warn('[share-pages] og-image.png missing from dist'));
