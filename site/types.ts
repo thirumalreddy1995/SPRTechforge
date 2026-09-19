@@ -55,6 +55,7 @@ export interface SiteSettings {
   youtubeUrl: string;
   instagramUrl: string;
   whatsappNumber: string;   // digits with country code, e.g. 918297276500
+  whatsappCommunityUrl: string; // https://chat.whatsapp.com/… invite for the learners community ('' = none)
   addressLine1: string;
   addressLine2: string;
   mapUrl: string;           // Google Maps link ('' = none)
@@ -83,6 +84,7 @@ export const defaultSettings = (): SiteSettings => ({
   youtubeUrl: 'https://youtube.com/@sprtechforge',
   instagramUrl: 'https://www.instagram.com/sprtechforgepvt',
   whatsappNumber: '918297276500',
+  whatsappCommunityUrl: '',
   addressLine1: '202, Above Union Bank, Near Forum Sujana Mall',
   addressLine2: 'KPHB 6th Phase, Kukatpally, Hyderabad 500085',
   mapUrl: CONTACT_DEFAULTS.mapUrl,

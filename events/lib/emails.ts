@@ -45,6 +45,14 @@ const joinButton = (url: string, platform: string): string =>
   `<p style="margin:14px 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">▶ Join Meeting${platform ? ` on ${escapeHtml(platform)}` : ''}</a><br/>
   <span style="color:#6b7280;font-size:12px;">Button not working? Copy this link into your browser: <a href="${escapeHtml(url)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(url)}</a></span></p>`;
 
+/** "Join our WhatsApp community" button — reminders and the recording go there. */
+const communityBlock = (ev: SprEvent): string => ev.whatsappGroupUrl
+  ? `<div style="margin:18px 0;padding:14px 16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+    <p style="margin:0 0 8px 0;color:#065f46;"><strong>Join the WhatsApp community</strong> — we post reminders, the joining link and the recording there, so you never miss the session.</p>
+    <a href="${escapeHtml(ev.whatsappGroupUrl)}" style="display:inline-block;background:#16a34a;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">Join on WhatsApp</a>
+  </div>`
+  : '';
+
 const whereBlock = (ev: SprEvent, priv: EventPrivateDetails | null, forConfirmed: boolean): string => {
   const rows: string[] = [];
   if (ev.mode !== 'offline') {
@@ -75,6 +83,7 @@ export const confirmationEmailHtml = (ev: SprEvent, reg: EventRegistration, priv
     ${whereBlock(ev, priv, !isWaitlisted)}
     <p><strong>Your registration code:</strong> <span style="font-family:monospace;font-size:18px;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span><br/>
     <span style="color:#6b7280;font-size:13px;">Keep this handy — it's used for check-in.</span></p>
+    ${communityBlock(ev)}
     ${gcal && !isWaitlisted ? `<p><a href="${gcal}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">Add to Google Calendar</a></p>` : ''}
     <p style="margin-top:18px;">While you wait for the session, learn more about SPR TechForge — our software testing courses, QA services and placement support — at <a href="https://sprtechforge.com" style="color:#1d4ed8;font-weight:bold;">sprtechforge.com</a>.</p>
   `);
@@ -88,6 +97,7 @@ export const reminderEmailHtml = (ev: SprEvent, reg: EventRegistration, priv: Ev
     <p><strong>When:</strong> ${escapeHtml(formatISTRange(ev.startAt, ev.endAt))}</p>
     ${whereBlock(ev, priv, true)}
     <p><strong>Your registration code:</strong> <span style="font-family:monospace;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span></p>
+    ${communityBlock(ev)}
     <p>See you there!</p>
   `);
 
@@ -164,11 +174,16 @@ export const sendEventEmail = async (ev: SprEvent, to: string, subject: string, 
   const inline = !!ev.bannerUrl && ev.bannerUrl.startsWith('data:');
   const useHosted = inline && await hasHostedBanner(ev);
   const body = useHosted ? html.split(`cid:${BANNER_CID}`).join(hostedBannerUrl(ev)) : html;
+  // Queued on the bridge: the visitor gets an instant "queued" reply and the
+  // server sends at a safe rate, so a burst of registrations never trips the
+  // mailbox's per-minute limit or leaves someone without a confirmation.
   await emailService.sendEmail({
     to,
     subject,
     body,
     isHtml: true,
+    queue: true,
+    key: `${ev.id}|${to.toLowerCase()}|${subject}`,
     from: opts.from,
     fromName: opts.fromName || 'SPR Techforge',
     inlineImages: inline && !useHosted
