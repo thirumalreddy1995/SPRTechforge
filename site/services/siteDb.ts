@@ -34,7 +34,7 @@ export const fetchSiteContent = async (): Promise<SiteContent> => {
   return {
     banners: banners.filter(b => b.imageUrl && b.active).sort(byOrder),
     photos: photos.filter(p => p.imageUrl).sort(byOrder),
-    testimonials: testimonials.filter(t => t.approved && t.quote).sort(byOrder),
+    testimonials: testimonials.filter(t => t.approved && t.photoUrl).sort(byOrder),
     stats: normStats(statsSnap),
     settings: normSettings(settingsSnap),
   };
