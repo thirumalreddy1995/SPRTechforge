@@ -130,6 +130,22 @@ export const EventAdminDetail: React.FC = () => {
     [allRegs, id],
   );
 
+  const [refCode, setRefCode] = useState('');
+  const refClean = refCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  const sourceRows = useMemo(() => {
+    const m = new Map<string, { total: number; confirmed: number; waitlisted: number; cancelled: number }>();
+    regs.forEach(r => {
+      const k = (r.utm?.source || '').trim() || 'direct';
+      const row = m.get(k) || { total: 0, confirmed: 0, waitlisted: 0, cancelled: 0 };
+      row.total++;
+      if (r.status === 'confirmed' || r.status === 'attended' || r.status === 'no_show') row.confirmed++;
+      else if (r.status === 'waitlisted') row.waitlisted++;
+      else row.cancelled++;
+      m.set(k, row);
+    });
+    return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
+  }, [regs]);
+
   // keep detail modal in sync with live data
   useEffect(() => {
     if (detailReg) {
@@ -164,22 +180,7 @@ export const EventAdminDetail: React.FC = () => {
   if (!ev) return <Card className="p-8 text-center"><p className="font-bold text-gray-700">Event not found.</p><Button className="mt-4 mx-auto" onClick={() => navigate('/events/manage')}>Back to Events</Button></Card>;
 
   const url = publicEventUrl(ev.slug);
-  const [refCode, setRefCode] = useState('');
-  const refClean = refCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
   const refUrl = refClean ? `${url}?ref=${refClean}` : '';
-  const sourceRows = useMemo(() => {
-    const m = new Map<string, { total: number; confirmed: number; waitlisted: number; cancelled: number }>();
-    regs.forEach(r => {
-      const k = (r.utm?.source || '').trim() || 'direct';
-      const row = m.get(k) || { total: 0, confirmed: 0, waitlisted: 0, cancelled: 0 };
-      row.total++;
-      if (r.status === 'confirmed' || r.status === 'attended' || r.status === 'no_show') row.confirmed++;
-      else if (r.status === 'waitlisted') row.waitlisted++;
-      else row.cancelled++;
-      m.set(k, row);
-    });
-    return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
-  }, [regs]);
   const shareText = buildShareText(ev, url);
   const seats = seatsRemaining(ev);
   const window_ = registrationWindow(ev);
