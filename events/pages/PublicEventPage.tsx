@@ -14,6 +14,7 @@ import { useApp } from '../../context/AppContext';
 import { Logo } from '../../components/Components';
 import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
 import { fetchEventBySlug, findExistingRegistration, registerForEvent, fetchPrivateDetails, updateRegistrationContact } from '../services/eventsPublicDb';
+import { fetchSiteSettingsLite } from '../../site/services/siteDb';
 import { formatISTRange, formatISTDate, formatISTTime } from '../lib/datetime';
 import {
   lifecycleOf, registrationWindow, seatsRemaining,
@@ -96,6 +97,17 @@ export const PublicEventPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  // WhatsApp community: the event's own link, else the site-wide one (fetched lazily, off the critical path).
+  const [communityUrl, setCommunityUrl] = useState<string>('');
+  useEffect(() => {
+    if (!ev) return;
+    if (ev.whatsappGroupUrl) { setCommunityUrl(ev.whatsappGroupUrl); return; }
+    let live = true;
+    fetchSiteSettingsLite().then(st => { if (live) setCommunityUrl(st.whatsappCommunityUrl || ''); });
+    return () => { live = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ev?.id, ev?.whatsappGroupUrl]);
+  const evForMail = (): SprEvent => { const e = ev as SprEvent; return communityUrl && !e.whatsappGroupUrl ? { ...e, whatsappGroupUrl: communityUrl } : e; };
   const [done, setDone] = useState<EventRegistration | null>(null);
   const [alreadyRegistered, setAlreadyRegistered] = useState<EventRegistration | null>(null);
   /** What the person typed when the duplicate check matched an earlier registration — offered as a correction. */
@@ -295,7 +307,7 @@ export const PublicEventPage: React.FC = () => {
       // everything too, so a mail failure never blocks the registration.
       if (isEventMailerConfigured()) {
         setEmailSent(null);
-        sendEventEmail(ev, reg.email, `${reg.status === 'waitlisted' ? 'Waitlisted' : 'Registered'}: ${ev.title}`, confirmationEmailHtml(ev, reg, privDetails))
+        sendEventEmail(evForMail(), reg.email, `${reg.status === 'waitlisted' ? 'Waitlisted' : 'Registered'}: ${ev.title}`, confirmationEmailHtml(evForMail(), reg, privDetails))
           .then(() => setEmailSent(true))
           .catch(e => { console.warn('Confirmation email failed:', e); setEmailSent(false); });
       } else {
@@ -317,7 +329,7 @@ export const PublicEventPage: React.FC = () => {
     if (!privDetails && reg.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid')) {
       try { privDetails = await fetchPrivateDetails(ev.id); setPriv(privDetails); } catch { /* still send without the link */ }
     }
-    await sendEventEmail(ev, reg.email, `${reg.status === 'waitlisted' ? 'Waitlisted' : 'Registered'}: ${ev.title}`, confirmationEmailHtml(ev, reg, privDetails));
+    await sendEventEmail(evForMail(), reg.email, `${reg.status === 'waitlisted' ? 'Waitlisted' : 'Registered'}: ${ev.title}`, confirmationEmailHtml(evForMail(), reg, privDetails));
     return true;
   };
 
@@ -361,8 +373,8 @@ export const PublicEventPage: React.FC = () => {
       </p>
       {!isExisting && (
         <p className="text-sm mb-5">
-          {emailSent === true && <span className="text-emerald-700 font-semibold">✓ Confirmation and joining details emailed to {reg.email}.</span>}
-          {emailSent === null && <span className="text-gray-500">Sending your confirmation email to {reg.email}…</span>}
+          {emailSent === true && <span className="text-emerald-700 font-semibold">✓ Confirmation with the joining details is on its way to {reg.email} (allow a few minutes; check spam/promotions).</span>}
+          {emailSent === null && <span className="text-gray-500">Queuing your confirmation email to {reg.email}…</span>}
           {emailSent === false && <span className="text-gray-500">Save this page or take a screenshot — it has everything you need to join.</span>}
         </p>
       )}
@@ -416,6 +428,12 @@ export const PublicEventPage: React.FC = () => {
         </div>
       )}
 
+      {communityUrl && (
+        <a href={communityUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full mb-4 px-5 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-black text-base shadow-lg shadow-emerald-200">
+          <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-1 1.2-.4.2-.7.1c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.6l.5-.6c.2-.2.2-.4.3-.6s0-.4 0-.6l-.9-2.1c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.5 1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4s.3-1.3.2-1.4c-.1-.2-.3-.2-.5-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" /></svg>
+          Join our WhatsApp community for reminders &amp; the recording
+        </a>
+      )}
       <div className="flex justify-center gap-3 flex-wrap">
         {reg.status === 'confirmed' && gcal && <a href={gcal} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700">Add to Google Calendar</a>}
         {reg.status === 'confirmed' && ics && <a href={ics} download={`${ev.slug}.ics`} className="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-bold hover:bg-gray-50">Download .ics</a>}

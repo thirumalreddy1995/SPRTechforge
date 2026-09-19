@@ -65,5 +65,9 @@ export const deleteTestimonial = (id: string) => cloudService.deleteItem(SITE_CO
 
 export const loadStats = async (): Promise<SiteStats> => normStats(await cloudService.getItem(SITE_COLLECTIONS.content, 'stats'));
 export const saveStats = (s: SiteStats) => cloudService.saveItem(SITE_COLLECTIONS.content, { id: 'stats', ...strip(s), updatedAt: new Date().toISOString() });
+/** Public (REST) read of the site settings — used by the event page for the community link. */
+export const fetchSiteSettingsLite = async (): Promise<SiteSettings> => {
+  try { const snap = await getDoc(doc(liteDb(), SITE_COLLECTIONS.content, 'settings')); return normSettings(snap.exists() ? snap.data() : {}); } catch { return defaultSettings(); }
+};
 export const loadSettings = async (): Promise<SiteSettings> => normSettings(await cloudService.getItem(SITE_COLLECTIONS.content, 'settings'));
 export const saveSettings = (s: SiteSettings) => cloudService.saveItem(SITE_COLLECTIONS.content, { id: 'settings', ...strip(s), updatedAt: new Date().toISOString() });

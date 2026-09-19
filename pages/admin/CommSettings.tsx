@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Card, Input } from '../../components/Components';
 import { useApp } from '../../context/AppContext';
-import { emailService } from '../../services/emailService';
+import { emailService, OutboxStatus } from '../../services/emailService';
 import { uploadService } from '../../services/uploadService';
 import {
   clearLocalMessagingOverride,
@@ -35,6 +35,13 @@ export const CommSettings: React.FC = () => {
   const [emailTest, setEmailTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string; quotaRemaining?: number; provider?: string; sender?: string } }>({ running: false });
   const [storageTest, setStorageTest] = useState<{ running: boolean; result?: { ok: boolean; error?: string } }>({ running: false });
   const [source, setSource] = useState(getMessagingConfigSource());
+  const [outbox, setOutbox] = useState<{ loading: boolean; status?: OutboxStatus }>({ loading: false });
+  const refreshOutbox = async (opts: { flush?: boolean; retryFailed?: boolean } = {}) => {
+    setOutbox(o => ({ ...o, loading: true }));
+    const status = await emailService.outboxStatus(opts);
+    setOutbox({ loading: false, status });
+  };
+  useEffect(() => { refreshOutbox(); }, []);
 
   const refreshFromResolved = () => {
     const cfg = getEmailBridgeConfig();
@@ -187,6 +194,34 @@ export const CommSettings: React.FC = () => {
             )
           )}
         </div>
+      </Card>
+
+      <Card title="Email outbox (queue)" action={<div className="flex gap-2"><Button variant="secondary" onClick={() => refreshOutbox()} disabled={outbox.loading}>{outbox.loading ? 'Checking…' : 'Refresh'}</Button><Button variant="secondary" onClick={() => refreshOutbox({ flush: true })} disabled={outbox.loading || !outbox.status?.ok}>Send queued now</Button>{!!outbox.status?.failed && <Button variant="secondary" onClick={() => refreshOutbox({ retryFailed: true })} disabled={outbox.loading}>Retry failed</Button>}</div>}>
+        <p className="text-xs text-gray-600 mb-3">
+          Registration confirmations, reminders and other event mails are handed to the bridge's outbox and sent by a server-side worker at a safe rate
+          (default 24 per minute; Outlook allows 30). A burst of registrations from a reel therefore never fails or slows the sign-up. Failed sends are retried three times with backoff.
+        </p>
+        {outbox.status && !outbox.status.ok && <p className="text-sm font-bold text-red-600">✗ {outbox.status.error}</p>}
+        {outbox.status?.ok && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              {[['Pending', outbox.status.pending ?? 0, 'text-amber-600'], ['Sending', outbox.status.sending ?? 0, 'text-blue-600'], ['Sent (24 h)', outbox.status.sent24h ?? 0, 'text-emerald-600'], ['Failed (24 h)', outbox.status.failed24h ?? 0, (outbox.status.failed24h ?? 0) > 0 ? 'text-red-600' : 'text-gray-500']].map(([label, n, cls]) => (
+                <div key={label as string} className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center"><p className={`text-2xl font-black ${cls}`}>{n as number}</p><p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label as string}</p></div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-600">
+              Rate: <strong>{outbox.status.perMinute}/min</strong>
+              {outbox.status.oldestPendingSec ? <> · oldest pending mail waiting <strong>{Math.round(outbox.status.oldestPendingSec / 60)} min</strong></> : null}
+              {' · '}Worker trigger: {outbox.status.triggerInstalled ? <strong className="text-emerald-700">installed</strong> : <strong className="text-red-600">NOT installed — open the Apps Script editor and run setupOutbox() once, then redeploy</strong>}
+              {outbox.status.sheetUrl && <> · <a href={outbox.status.sheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Open outbox sheet</a></>}
+            </p>
+            {!!outbox.status.recentFailures?.length && (
+              <ul className="mt-3 text-xs text-red-700 space-y-1">
+                {outbox.status.recentFailures.map((f, i) => <li key={i}><strong>{f.to}</strong> — {f.subject}: {f.error}</li>)}
+              </ul>
+            )}
+          </>
+        )}
       </Card>
 
       <Card title="Sending from Outlook / Microsoft 365 (admin@sprtechforge.com)">
