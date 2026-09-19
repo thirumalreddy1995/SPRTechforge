@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, HashRouter } from 'react-router-dom';
+import { Routes, Route, Navigate, HashRouter, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastOverlay } from './components/Components';
 import { Login } from './pages/Login';
@@ -103,6 +103,13 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // enforcement of the same predicate lands with G-02 Firestore rules.
   if (!isMasterUser(user)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
+};
+
+/** New screen → start at the top (the browser keeps the scroll offset across hash routes). */
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  React.useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); }, [pathname]);
+  return null;
 };
 
 const AppRoutes = () => {
@@ -220,6 +227,7 @@ export default function App() {
     <AppProvider>
       <HashRouter>
         <ToastOverlay />
+        <ScrollToTop />
         <LoadErrorBoundary>
           <AppRoutes />
         </LoadErrorBoundary>
