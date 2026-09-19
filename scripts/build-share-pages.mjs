@@ -127,7 +127,7 @@ for (const ev of events) {
     <meta name="twitter:description" content="${esc(desc)}" />
     <meta name="twitter:image" content="${esc(image)}" />
     <!-- Humans go straight to the app; crawlers only read the tags above. -->
-    <script>location.replace(${JSON.stringify(appUrl)});</script>
+    <script>location.replace(${JSON.stringify(appUrl)} + location.search);</script>
     <meta http-equiv="refresh" content="0; url=${appUrl}" />
     <style>body{font-family:Inter,Arial,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#93c5fd}</style>
   </head>
@@ -141,6 +141,25 @@ for (const ev of events) {
   console.log(`[share-pages] /e/${ev.slug}/  ${banner?.file ? `${banner.file} ${Math.round(banner.bytes / 1024)} KB${banner.width ? ` ${banner.width}x${banner.height}` : ''}` : (banner?.src ? 'hosted banner' : 'site poster')}`);
 }
 console.log(`[share-pages] ${made} page(s) written for ${origin}`);
+
+// /webinar short link: the soonest upcoming published event (falls back to the events list).
+const upcoming = events.filter(e => e.slug && e.status === 'published' && Date.parse(e.endAt || e.startAt) > Date.now()).sort((a, b) => (Date.parse(a.startAt) - Date.parse(b.startAt)) || (Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0)))[0];
+{
+  const target = upcoming ? `/e/${upcoming.slug}/` : '/#/events';
+  await mkdir(path.join(DIST, 'webinar'), { recursive: true });
+  await writeFile(path.join(DIST, 'webinar', 'index.html'), `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(upcoming ? upcoming.title : 'Free Software Testing Webinar')} · SPR TechForge</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+${upcoming ? `<meta property="og:type" content="website" /><meta property="og:site_name" content="SPR TechForge" /><meta property="og:title" content="${esc(upcoming.title)}" /><meta property="og:description" content="${esc([fmtRange(upcoming.startAt, upcoming.endAt), upcoming.shortDescription || 'Free event by SPR TechForge — register now.'].filter(Boolean).join(' · ').slice(0, 300))}" /><meta property="og:url" content="${origin}/webinar" /><meta property="og:image" content="${origin}/e/${upcoming.slug}/banner.jpg" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:image" content="${origin}/e/${upcoming.slug}/banner.jpg" />` : ''}
+<script>location.replace(${JSON.stringify(target)} + location.search);</script>
+<meta http-equiv="refresh" content="0; url=${target}" />
+<style>body{font-family:Inter,Arial,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#93c5fd}</style>
+</head><body><p>Opening the webinar page… <a href="${target}">Continue</a></p></body></html>
+`);
+  console.log(`[share-pages] /webinar → ${target}`);
+}
 
 // sitemap.xml: home plus one entry per event share page (hash routes are not crawlable).
 const today = new Date().toISOString().slice(0, 10);
