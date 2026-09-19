@@ -11,8 +11,11 @@
          unknown path, send the visitor to the right place inside the app. -->
     <script>
       (function () {
-        var m = location.pathname.match(/^\/e\/([A-Za-z0-9-]+)\/?$/);
-        location.replace(m ? '/#/events/' + m[1] : '/');
+        var m = location.pathname.match(/^[/]e[/]([A-Za-z0-9-]+)[/]?$/);
+        var q = location.search || '';
+        if (m) location.replace('/#/events/' + m[1] + q);
+        else if (/^[/]webinar[/]?$/.test(location.pathname)) location.replace('/#/events' + q);
+        else location.replace('/');
       })();
     </script>
     <style>body{font-family:Inter,Arial,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}a{color:#93c5fd}</style>

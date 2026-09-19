@@ -120,10 +120,21 @@ export const PublicEventPage: React.FC = () => {
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   const [formVisible, setFormVisible] = useState(false);
 
+  // Attribution: influencer links are …/e/<slug>/?ref=<code> (the share page forwards the query).
+  // Classic utm_* still works. The code is remembered in this browser so a visitor who wanders to
+  // the home page and comes back is still credited to the influencer who sent them.
   const utm = useMemo(() => {
     const p = new URLSearchParams(location.search);
-    return { source: p.get('utm_source') || '', medium: p.get('utm_medium') || '', campaign: p.get('utm_campaign') || '' };
-  }, [location.search]);
+    const clean = (v: string | null) => (v || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    const key = `spr:ref:${slug || ''}`;
+    let source = clean(p.get('ref')) || clean(p.get('utm_source'));
+    try {
+      if (source) sessionStorage.setItem(key, source);
+      else source = sessionStorage.getItem(key) || '';
+    } catch { /* storage unavailable */ }
+    return { source, medium: (p.get('utm_medium') || (p.get('ref') ? 'influencer' : '')).trim().slice(0, 40), campaign: (p.get('utm_campaign') || '').trim().slice(0, 60) };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, slug]);
 
   useEffect(() => {
     let cancelled = false;

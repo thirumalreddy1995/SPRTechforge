@@ -164,6 +164,22 @@ export const EventAdminDetail: React.FC = () => {
   if (!ev) return <Card className="p-8 text-center"><p className="font-bold text-gray-700">Event not found.</p><Button className="mt-4 mx-auto" onClick={() => navigate('/events/manage')}>Back to Events</Button></Card>;
 
   const url = publicEventUrl(ev.slug);
+  const [refCode, setRefCode] = useState('');
+  const refClean = refCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  const refUrl = refClean ? `${url}?ref=${refClean}` : '';
+  const sourceRows = useMemo(() => {
+    const m = new Map<string, { total: number; confirmed: number; waitlisted: number; cancelled: number }>();
+    regs.forEach(r => {
+      const k = (r.utm?.source || '').trim() || 'direct';
+      const row = m.get(k) || { total: 0, confirmed: 0, waitlisted: 0, cancelled: 0 };
+      row.total++;
+      if (r.status === 'confirmed' || r.status === 'attended' || r.status === 'no_show') row.confirmed++;
+      else if (r.status === 'waitlisted') row.waitlisted++;
+      else row.cancelled++;
+      m.set(k, row);
+    });
+    return [...m.entries()].sort((a, b) => b[1].total - a[1].total);
+  }, [regs]);
   const shareText = buildShareText(ev, url);
   const seats = seatsRemaining(ev);
   const window_ = registrationWindow(ev);
@@ -260,7 +276,7 @@ export const EventAdminDetail: React.FC = () => {
       Status: REG_STATUS_LABELS[r.status],
       FollowUp: FOLLOW_UP_LABELS[r.followUpStatus] || r.followUpStatus,
       RegisteredAt: formatISTDateTime(r.registeredAt),
-      UTMSource: r.utm?.source || '',
+      Source: r.utm?.source || 'direct',
       ConsentEmail: r.consentEmail?.given ? 'Yes' : 'No',
       ConsentWhatsApp: r.consentWhatsApp?.given ? 'Yes' : 'No',
       ConvertedToCandidate: r.convertedToCandidateId ? 'Yes' : 'No',
@@ -496,11 +512,42 @@ export const EventAdminDetail: React.FC = () => {
                 <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-sm font-bold">Share on LinkedIn</a>
                 <a href={url} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-bold hover:bg-gray-50">Open public page</a>
               </div>
+              <div className="mt-4 border-t border-gray-100 pt-4">
+                <p className="text-sm font-bold text-gray-800 mb-1">Influencer / partner links</p>
+                <p className="text-xs text-gray-500 mb-2">Give each promoter the same page with their own code. Registrations coming through it are counted under that code below and in the CSV export. Codes: letters, numbers, - or _ (e.g. <span className="font-mono">priya</span>).</p>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <input value={refCode} onChange={e => setRefCode(e.target.value)} placeholder="code, e.g. priya" className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-44" />
+                  {refUrl && <><span className="font-mono text-xs text-gray-800 break-all flex-1 min-w-[200px]">{refUrl}</span><CopyButton text={refUrl} label="Copy link" /><a href={whatsAppShareUrl(buildShareText(ev, refUrl))} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Send via WhatsApp</a></>}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Short link for reels and stories: <span className="font-mono">{window.location.origin}/webinar</span> always opens the next upcoming event (add <span className="font-mono">?ref=code</span> to it too).</p>
+              </div>
               {!window_.open && (
                 <p className="text-xs font-bold text-amber-700 mt-3">
                   ⚠ Registrations are currently closed ({window_.reason === 'closed_early' ? 'closed early by you' : window_.reason === 'window_over' ? 'registration window is over' : 'event has ended'}).
                 </p>
               )}
+            </Card>
+          )}
+          {sourceRows.length > 0 && (
+            <Card title="📊 Registrations by source">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left text-xs uppercase tracking-wider text-gray-500 border-b border-gray-200"><th className="py-2 pr-4">Source</th><th className="py-2 pr-4 text-right">Total</th><th className="py-2 pr-4 text-right">Confirmed</th><th className="py-2 pr-4 text-right">Waitlisted</th><th className="py-2 pr-4 text-right">Cancelled</th><th className="py-2 text-right">Share</th></tr></thead>
+                  <tbody>
+                    {sourceRows.map(([src, n]) => (
+                      <tr key={src} className="border-b border-gray-100">
+                        <td className="py-2 pr-4 font-bold text-gray-900">{src === 'direct' ? <span className="text-gray-500 font-medium">Direct / untagged</span> : <span className="font-mono">{src}</span>}</td>
+                        <td className="py-2 pr-4 text-right font-bold">{n.total}</td>
+                        <td className="py-2 pr-4 text-right text-emerald-700">{n.confirmed}</td>
+                        <td className="py-2 pr-4 text-right text-amber-700">{n.waitlisted}</td>
+                        <td className="py-2 pr-4 text-right text-gray-500">{n.cancelled}</td>
+                        <td className="py-2 text-right text-gray-600">{regs.length ? Math.round(n.total * 100 / regs.length) : 0}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">A source is the <span className="font-mono">?ref=</span> code on the link the person used (or utm_source). "Direct" means the plain link. The CSV export includes a Source column.</p>
             </Card>
           )}
 
