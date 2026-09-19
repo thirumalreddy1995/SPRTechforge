@@ -84,7 +84,7 @@ export const defaultSettings = (): SiteSettings => ({
   youtubeUrl: 'https://youtube.com/@sprtechforge',
   instagramUrl: 'https://www.instagram.com/sprtechforgepvt',
   whatsappNumber: '918297276500',
-  whatsappCommunityUrl: '',
+  whatsappCommunityUrl: 'https://chat.whatsapp.com/LW7ZWqlDUlM6SeKa4MVpZ2',
   addressLine1: '202, Above Union Bank, Near Forum Sujana Mall',
   addressLine2: 'KPHB 6th Phase, Kukatpally, Hyderabad 500085',
   mapUrl: CONTACT_DEFAULTS.mapUrl,
