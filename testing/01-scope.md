@@ -12,28 +12,35 @@
 
 ## What's in scope
 
-All functionality currently shipped to the QA environment, grouped into 10 epics:
+All functionality shipped to QA and production as of 2026-09-23, grouped into 15 epics (see `SPR-Epics-User-Stories-v2.xlsx` for the 108 stories):
 
-| Epic | Module / Feature                       | Notes                                      |
-| ---- | -------------------------------------- | ------------------------------------------ |
-| E1   | Authentication & Users                 | Login, session, master role, user CRUD     |
-| E2   | Candidates                             | CRUD, profiles, agreements, status changes |
-| E3   | Enquiries & Web Leads                  | Lead capture, merge to candidate           |
-| E4   | Training                               | Modules, topics, attendance, progress      |
-| E5   | Interviews                             | Scheduling, outcomes, prep, question bank  |
-| E6   | Finance (master-only)                  | Accounts, transactions, payroll, reports   |
-| E7   | SPRConnect → Chat                      | DMs, announcements, file attachments       |
-| E8   | SPRConnect → Meetings                  | Scheduling, RSVP, calendar                 |
-| E9   | SPRConnect → Video Calls (Jitsi)       | Instant DM calls, scheduled-meeting calls, ring overlay |
-| E10  | SPRConnect → Email (Apps Script)       | Send/receive Gmail, attachments            |
+| Epic | Module / Feature | SRS modules |
+| ---- | ---------------- | ----------- |
+| E01 | Authentication & Users | MOD-01, MOD-02 |
+| E02 | Community & Notifications (staff home, dashboard routing) | MOD-03, MOD-26 |
+| E03 | Candidates & Agreements | MOD-05, MOD-06, MOD-07 |
+| E04 | Enquiries & Web Leads | MOD-08 |
+| E05 | Training Delivery (curriculum, attendance, progress) | MOD-09, MOD-10, MOD-11 |
+| E06 | Interviews & Preparation (scheduling, question bank, prompt practice) | MOD-12, MOD-13, MOD-14 |
+| E07 | Finance (master only) | MOD-15, MOD-16, MOD-17 |
+| E08 | Events — Administration | MOD-27 |
+| E09 | Events — Public Registration & Emails | MOD-28 |
+| E10 | Marketing Links & Attribution (share pages, short link, ref codes) | MOD-28 |
+| E11 | Public Website & Content Management | MOD-25, MOD-29 |
+| E12 | Communications & Email Outbox | MOD-30 |
+| E13 | Seminar Campaigns | MOD-31 |
+| E14 | Admin Tools & Audit (logs, cloud setup, test runner, address book) | MOD-04, MOD-22, MOD-23, MOD-24 |
+| E15 | Cross-cutting Quality (mobile, performance, deploy resilience, permissions, browsers) | NFR §6 |
+
+Retired and out of scope: SPRConnect Chat, Meetings, Video Calls and the Email inbox (MOD-18–21) were removed on 2026-09-15; their routes redirect to Community.
 
 Plus cross-cutting concerns:
 
 - **Real-time sync** across multiple browser sessions (Firestore listeners)
-- **Cross-browser** on Chrome, Edge, Firefox (Safari best-effort if Mac available)
-- **Responsive layout** on tablet + phone widths
-- **Activity logging** integrity (every action master-visible)
-- **Permissions matrix** (admin vs staff vs candidate vs master)
+- **Cross-browser** on Chrome, Edge, Firefox, Android Chrome and iOS Safari (public pages and emails)
+- **Responsive layout** at phone (390 px), tablet and desktop widths
+- **Activity logging** integrity (known coverage gaps listed in SRS §12)
+- **Permissions matrix** (master vs admin vs staff vs candidate vs anonymous)
 
 ---
 
@@ -41,7 +48,7 @@ Plus cross-cutting concerns:
 
 | Out of scope                                  | Why                                                                |
 | --------------------------------------------- | ------------------------------------------------------------------ |
-| Production environment (https://sprtechforge.com) | Live business data. We test only on QA. UAT later, separately.    |
+| Production (https://sprtechforge.com) except lead-approved read-only checks (link previews, website, emails) | Live business data. Never run restore, cloud setup, test runner or load stories on production. |
 | Load / performance / stress testing           | Not warranted at current user count. Revisit when scaling.         |
 | Penetration / OWASP-grade security testing    | Separate engagement when warranted. Light auth-bypass checks only. |
 | Email deliverability / spam-score testing     | Gmail handles deliverability. Out of our control.                  |
