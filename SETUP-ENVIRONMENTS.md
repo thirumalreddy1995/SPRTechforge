@@ -42,7 +42,7 @@ Go to https://github.com/thirumalreddy1995/SPRTechforge/settings/secrets/actions
 
 | Secret name | Value (from existing `services/cloud.ts`) |
 | --- | --- |
-| `FIREBASE_API_KEY` | `AIzaSyDWiI7gQ-sCLiMfoNPAmbqrT_XNAH2SxL8` |
+| `FIREBASE_API_KEY` | `<Firebase web API key from the Firebase console>` |
 | `FIREBASE_AUTH_DOMAIN` | `sprtechforge.firebaseapp.com` |
 | `FIREBASE_PROJECT_ID` | `sprtechforge` |
 | `FIREBASE_STORAGE_BUCKET` | `sprtechforge.firebasestorage.app` |
