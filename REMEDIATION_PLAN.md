@@ -34,7 +34,7 @@ These answers from the PO supersede any "to be confirmed" placeholders later in 
 
 Recorded in [CODE_REVIEW_FINDINGS.md](CODE_REVIEW_FINDINGS.md) "Residual Risks Accepted by PO":
 
-- RR-01: hardcoded `ThiruPriya@13` in git history forever (mitigated by post-deploy rotation).
+- RR-01: hardcoded the bootstrap password in git history forever (mitigated by post-deploy rotation).
 - RR-02: client-side rate limits bypassable (audit trail catches abuse).
 - RR-03: +30 KB bundle (bcryptjs + zod).
 - RR-04: G-20 (app-level encryption at rest) deferred indefinitely.
@@ -64,7 +64,7 @@ There are also lower-priority PO questions (G-08 quota warnings, G-09 captcha-or
 
 | Area | Finding | Source |
 | --- | --- | --- |
-| Auth | Plain-text passwords compared with `===`. Hardcoded `ThiruPriya@13` in `DEFAULT_ADMIN`. | [context/AppContext.tsx:153-157](context/AppContext.tsx#L153-L157), [context/AppContext.tsx:344-354](context/AppContext.tsx#L344-L354) |
+| Auth | Plain-text passwords compared with `===`. Hardcoded the bootstrap password in `DEFAULT_ADMIN`. | [context/AppContext.tsx:153-157](context/AppContext.tsx#L153-L157), [context/AppContext.tsx:344-354](context/AppContext.tsx#L344-L354) |
 | Master gate | `username === 'thirumalreddy@sprtechforge.com'` is repeated **6+ times** across files. | [App.tsx:65](App.tsx#L65), [components/Layout.tsx:139](components/Layout.tsx#L139), [pages/Dashboard.tsx:18](pages/Dashboard.tsx#L18), [pages/admin/ActivityLogs.tsx:12](pages/admin/ActivityLogs.tsx#L12), [pages/admin/AddUser.tsx:25-26](pages/admin/AddUser.tsx#L25-L26), [pages/candidates/AddCandidate.tsx:10](pages/candidates/AddCandidate.tsx#L10), [pages/chat/Chat.tsx:230](pages/chat/Chat.tsx#L230) |
 | Firestore rules | **No `firestore.rules` file in the repo.** `firebase.json` only has hosting. Production/QA rules are configured by hand in the Firebase Console — and per §12 are currently `allow read, write: if true`. | [firebase.json](firebase.json) |
 | Audit logging | `logActivity` is called on **success** (login, create, update, delete) but never on **failure** (failed login, denied permission). | [context/AppContext.tsx:215-228](context/AppContext.tsx#L215), [context/AppContext.tsx:344-354](context/AppContext.tsx#L344-L354) |
@@ -104,7 +104,7 @@ Order of execution: **P0 → P1 → P2 → P3**, but P1 items that need PO clari
 2. New helper module [`services/passwordHash.ts`](services/passwordHash.ts) exporting `hash(plain): Promise<string>` and `verify(plain, stored): Promise<boolean>`. `verify` recognises both bcrypt hashes (start with `$2a$` / `$2b$`) and **plain-text legacy values** (fallback compare).
 3. `login()` in [context/AppContext.tsx](context/AppContext.tsx): use `verify`. If the stored value was plain-text and matched, **rehash and persist** before returning — this is the lazy migration window.
 4. `addUser` / `updateUser` / "first-login password change" flow: hash before write. Never log the plaintext.
-5. Remove the hardcoded `'ThiruPriya@13'` plain-text from `DEFAULT_ADMIN` — replace with the pre-computed bcrypt hash, embedded as a constant. The plaintext is still `ThiruPriya@13` for bootstrap-login, but the source no longer contains it in cleartext. (Note: anyone with repo access can still find the password in commit history — this is acknowledged as a residual risk and tracked under G-06.)
+5. Remove the hardcoded the bootstrap password literal plain-text from `DEFAULT_ADMIN` — replace with the pre-computed bcrypt hash, embedded as a constant. The plaintext is still the bootstrap password for bootstrap-login, but the source no longer contains it in cleartext. (Note: anyone with repo access can still find the password in commit history — this is acknowledged as a residual risk and tracked under G-06.)
 6. One-time migration script: `scripts/migrate-passwords.mjs` reads `users` from Firestore, hashes any plain-text passwords, writes back. Idempotent (skips already-hashed entries). Run manually once per environment after deploy.
 
 **Affected files:** `package.json`, `services/passwordHash.ts` (new), `context/AppContext.tsx`, `pages/Login.tsx` (no behaviour change, but verify password-change flow hashes), `types.ts` (`password` comment update), `scripts/migrate-passwords.mjs` (new).
