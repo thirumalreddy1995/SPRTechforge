@@ -130,14 +130,7 @@ Cross-coverage: every tester runs the smoke suite at sprint start; everyone can 
 | **Local** | `npm run dev` (http://localhost:5173) | Reproducing bugs locally |
 | **Production** | https://sprtechforge.com | **Do not test against prod.** UAT only |
 
-Bootstrap login on QA:
-
-```
-Username: thirumalreddy@sprtechforge.com
-Password: ThiruPriya@13
-```
-
-Replace this with rotated tester accounts during Sprint 0.
+Test accounts on QA: ask the lead for the QA tester logins (e.g. the E2E tester account). Credentials are never written into documents or the repository.
 
 ---
 
