@@ -115,14 +115,14 @@ This is a hard rule, not a "try to remember". If any step fails, fix it before m
 **Steps:**
 
 1. Confirm G-01 is live in production: `https://sprtechforge.github.io/SPRTechforge` (or current prod URL) is serving the new build with bcryptjs in the JS bundle.
-2. Log in to **production** with `thirumalreddy@sprtechforge.com` and the bootstrap plaintext password `ThiruPriya@13`. This login uses the dual-format `verify()` path — it will succeed against the legacy plaintext and the lazy-migration step will rehash and persist a bcrypt value.
+2. Log in to **production** with `thirumalreddy@sprtechforge.com` and the bootstrap plaintext password the bootstrap password held by the owner. This login uses the dual-format `verify()` path — it will succeed against the legacy plaintext and the lazy-migration step will rehash and persist a bcrypt value.
 3. Verify the rehash worked: in the Firebase Console, navigate to Firestore → `users` → `admin-01`. Confirm the `password` field now starts with `$2a$` or `$2b$` and is no longer the readable plaintext.
-4. From the app, go to **Profile / Settings → Change Password** (or the equivalent flow). Set a NEW password (not `ThiruPriya@13`, and not any password you have used on another system). Use a generated value from a password manager — record it there, not in source control or in chat.
+4. From the app, go to **Profile / Settings → Change Password** (or the equivalent flow). Set a NEW password (not the bootstrap password held by the owner, and not any password you have used on another system). Use a generated value from a password manager — record it there, not in source control or in chat.
 5. Log out. Log back in with the new password. Confirm success.
 6. Repeat steps 2–5 against QA so QA and prod both have the source-tree bootstrap password retired.
 7. Tick off this step in the sprint tracker. **Sprint A is not complete until this step is done.**
 
-**Why this matters:** the bootstrap bcrypt hash compiled into the JS bundle still corresponds to `ThiruPriya@13`. Anyone with access to git history could verify the plaintext. Once the master rotates the password via the in-app flow, the Firestore record carries a fresh hash that has no representative in source — the source-tree hash is inert.
+**Why this matters:** the bootstrap bcrypt hash compiled into the JS bundle still corresponds to the bootstrap password held by the owner. Anyone with access to git history could verify the plaintext. Once the master rotates the password via the in-app flow, the Firestore record carries a fresh hash that has no representative in source — the source-tree hash is inert.
 
 **If you cannot rotate within 24 hours:** restrict the master account by other means (block via Firestore rules to require a known IP, etc.) until the rotation can happen. Notify the team.
 
