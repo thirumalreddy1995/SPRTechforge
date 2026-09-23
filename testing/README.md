@@ -1,6 +1,6 @@
 # SPRTechforge — Test Management Pack
 
-Everything your 4-person test team needs to run Agile testing on the SPRTechforge application. The working file is **[SPR-Testing.xlsx](SPR-Testing.xlsx)** — a single Excel workbook with 7 sheets, proper dropdowns on every status field, frozen headers, autofilters, and ~140 pre-populated user stories with detailed acceptance criteria.
+Everything your 4-person test team needs to run Agile testing on the SPRTechforge application. The stories baseline for the September 2026 release is **[SPR-Epics-User-Stories-v2.xlsx](SPR-Epics-User-Stories-v2.xlsx)** (15 epics, 108 stories with acceptance criteria and a 5-sprint plan; source data in `generator/data/stories-v2.cjs`; requirements in [../SRS_BRS_Document.md](../SRS_BRS_Document.md) v2.0). The original working file is **[SPR-Testing.xlsx](SPR-Testing.xlsx)** — a single Excel workbook with 7 sheets, proper dropdowns on every status field, frozen headers, autofilters, and ~140 pre-populated user stories with detailed acceptance criteria.
 
 ---
 
