@@ -1,0 +1,1307 @@
+"Issue Type","Issue ID","Parent ID","Epic Name","Epic Link","Summary","Description","Priority","Story Points","Labels","Labels","Labels"
+"Epic","1","","E01 Authentication & Users","","E01 Authentication & Users","h3. Scope
+Login, session, first-login password change, forgot password, user CRUD, roles and master flag
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-01, MOD-02
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E01","srs-v2.1","release-2026-09"
+"Epic","2","","E02 Community & Notifications","","E02 Community & Notifications","h3. Scope
+Staff home feed, posts, birthdays, quote/learning of the day, bell notifications, dashboard routing
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-03, MOD-26
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E02","srs-v2.1","release-2026-09"
+"Epic","3","","E03 Candidates & Agreements","","E03 Candidates & Agreements","h3. Scope
+Candidate CRUD, profiles, login accounts, agreement page and public portal
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-05, MOD-06, MOD-07
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E03","srs-v2.1","release-2026-09"
+"Epic","4","","E04 Enquiries & Web Leads","","E04 Enquiries & Web Leads","h3. Scope
+Enquiry CRUD, notes, merge to candidate, website leads handling
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-08
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E04","srs-v2.1","release-2026-09"
+"Epic","5","","E05 Training Delivery","","E05 Training Delivery","h3. Scope
+Curriculum, attendance, progress monitor, candidate training dashboard
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-09, MOD-10, MOD-11
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E05","srs-v2.1","release-2026-09"
+"Epic","6","","E06 Interviews & Preparation","","E06 Interviews & Preparation","h3. Scope
+Scheduling, conflicts, results, question bank & bulk upload, prompt practice
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-12, MOD-13, MOD-14
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E06","srs-v2.1","release-2026-09"
+"Epic","7","","E07 Finance (master)","","E07 Finance (master)","h3. Scope
+Accounts, journal entries, statements, balance sheet, P&L, trial balance, payroll, reports & backup
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-15, MOD-16, MOD-17
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E07","srs-v2.1","release-2026-09"
+"Epic","8","","E08 Events — Administration","","E08 Events — Administration","h3. Scope
+Event editor wizard, publish rules, event dashboard, registrants, check-in, recap, convert to candidate
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-27
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E08","srs-v2.1","release-2026-09"
+"Epic","9","","E09 Events — Public Registration & Emails","","E09 Events — Public Registration & Emails","h3. Scope
+Event pages on phone/desktop, registration rules, success card, confirmation & reminder emails
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-28
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E09","srs-v2.1","release-2026-09"
+"Epic","10","","E10 Marketing Links & Attribution","","E10 Marketing Links & Attribution","h3. Scope
+Share pages with poster previews, short link, ref codes, source table, sitemap
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-28
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E10","srs-v2.1","release-2026-09"
+"Epic","11","","E11 Public Website & Content Management","","E11 Public Website & Content Management","h3. Scope
+Website sections and contact actions, enquiry form, admin banners/photos/testimonials/numbers
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-25, MOD-29
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E11","srs-v2.1","release-2026-09"
+"Epic","12","","E12 Communications & Email Outbox","","E12 Communications & Email Outbox","h3. Scope
+Bridge configuration, providers, queue behaviour, outbox admin card
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-30
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E12","srs-v2.1","release-2026-09"
+"Epic","13","","E13 Seminar Campaigns","","E13 Seminar Campaigns","h3. Scope
+Import, WhatsApp/email campaign, questions, settings, public token page
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-31
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E13","srs-v2.1","release-2026-09"
+"Epic","14","","E14 Admin Tools & Audit","","E14 Admin Tools & Audit","h3. Scope
+Activity logs, cloud setup, test runner safety, address book
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-04, MOD-22, MOD-23, MOD-24
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E14","srs-v2.1","release-2026-09"
+"Epic","15","","E15 Cross-cutting Quality","","E15 Cross-cutting Quality","h3. Scope
+Mobile layout, performance, deploy resilience, permissions matrix, browsers, data integrity
+
+h3. Requirements
+SRS/BRS v2.1 — NFR §6
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E15","srs-v2.1","release-2026-09"
+"Story","16","1","","E01 Authentication & Users","SPR-101 Login with valid credentials","*Story:* As a staff member I want to sign in so that I reach my home page.
+
+h3. Acceptance criteria
+* Given a valid username and password, when I click Sign In, then I see ""Login successful"" and land on /community (master lands on /dashboard)
+* Given the users stream has not loaded yet, when I open /login, then the button reads ""Connecting…"" and is disabled until ready
+* Given a successful login, when I refresh within 60 minutes, then I stay signed in
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E01","sprint-S1","spr-101"
+"Story","17","1","","E01 Authentication & Users","SPR-102 Login rejects bad input and wrong credentials","*Story:* Clear, non-enumerating errors for invalid attempts.
+
+h3. Acceptance criteria
+* Given a username without ""@"", when I submit, then I see ""Enter a valid email address""
+* Given a password shorter than 4 characters, when I submit, then the form blocks submission
+* Given a wrong password or unknown username, when I submit, then I see the same ""Invalid credentials"" message and stay on /login
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Depends on: SPR-101
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E01","sprint-S1","spr-102"
+"Story","18","1","","E01 Authentication & Users","SPR-103 First-login password change","*Story:* New users and candidate accounts must set their own password.
+
+h3. Acceptance criteria
+* Given a user with isPasswordChanged = false, when I log in, then I see ""Set New Password"" before anything else
+* Given a new password shorter than 6 characters or equal to my name, when I submit, then I am blocked with a clear message
+* Given matching valid passwords, when I click ""Update Password & Continue"", then I land on my home page and the next login works only with the new password
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-101
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E01","sprint-S1","spr-103"
+"Story","19","1","","E01 Authentication & Users","SPR-104 Session expiry and logout","*Story:* Sessions last 60 minutes; Sign Out clears them.
+
+h3. Acceptance criteria
+* Given a session older than 60 minutes, when I open any protected route, then I am redirected to /login
+* Given I click Sign Out, when the page changes, then I am on the website home and protected routes redirect to /login
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E01","sprint-S1","spr-104"
+"Story","20","1","","E01 Authentication & Users","SPR-105 Forgot password request","*Story:* Document the current behaviour so the gap is tracked.
+
+h3. Acceptance criteria
+* Given the Forgot Password modal, when I submit a username with ""@"", then I see the message to contact Thirumal Reddy
+* Given the request was sent, when an admin opens Users in another browser, then no request is listed (known gap G-08) — record as expected-fail
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S2
+* Note: Known gap G-08
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E01","sprint-S2","spr-105"
+"Story","21","1","","E01 Authentication & Users","SPR-106 Admin creates and edits users","*Story:* Add/Edit User with role and defaults.
+
+h3. Acceptance criteria
+* Given I am admin, when I add a user with name and Login ID only, then the user is created with password = name and must change it at first login
+* Given I pick role Admin, when I save, then modules are [candidates, users, training]
+* Given I am a non-master admin editing the master, when I open the form, then name/login are locked and I cannot change the password
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E01","sprint-S1","spr-106"
+"Story","22","1","","E01 Authentication & Users","SPR-107 Role and master guards","*Story:* Route wrappers enforce access.
+
+h3. Acceptance criteria
+* Given a staff user, when I open /admin/users, /events/manage, /admin/website, then I am redirected to /dashboard → /community
+* Given a non-master admin, when I open /finance/dashboard, /admin/logs, /admin/communication, then I am redirected
+* Given a candidate user, when I open /candidates, then record whether the page opens (known gap G-03)
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E01","sprint-S1","spr-107"
+"Story","23","1","","E01 Authentication & Users","SPR-108 Delete user rules","*Story:* Only the master deletes users and never themselves.
+
+h3. Acceptance criteria
+* Given I am master, when I open Users, then Delete is offered on every row except mine
+* Given I am a non-master admin, when I open Users, then no Delete action is shown
+* Given I delete a user, when I check System Logs, then a ""User deleted"" entry exists
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-106
+* Epic: E01 Authentication & Users
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E01","sprint-S2","spr-108"
+"Story","24","2","","E02 Community & Notifications","SPR-121 Home routing by role","*Story:* Master sees the Director Dashboard; everyone else lands on Community.
+
+h3. Acceptance criteria
+* Given I am master, when I open /dashboard, then I see the Director Dashboard with the financial toggle off
+* Given I am staff or candidate, when I open /dashboard, then I am redirected to /community
+* Given I open /chat, /meetings or /email, when the page loads, then I am redirected to /community
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E02","sprint-S1","spr-121"
+"Story","25","2","","E02 Community & Notifications","SPR-122 Director dashboard KPIs","*Story:* Financial KPIs reconcile with Finance.
+
+h3. Acceptance criteria
+* Given financials toggled on, when I compare Net Liquidity, Income, Payments, then they match /finance/dashboard
+* Given active candidates with dues, when I read Fees Pending, then it equals Σ max(0, agreed − paid)
+* Given scheduled interviews from today, when I read Active Interview Schedule, then up to 8 rows appear, today tagged
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E02","sprint-S2","spr-122"
+"Story","26","2","","E02 Community & Notifications","SPR-123 Create an announcement","*Story:* Admins post announcements visible to the chosen audience.
+
+h3. Acceptance criteria
+* Given I am admin, when I click ""New announcement"", fill Title (≤120) and Message, choose ""Everyone"", then the post appears at the top of the feed within 5 s in another browser
+* Given I leave the title blank, when I click Post, then I see ""Give the post a title""
+* Given I paste a link without http, when I click Post, then the link is rejected
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E02","sprint-S1","spr-123"
+"Story","27","2","","E02 Community & Notifications","SPR-124 Audience and moderation","*Story:* Staff-only posts are hidden from candidates; moderators pin.
+
+h3. Acceptance criteria
+* Given a post with audience ""Staff only"", when a candidate opens Community, then the post is not visible
+* Given I am admin, when I tick ""Pin to top"", then the post shows 📌 Pinned and sorts first
+* Given I am the author (staff), when I open the post menu, then I can Edit and Delete my own post only
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-123
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E02","sprint-S2","spr-124"
+"Story","28","2","","E02 Community & Notifications","SPR-125 Reactions and expiry","*Story:* Reactions toggle per user; posts hide after their date.
+
+h3. Acceptance criteria
+* Given a post, when I click 🎉 twice, then the count increments then decrements
+* Given a post with ""Hide after"" yesterday, when I open the feed today, then the post is no longer listed
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E02","sprint-S2","spr-125"
+"Story","29","2","","E02 Community & Notifications","SPR-126 Birthdays","*Story:* Birthdays come from candidate profile DOB.
+
+h3. Acceptance criteria
+* Given an active candidate whose profile DOB is today, when I open Community, then a birthday card with ""turns N"" appears and ""Post wishes"" is offered once
+* Given a DOB within the next 8 days, when I read Upcoming birthdays, then it is listed with Tomorrow or the date
+* Given DOB 29 Feb in a non-leap year, when I check, then it falls on 1 Mar
+
+h3. Details
+* Priority: P2   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","2","E02","sprint-S2","spr-126"
+"Story","30","2","","E02 Community & Notifications","SPR-127 Quote and Learning of the day","*Story:* Daily content with offline fallback.
+
+h3. Acceptance criteria
+* Given a normal connection, when I open Community, then a quote and a learning tip are shown and stay the same all day
+* Given dummyjson.com blocked, when I reload, then a fallback quote is shown and no error appears
+* Given I click ""Share your own tip"", when the composer opens, then the type is preset to Learning
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E02","sprint-S2","spr-127"
+"Story","31","2","","E02 Community & Notifications","SPR-128 Notification bell","*Story:* New posts notify everyone except the author.
+
+h3. Acceptance criteria
+* Given another user posts, when I look at the bell, then the badge count increments and the panel lists the post
+* Given I click the item, when it opens, then it is marked read and I am taken to /community
+* Given I click ""Mark all read"", when the panel closes, then the badge disappears
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-123
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E02","sprint-S2","spr-128"
+"Story","32","2","","E02 Community & Notifications","SPR-129 Photo carousel on Community","*Story:* Moments carousel with manage mode for staff.
+
+h3. Acceptance criteria
+* Given I am staff, when I add 3 photos with captions, then they appear in the carousel, autoplaying every 5 s, pausing on hover
+* Given I reorder and remove one, when I click Done, then the order persists after reload
+
+h3. Details
+* Priority: P3   * Effort: 2 pts   * Suggested sprint: S3
+* Epic: E02 Community & Notifications
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","2","E02","sprint-S3","spr-129"
+"Story","33","3","","E03 Candidates & Agreements","SPR-141 Add a candidate with validation","*Story:* All required fields and duplicate protection.
+
+h3. Acceptance criteria
+* Given the Add Candidate form, when I submit without name/batch/email/phone, then the first missing field is reported in order
+* Given a 9-digit phone, when I submit, then I am blocked and the hint shows digits needed
+* Given an email or phone already used by another candidate, when I submit, then I see ""A candidate with this Email or Phone Number already exists.""
+* Given valid data, when I save, then the candidate appears in Active with status Training and a CREATE log exists
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E03","sprint-S1","spr-141"
+"Story","34","3","","E03 Candidates & Agreements","SPR-142 Candidate list tabs, filters and amounts","*Story:* Tabs by status; amounts masked.
+
+h3. Acceptance criteria
+* Given candidates in each status, when I switch tabs, then Active shows Training + Ready; Placed and Discontinued show theirs; counts in the header match
+* Given amounts masked, when I click Show Amounts, then Agreed/Paid/Due reveal; Due shows ""✓ Cleared"" when ≤ 0
+* Given a search for a phone number, when I type it, then only that candidate remains
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-141
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E03","sprint-S1","spr-142"
+"Story","35","3","","E03 Candidates & Agreements","SPR-143 Delete candidate rules","*Story:* Master-only and blocked when transactions exist.
+
+h3. Acceptance criteria
+* Given I am staff, when I click Delete, then I see ""Only the Director can delete candidates""
+* Given I am master and the candidate has transactions, when I click Delete, then I see ""Cannot delete: candidate has financial entries…""
+* Given I am master and no transactions exist, when I confirm, then the candidate is removed and logged
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-141
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E03","sprint-S2","spr-143"
+"Story","36","3","","E03 Candidates & Agreements","SPR-144 Create login account for a candidate","*Story:* Candidate portal access from the list.
+
+h3. Acceptance criteria
+* Given a candidate with an email and no user, when I click Create Login Account, then a candidate user is created (username = email, password = phone) and first login forces a change
+* Given the same candidate, when I click again, then I see ""Account already exists""
+* Given a candidate without email, when I click, then I am told an email is required
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-141,SPR-103
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E03","sprint-S2","spr-144"
+"Story","37","3","","E03 Candidates & Agreements","SPR-145 Candidate profile self-service and admin view","*Story:* Profile tabs and read-only rules.
+
+h3. Acceptance criteria
+* Given I am a linked candidate, when I fill Personal/Education/Experience and click Update My Profile, then the profile is saved and shows on staff view
+* Given I am staff, when I open a profile, then all fields are disabled and Training Progress / Interview History tabs are read-only
+* Given I am admin, when I click Export CSV, then the filtered profiles download
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E03","sprint-S2","spr-145"
+"Story","38","3","","E03 Candidates & Agreements","SPR-146 Agreement lifecycle (staff side)","*Story:* Sent → Accepted / Rejected with dates.
+
+h3. Acceptance criteria
+* Given a candidate with email, when I click ""Email Agreement & Link"", then a mail draft opens with the portal link and agreementSentDate is set
+* Given I click ""Mark as Accepted"" and confirm, when the page reloads, then the Accepted badge shows the date and rejection fields are cleared
+* Given I click ""Print / Save PDF"", when the print dialog opens, then the printable body shows logo, details, text, stamp and address
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E03","sprint-S2","spr-146"
+"Story","39","3","","E03 Candidates & Agreements","SPR-147 Public agreement portal","*Story:* Candidate accepts or rejects via the link without login.
+
+h3. Acceptance criteria
+* Given a fresh incognito window, when I open the portal link from the email, then the agreement loads (if it stays on ""Loading Agreement…"", record gap G-21 as a P0 bug)
+* Given the consent box unticked, when I click Accept & Sign, then I am told to tick the box
+* Given I choose Reject with a reason, when I confirm, then the staff page shows Rejected with the reason
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-146
+* Note: Suspected defect G-21
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E03","sprint-S2","spr-147"
+"Story","40","3","","E03 Candidates & Agreements","SPR-148 Candidate exports","*Story:* CSV completeness.
+
+h3. Acceptance criteria
+* Given filters applied, when I click Export CSV on the list, then the file contains all candidates (documented behaviour) with paid and due columns
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E03 Candidates & Agreements
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E03","sprint-S3","spr-148"
+"Story","41","4","","E04 Enquiries & Web Leads","SPR-161 Enquiry CRUD and notes","*Story:* Capture and follow up prospects.
+
+h3. Acceptance criteria
+* Given the New Enquiry form, when I save with name and 10-digit phone, then the row appears with status Enquiry and the KPI counts update
+* Given an enquiry, when I add a discussion note, then the note shows my name and date and cannot be edited or deleted
+* Given a phone of 9 digits, when I save, then I am blocked
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E04 Enquiries & Web Leads
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E04","sprint-S1","spr-161"
+"Story","42","4","","E04 Enquiries & Web Leads","SPR-162 Merge enquiry to candidate","*Story:* Master-only conversion.
+
+h3. Acceptance criteria
+* Given I am master, when I click Merge to Candidate and confirm, then a candidate is created with batch (or TBD), agreed = committed amount, notes copied; enquiry becomes Joined, Merged and read-only; two log entries exist
+* Given I am staff, when I open the enquiry, then Merge is not offered
+* Given a merged enquiry, when I try Edit or Add Note, then both are unavailable
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-161
+* Epic: E04 Enquiries & Web Leads
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E04","sprint-S2","spr-162"
+"Story","43","4","","E04 Enquiries & Web Leads","SPR-163 Web leads handling","*Story:* Leads from the website form.
+
+h3. Acceptance criteria
+* Given a submitted website enquiry, when I open Web Enquiries, then the lead is bold/unread with the red badge count, service = ""interest · mode""
+* Given I open it, when the modal shows, then it is marked read; status dropdown saves immediately; internal note saves as I type
+* Given I click Delete Lead, when I confirm, then it disappears and the counts update
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E04 Enquiries & Web Leads
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E04","sprint-S1","spr-163"
+"Story","44","4","","E04 Enquiries & Web Leads","SPR-164 Enquiry and lead exports","*Story:* CSV downloads.
+
+h3. Acceptance criteria
+* Given a filtered enquiry list, when I export, then only filtered rows are included with notes joined by "" | ""
+* Given web leads, when I export, then the CSV opens in Excel with all columns
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E04 Enquiries & Web Leads
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E04","sprint-S3","spr-164"
+"Story","45","5","","E05 Training Delivery","SPR-181 Curriculum modules and topics","*Story:* Admin builds the syllabus.
+
+h3. Acceptance criteria
+* Given I am admin, when I create a module and two topics with hours, then they appear in order and the topic hours show ""(Nh)"" in Attendance
+* Given I am staff, when I open Curriculum, then no create/edit/delete controls are shown
+* Given I delete a module, when I confirm, then topics remain orphaned (record as gap G-16)
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E05 Training Delivery
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E05","sprint-S2","spr-181"
+"Story","46","5","","E05 Training Delivery","SPR-182 Mark daily attendance","*Story:* One log per candidate per day.
+
+h3. Acceptance criteria
+* Given a date and no topic, when I click Save Attendance, then I see ""Please select the Topic covered today before saving.""
+* Given a topic and statuses Present/Absent/Excused, when I save, then logs are created; Present gets topic hours × 60 minutes; Excused stored as No Class
+* Given I reopen the same date, when the sheet loads, then existing statuses and topic are pre-filled and saving updates rather than duplicates
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-181
+* Epic: E05 Training Delivery
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E05","sprint-S2","spr-182"
+"Story","47","5","","E05 Training Delivery","SPR-183 Attendance exports","*Story:* Summary and full history CSVs.
+
+h3. Acceptance criteria
+* Given saved attendance, when I click Export Today's Summary, then per-candidate totals and today's status download
+* Given I click Export Full History, when the file downloads, then each row has date, candidate, topic, attendance and minutes
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
+* Depends on: SPR-182
+* Epic: E05 Training Delivery
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E05","sprint-S3","spr-183"
+"Story","48","5","","E05 Training Delivery","SPR-184 Progress monitor and candidate dashboard","*Story:* Progress % and hours agree everywhere.
+
+h3. Acceptance criteria
+* Given logs for a candidate, when I open Progress Tracker, then Topics % = unique topics with a log ÷ total topics; attendance = Present/total
+* Given the same candidate logs in, when they open Training Stats, then Total Hours and Progress % match the monitor and covered topics are struck through
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-182
+* Epic: E05 Training Delivery
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E05","sprint-S2","spr-184"
+"Story","49","6","","E06 Interviews & Preparation","SPR-201 Schedule an interview","*Story:* Required fields and conflict rule.
+
+h3. Acceptance criteria
+* Given an active candidate, when I schedule with date, start time, company, then it appears under Active Schedule grouped by date and the sidebar badge increments
+* Given another interview overlapping the same time, when I save, then I see ""This slot conflicts…"" (global rule)
+* Given missing company, when I save, then I am blocked
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E06","sprint-S2","spr-201"
+"Story","50","6","","E06 Interviews & Preparation","SPR-202 Candidate requests a slot; staff confirms or rejects","*Story:* Pending approval flow.
+
+h3. Acceptance criteria
+* Given I am a candidate, when I request a slot, then status is pending_confirmation and I see ""awaiting admin confirmation""
+* Given I am staff, when I click Confirm, then status becomes Scheduled (note the confirm button label — gap G-25)
+* Given I click Reject, when I confirm, then status becomes Cancelled; no notification is sent (gap G-25)
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-201
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E06","sprint-S2","spr-202"
+"Story","51","6","","E06 Interviews & Preparation","SPR-203 Update interview result","*Story:* Status history and feedback.
+
+h3. Acceptance criteria
+* Given a scheduled interview, when I set Attended then Cleared with feedback, then statusHistory has both entries with my name; feedback shows author and time
+* Given Cleared, when I open the candidate, then status is unchanged (gap G-25: not auto-Placed)
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-201
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E06","sprint-S2","spr-203"
+"Story","52","6","","E06 Interviews & Preparation","SPR-204 Resume upload and Ready Candidates","*Story:* Resume rules.
+
+h3. Acceptance criteria
+* Given a Ready for Interview candidate, when I upload a 6 MB PDF, then I am blocked at 5 MB
+* Given a valid PDF, when I upload and click View, then a preview opens; DOCX offers download
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E06","sprint-S3","spr-204"
+"Story","53","6","","E06 Interviews & Preparation","SPR-205 Interview exports and candidate stats","*Story:* CSV columns and per-candidate counts.
+
+h3. Acceptance criteria
+* Given interviews with several statuses, when I export all, then columns include feedback, scheduled by and status
+* Given a candidate in Candidate Stats, when I select them, then Total/Attended/Cleared/Rejected/No-show/Pending are correct
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E06","sprint-S3","spr-205"
+"Story","54","6","","E06 Interviews & Preparation","SPR-206 Question bank management","*Story:* Modules and questions.
+
+h3. Acceptance criteria
+* Given I am admin, when I add a module with a colour and a question, then the card renders with the colour and the question
+* Given anyone, when I click a question, then the prompt is copied and chatgpt.com opens in a new tab
+* Given I delete selected questions, when I confirm, then they disappear; deleting a module leaves its questions (gap G-16)
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E06","sprint-S2","spr-206"
+"Story","55","6","","E06 Interviews & Preparation","SPR-207 Bulk upload questions","*Story:* Paste or file import.
+
+h3. Acceptance criteria
+* Given a .xlsx with a ""Question"" header and 20 rows, when I upload and import, then 20 questions are added after the module's last order and a log entry exists
+* Given pasted text with blank lines, when I preview, then blank lines are skipped and up to 50 rows preview
+* Given no module exists, when I open Bulk Upload, then I am told to create a module first
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-206
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E06","sprint-S2","spr-207"
+"Story","56","6","","E06 Interviews & Preparation","SPR-208 Prompt practice session","*Story:* Speech-based practice with scoring.
+
+h3. Acceptance criteria
+* Given at least one category and 5 questions, when I start a session and answer, then each question shows a score, missed keywords and feedback band
+* Given the last question, when I finish, then the session auto-saves with score and grade and appears in History
+* Given microphone unavailable, when I start, then I can type my answer instead
+
+h3. Details
+* Priority: P2   * Effort: 3 pts   * Suggested sprint: S3
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","3","E06","sprint-S3","spr-208"
+"Story","57","6","","E06 Interviews & Preparation","SPR-209 Prompt practice admin view","*Story:* Sessions overview and custom questions.
+
+h3. Acceptance criteria
+* Given saved sessions, when I open Admin View → Sessions, then ranking, averages and Not Yet Attempted are correct; PDF export opens print
+* Given I add a custom question, when I open the same page on another browser, then the question is missing (gap G-27) — record
+
+h3. Details
+* Priority: P3   * Effort: 2 pts   * Suggested sprint: S4
+* Epic: E06 Interviews & Preparation
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","2","E06","sprint-S4","spr-209"
+"Story","58","7","","E07 Finance (master)","SPR-221 Chart of accounts","*Story:* Create, edit, group and delete accounts.
+
+h3. Acceptance criteria
+* Given I am master, when I create a Bank account with opening balance, then it appears under Assets with the balance and in KPIs
+* Given a Salary account, when I fill Fixed Monthly Obligations, then the fields save and the account appears in Payroll
+* Given the system Office Cash account, when I try to delete, then the UI refuses
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S3
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E07","sprint-S3","spr-221"
+"Story","59","7","","E07 Finance (master)","SPR-222 Journal entries of each type","*Story:* Double-entry recording.
+
+h3. Acceptance criteria
+* Given type Income from a candidate into Bank, when I save, then the candidate's Paid increases and Bank balance increases
+* Given type Payment to an Expense from Cash, when I save, then Cash decreases and the expense shows in Top Expenses
+* Given type Transfer and Refund, when I save each, then balances move as per Dr/Cr labels
+* Given missing account or zero amount, when I save, then I see the corresponding alert
+
+h3. Details
+* Priority: P0   * Effort: 3 pts   * Suggested sprint: S3
+* Depends on: SPR-221
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E07","sprint-S3","spr-222"
+"Story","60","7","","E07 Finance (master)","SPR-223 Transaction register filters and export","*Story:* Find and export entries.
+
+h3. Acceptance criteria
+* Given entries of all types, when I click a summary tile, then the list filters to that type and Net = Income − Payment
+* Given date range and account filters, when I apply them, then only matching rows remain; Export contains the filtered set
+* Given I edit an entry, when I save, then isLocked resets to false (gap G-26)
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-222
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E07","sprint-S3","spr-223"
+"Story","61","7","","E07 Finance (master)","SPR-224 Account and candidate statements","*Story:* Running balances.
+
+h3. Acceptance criteria
+* Given an account with transactions, when I open its statement with a date range, then Opening b/f, Dr/Cr columns and running balance suffixes are correct; CSV and Print work
+* Given a candidate statement, when I open it, then Paid and Refunds reconcile with the candidate list
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-222
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E07","sprint-S3","spr-224"
+"Story","62","7","","E07 Finance (master)","SPR-225 Balance sheet, P&L and trial balance","*Story:* Reports reconcile.
+
+h3. Acceptance criteria
+* Given the sample data set, when I open Balance Sheet, then Assets = Liabilities + implied Equity
+* Given a P&L period, when I set dates, then income and expense groups sum to the entries in that period; compare with dashboard and note differences (documented)
+* Given Trial Balance, when I open it, then ""balanced"" banner or a difference is shown; Print/PDF works
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S4
+* Depends on: SPR-222
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E07","sprint-S4","spr-225"
+"Story","63","7","","E07 Finance (master)","SPR-226 Payroll schedule","*Story:* Months due, paid and pending.
+
+h3. Acceptance criteria
+* Given a Salary account since 3 months with monthly 20,000, when I open Payroll, then Months Due = 3, Payable = 60,000, Paid = Σ Payment entries, Pending = difference
+* Given a salary paid by Transfer, when I check Paid, then it is not counted (gap G-05) — record
+
+h3. Details
+* Priority: P2   * Effort: 2 pts   * Suggested sprint: S4
+* Depends on: SPR-221
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","2","E07","sprint-S4","spr-226"
+"Story","64","7","","E07 Finance (master)","SPR-227 Reports, backup and restore (QA only)","*Story:* Full Excel report and JSON backup.
+
+h3. Acceptance criteria
+* Given /finance/reports, when I download the full report, then the .xls opens with Candidates, Transactions, Debtors, Creditors, Balance Sheet, P&L sheets
+* Given I export the database, when I import the same JSON on QA, then data is restored and a restore log exists
+
+h3. Details
+* Priority: P3   * Effort: 2 pts   * Suggested sprint: S5
+* Note: QA only — never restore on production
+* Epic: E07 Finance (master)
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","2","E07","sprint-S5","spr-227"
+"Story","65","8","","E08 Events — Administration","SPR-241 Create an event through the wizard","*Story:* Five steps with draft saving.
+
+h3. Acceptance criteria
+* Given a new event, when I complete Basics with a 201-character short description, then the field caps at 200
+* Given I move between steps, when I refresh, then the draft is preserved and the header shows ""All changes saved ✓""
+* Given Online mode without a Join URL, when I open Review & Publish, then the issue is listed with ""Fix in step 2"" and Publish is disabled
+
+h3. Details
+* Priority: P0   * Effort: 3 pts   * Suggested sprint: S1
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E08","sprint-S1","spr-241"
+"Story","66","8","","E08 Events — Administration","SPR-242 Banner and content rules","*Story:* Banner required and size-limited.
+
+h3. Acceptance criteria
+* Given a 6 MB banner, when I upload, then I see ""Banner exceeds the 5 MB limit""
+* Given a valid banner, speaker, agenda and lists, when I save, then the public page shows them in order
+* Given a YouTube link, when I paste it, then a preview embeds; a non-YouTube link is flagged
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-241
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S1","spr-242"
+"Story","67","8","","E08 Events — Administration","SPR-243 Registration settings and custom questions","*Story:* Capacity, waitlist, fields.
+
+h3. Acceptance criteria
+* Given capacity 2 with waitlist on, when three people register, then the third is waitlisted and the counters show 2 / 1
+* Given a dropdown custom question with 5 options marked required, when a registrant leaves it blank, then submission is blocked
+* Given City unticked, when I open the public form, then no City field is shown
+
+h3. Details
+* Priority: P0   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-241
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E08","sprint-S2","spr-243"
+"Story","68","8","","E08 Events — Administration","SPR-244 Publish and slug","*Story:* Publishing makes the event public with a stable link.
+
+h3. Acceptance criteria
+* Given all issues fixed, when I click Publish Event, then the live modal shows /e/<slug>/ and the event appears on /events
+* Given I edit the title later, when I save, then the slug is unchanged
+* Given a very long title, when I publish, then the slug is ≤60 characters and unique
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-241
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E08","sprint-S1","spr-244"
+"Story","69","8","","E08 Events — Administration","SPR-245 Edit a published event with notification","*Story:* Registrant-facing changes prompt.
+
+h3. Acceptance criteria
+* Given a published event with registrants, when I change the start time and click Save Changes, then I am asked to confirm and offered ""Save & email the update"" or ""Save without notifying""
+* Given I choose to notify, when I check a registrant inbox, then a change-notice email arrives with the new time
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-244
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S2","spr-245"
+"Story","70","8","","E08 Events — Administration","SPR-246 Event dashboard overview and share card","*Story:* Counters, private join button, share tools.
+
+h3. Acceptance criteria
+* Given a published event, when I open its dashboard, then counters match registrations; Join Meeting button and Copy link are shown, never the raw URL
+* Given the share card, when I click Copy / WhatsApp / LinkedIn / Open public page, then each works with the /e/<slug>/ link
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-244
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S2","spr-246"
+"Story","71","8","","E08 Events — Administration","SPR-247 Registrations tab: search, details, follow-up, export","*Story:* Manage registrants.
+
+h3. Acceptance criteria
+* Given several registrations, when I search by name and filter by status, then the list narrows correctly
+* Given a registrant, when I open details and change follow-up status, then it persists; source and consents are shown
+* Given I click Export CSV, when the file downloads, then it includes a Source column and custom answers
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-243
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S2","spr-247"
+"Story","72","8","","E08 Events — Administration","SPR-248 Email selected registrants","*Story:* Custom message via the outbox.
+
+h3. Acceptance criteria
+* Given two selected registrants, when I send a message, then each receives it within 2 minutes with event details, Join button, community box and footer; nobody else does
+* Given no mailer configured, when I open the action, then it is disabled with an explanation
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-247,SPR-321
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S2","spr-248"
+"Story","73","8","","E08 Events — Administration","SPR-249 Check-in and recap","*Story:* Attendance on the day and post-event data.
+
+h3. Acceptance criteria
+* Given event day, when I mark two registrants Attended and one No-show, then counters update and statuses show in the list
+* Given after the event, when I save recording URL, attendee count, photo URLs and notes, then they persist on reload
+
+h3. Details
+* Priority: P2   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-247
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","2","E08","sprint-S3","spr-249"
+"Story","74","8","","E08 Events — Administration","SPR-250 Convert registrant to candidate","*Story:* Bridge to the recruitment funnel.
+
+h3. Acceptance criteria
+* Given an attended registrant, when I convert with a ₹5,000 sign-up payment, then a candidate is created and an Income transaction appears in Finance
+* Given I convert without a payment, when I confirm, then only the candidate is created and the registration links to it
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-249,SPR-222
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E08","sprint-S3","spr-250"
+"Story","75","8","","E08 Events — Administration","SPR-251 Unpublish, cancel, delete rules","*Story:* Lifecycle protections.
+
+h3. Acceptance criteria
+* Given a published event with zero registrations, when I open the dashboard, then Unpublish is offered
+* Given a published event with registrations, when I open the dashboard, then only Cancel and (master) Delete are offered
+* Given I cancel with a reason and notify, when I confirm, then registrants receive the cancellation email; the public page shows cancelled
+* Given I am a non-master admin, when I look for Delete permanently, then it is not offered
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-244
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E08","sprint-S2","spr-251"
+"Story","76","9","","E09 Events — Public Registration & Emails","SPR-261 Event page renders on phone and desktop","*Story:* Content and layout.
+
+h3. Acceptance criteria
+* Given a published event, when I open it on a 390 px phone, then banner, badges, title, details, sections, form and footer render without horizontal scroll; sticky Register bar appears only when the form is off screen
+* Given a laptop, when I open it, then the form is in the right column and the hero button scrolls to it
+* Given the banner, when I tap it, then the page scrolls to the form
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-244
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-261"
+"Story","77","9","","E09 Events — Public Registration & Emails","SPR-262 Registration validation","*Story:* Field rules and bot guard.
+
+h3. Acceptance criteria
+* Given a 9-digit Indian mobile, when I submit, then I see ""Enter valid Mobile number""
+* Given country changed to another code, when I enter that country's number, then validation follows the selected country
+* Given consent unticked, when I submit, then I am blocked
+* Given I submit within 2 seconds of the page opening, when the form responds, then I see ""That was fast! Please review your details and try again.""
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-261
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-262"
+"Story","78","9","","E09 Events — Public Registration & Emails","SPR-263 Successful registration and success card","*Story:* Everything a registrant needs.
+
+h3. Acceptance criteria
+* Given valid details, when I submit, then a code SPR-WEB-XXXXXXX, Join Meeting on <platform> button (real link), WhatsApp community button, Google Calendar, .ics, Invite a friend, email status and website link are shown
+* Given an offline event, when I register, then venue details replace the Join button
+* Given the confirmation counter, when I check the admin, then Confirmed increments by exactly one
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-262
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-263"
+"Story","79","9","","E09 Events — Public Registration & Emails","SPR-264 Duplicate registration and contact correction","*Story:* Same email or mobile.
+
+h3. Acceptance criteria
+* Given an existing registration, when I register again with the same email or mobile, then the already-registered card shows my code
+* Given the card, when I correct my email and resend, then the record updates and a new confirmation is queued
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-263
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E09","sprint-S2","spr-264"
+"Story","80","9","","E09 Events — Public Registration & Emails","SPR-265 Waitlist path","*Story:* Limited capacity behaviour.
+
+h3. Acceptance criteria
+* Given a full event with waitlist, when I register, then I am waitlisted; the card and email say so and no Join button is shown
+* Given a full event without waitlist, when I open the page, then registration is closed with a message
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-243
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E09","sprint-S2","spr-265"
+"Story","81","9","","E09 Events — Public Registration & Emails","SPR-266 Confirmation email content","*Story:* Rendering across clients.
+
+h3. Acceptance criteria
+* Given a registration, when I open the email in Gmail app, Outlook and Apple Mail, then from admin@sprtechforge.com; banner as image not attachment; Join button; code; community box; contact footer; logo; map-linked address
+* Given the email, when I tap each link, then event page, Teams/Meet, WhatsApp invite, dialer, mail, Maps, website all open correctly
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-263,SPR-321
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-266"
+"Story","82","9","","E09 Events — Public Registration & Emails","SPR-267 Reminder and cancellation emails","*Story:* Templates share the footer.
+
+h3. Acceptance criteria
+* Given the admin sends a reminder message, when I receive it, then my message text appears above the event block with Join button and community box
+* Given the event is cancelled with notify, when I receive it, then the cancellation email states the reason and no Join button is present
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-248,SPR-251
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E09","sprint-S2","spr-267"
+"Story","83","9","","E09 Events — Public Registration & Emails","SPR-268 Public events list","*Story:* Listing rules.
+
+h3. Acceptance criteria
+* Given published upcoming and a cancelled event, when I open /events, then upcoming ones show with banners and Register free; cancelled is flagged; drafts are absent
+* Given I click Register free, when the event opens, then scrolled to the top
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E09","sprint-S1","spr-268"
+"Story","84","9","","E09 Events — Public Registration & Emails","SPR-269 Invite a friend and calendar files","*Story:* Sharing from the success card.
+
+h3. Acceptance criteria
+* Given the success card, when I tap Invite a friend on WhatsApp, then WhatsApp opens with plain text (no broken characters) containing the /e/<slug>/ link
+* Given I tap Download .ics, when the file opens, then title, IST time and event link are correct; Google Calendar link pre-fills the same
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-263
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E09","sprint-S2","spr-269"
+"Story","85","9","","E09 Events — Public Registration & Emails","SPR-270 Burst registration (QA load)","*Story:* Reliability under load.
+
+h3. Acceptance criteria
+* Given a QA event with unlimited capacity, when we fire 300 registrations at 100 concurrency, then 100% succeed, codes are unique, counters are exact, and the outbox drains at 24/min with 0 failures
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S3
+* Depends on: SPR-321
+* Note: Use the load script on QA only
+* Epic: E09 Events — Public Registration & Emails
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E09","sprint-S3","spr-270"
+"Story","86","10","","E10 Marketing Links & Attribution","SPR-281 Share link preview shows the event poster","*Story:* WhatsApp / LinkedIn previews.
+
+h3. Acceptance criteria
+* Given a published event (rebuilt), when I paste /e/<slug>/ in WhatsApp, then the card shows the event banner, title and IST date
+* Given I paste the site root, when the preview renders, then it shows the company poster instead
+* Given a cancelled event, when I paste its link, then the title starts with [Cancelled]
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-244
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E10","sprint-S1","spr-281"
+"Story","87","10","","E10 Marketing Links & Attribution","SPR-282 Share page forwards humans into the app","*Story:* Redirect behaviour.
+
+h3. Acceptance criteria
+* Given /e/<slug>/?ref=abc, when I open it, then I land on /#/events/<slug>?ref=abc
+* Given /e/not-a-real-event/, when I open it, then the app shows its event-not-found page, not a blank 404
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E10","sprint-S1","spr-282"
+"Story","88","10","","E10 Marketing Links & Attribution","SPR-283 Short link /webinar","*Story:* Always the next upcoming event.
+
+h3. Acceptance criteria
+* Given one upcoming published event, when I open /webinar?ref=x, then I land on that event with ?ref=x kept and the preview shows its poster
+* Given no upcoming event, when I open /webinar, then I land on /#/events
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E10","sprint-S1","spr-283"
+"Story","89","10","","E10 Marketing Links & Attribution","SPR-284 Ref code attribution end to end","*Story:* Influencer tracking.
+
+h3. Acceptance criteria
+* Given a link with ?ref=inf1, when I register after visiting the home page and coming back, then the admin source table shows inf1 with 1 and the CSV Source column says inf1
+* Given a plain link, when I register, then the registration counts under Direct / untagged
+* Given ?ref=Priya Test!, when I open it, then the stored source is priyatest
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-263
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E10","sprint-S1","spr-284"
+"Story","90","10","","E10 Marketing Links & Attribution","SPR-285 Influencer link builder","*Story:* Admin tooling.
+
+h3. Acceptance criteria
+* Given the share card, when I type a code, then the link ends with ?ref=<clean code>; Copy and Send via WhatsApp work; the /webinar hint is shown
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-246
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E10","sprint-S2","spr-285"
+"Story","91","10","","E10 Marketing Links & Attribution","SPR-286 SEO files and structured data","*Story:* Crawler basics.
+
+h3. Acceptance criteria
+* Given production, when I fetch /robots.txt and /sitemap.xml, then both return 200; sitemap lists home and every published share page
+* Given the home page source, when I inspect, then the title is the company title and JSON-LD Organization/WebSite/SiteNavigation is present
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E10 Marketing Links & Attribution
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E10","sprint-S3","spr-286"
+"Story","92","11","","E11 Public Website & Content Management","SPR-301 Website renders correctly on a phone","*Story:* Layout at 390 px.
+
+h3. Acceptance criteria
+* Given the home page on a phone, when I scroll top to bottom, then the header stays opaque, nothing shows through it, no horizontal scroll, dots sit below hero buttons on every slide, WhatsApp bubble does not cover footer text
+* Given the hamburger menu, when I tap a section, then the page scrolls to it and the menu closes
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E11","sprint-S1","spr-301"
+"Story","93","11","","E11 Public Website & Content Management","SPR-302 Hero carousel behaviour","*Story:* Slides and side panels.
+
+h3. Acceptance criteria
+* Given default slides on desktop, when I click a track tile / service tile, then the page scrolls to Training / Services
+* Given autoplay, when I wait 6 s, then the slide advances; hovering pauses; swipe and arrow keys work
+* Given admin banners active, when I reload, then they replace the default slides in order
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-311
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-302"
+"Story","94","11","","E11 Public Website & Content Management","SPR-303 Contact actions","*Story:* Every contact element works.
+
+h3. Acceptance criteria
+* Given the Contact section on Android, iPhone and laptop, when I tap phone icon, number, WhatsApp chip, email icon, address, map pin, socials, then dialer, WhatsApp, mail app, Google Maps and social pages open
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E11","sprint-S1","spr-303"
+"Story","95","11","","E11 Public Website & Content Management","SPR-304 Enquiry form validation and submission","*Story:* Lead capture.
+
+h3. Acceptance criteria
+* Given empty form, when I submit, then name message; then mobile message for 9 digits; then the email-required message
+* Given valid data, when I submit, then I see ""Thanks! We have your enquiry."" and the lead appears in Web Enquiries with interest · mode
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Depends on: SPR-163
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E11","sprint-S1","spr-304"
+"Story","96","11","","E11 Public Website & Content Management","SPR-305 Testimonials and gallery carousels","*Story:* Single-row carousels.
+
+h3. Acceptance criteria
+* Given ≥2 testimonial images, when I view the section, then same-size cards in one row, arrows and dots work, auto-advance, tap enlarges
+* Given gallery photos, when I view, then uniform tiles scroll horizontally with a lightbox
+* Given no images, when I view, then the sections are hidden entirely
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Depends on: SPR-312
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S2","spr-305"
+"Story","97","11","","E11 Public Website & Content Management","SPR-306 Upcoming events on the website","*Story:* Cross-module listing.
+
+h3. Acceptance criteria
+* Given a published upcoming event, when I open the home page, then it appears with banner and Register free; past or draft events do not
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
+* Depends on: SPR-244
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E11","sprint-S1","spr-306"
+"Story","98","11","","E11 Public Website & Content Management","SPR-307 Numbers strip and FAQ","*Story:* Admin numbers and static content.
+
+h3. Acceptance criteria
+* Given stats entered, when I view, then count-up numbers show; a 0 hides its tile; all 0 shows the promise line
+* Given the FAQ, when I tap questions, then one opens at a time
+* Given Privacy / Terms, when I click, then modals open
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-313
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E11","sprint-S2","spr-307"
+"Story","99","11","","E11 Public Website & Content Management","SPR-311 Admin manages hero banners","*Story:* Website Content → Hero banners.
+
+h3. Acceptance criteria
+* Given I add a banner with image, headline (≤90), sub-text, button and target, when I save, then it shows on the website first slide; Hide removes it; reorder changes order
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-311"
+"Story","100","11","","E11 Public Website & Content Management","SPR-312 Admin manages photos and testimonials","*Story:* Image-only content.
+
+h3. Acceptance criteria
+* Given I upload 3 photos and caption one, when I reload the website, then they appear in the gallery with the caption
+* Given I upload 2 testimonial images, when I reload, then both appear as equal cards; Hide removes one; Replace swaps the image
+* Given the Testimonials tab, when I look for text fields, then none exist — upload only
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-312"
+"Story","101","11","","E11 Public Website & Content Management","SPR-313 Admin manages numbers and links","*Story:* Settings validation.
+
+h3. Acceptance criteria
+* Given a URL without http, when I save, then I see ""Links must start with http:// or https://""
+* Given valid social links and the community link, when I save, then icons appear on the site and the community button uses the new link
+* Given the map link, when I change it, then the contact map pin opens the new location
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E11","sprint-S1","spr-313"
+"Story","102","11","","E11 Public Website & Content Management","SPR-314 Brand assets","*Story:* Real logo everywhere.
+
+h3. Acceptance criteria
+* Given website, login, event pages, sidebar, printed agreement, emails, browser tab, WhatsApp preview, when I check, then the official SPR logo is used, not a drawn substitute
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Epic: E11 Public Website & Content Management
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E11","sprint-S2","spr-314"
+"Story","103","12","","E12 Communications & Email Outbox","SPR-321 Email bridge configuration","*Story:* Runtime settings for the master.
+
+h3. Acceptance criteria
+* Given Communication Settings, when I click Test Email Connection, then it reports Outlook / Microsoft 365 and the sender
+* Given a wrong secret, when I test, then a friendly ""shared secret does not match"" message appears
+* Given I click Save for All Users, when another admin reloads, then the same configuration is active (source: Cloud settings)
+
+h3. Details
+* Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
+* Epic: E12 Communications & Email Outbox
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E12","sprint-S1","spr-321"
+"Story","104","12","","E12 Communications & Email Outbox","SPR-322 Outbox queues and drains","*Story:* Rate-limited delivery.
+
+h3. Acceptance criteria
+* Given a registration, when I refresh the outbox card, then Pending 1 → 0 within about a minute and Sent (24 h) increments; ""Worker trigger: installed""
+* Given 30 registrations in one minute (QA), when I watch the card, then they drain at ≤24/min with 0 failures
+* Given an unreachable domain, when I wait, then the row ends Failed after 4 attempts and Retry failed re-queues it
+
+h3. Details
+* Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
+* Depends on: SPR-321
+* Epic: E12 Communications & Email Outbox
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E12","sprint-S1","spr-322"
+"Story","105","12","","E12 Communications & Email Outbox","SPR-323 Send queued now and outbox sheet","*Story:* Manual controls.
+
+h3. Acceptance criteria
+* Given pending rows, when I click Send queued now, then they are sent immediately
+* Given I click Open outbox sheet, when the sheet opens, then rows match the card counters
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-322
+* Epic: E12 Communications & Email Outbox
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E12","sprint-S2","spr-323"
+"Story","106","12","","E12 Communications & Email Outbox","SPR-324 Idempotent confirmation","*Story:* No duplicate mails on retries.
+
+h3. Acceptance criteria
+* Given a registrant clicks resend twice within seconds, when I inspect the outbox, then only one pending row exists for that event/email/subject
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
+* Depends on: SPR-264
+* Epic: E12 Communications & Email Outbox
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E12","sprint-S2","spr-324"
+"Story","107","12","","E12 Communications & Email Outbox","SPR-325 Storage test and fallback","*Story:* Uploads without a bucket.
+
+h3. Acceptance criteria
+* Given production without Storage, when I click Test Firebase Storage, then the result explains the inline fallback and uploads still succeed as inline images
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E12 Communications & Email Outbox
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E12","sprint-S3","spr-325"
+"Story","108","13","","E13 Seminar Campaigns","SPR-341 Import invitees from Excel","*Story:* Mapping and dedupe.
+
+h3. Acceptance criteria
+* Given the template with 5 rows including 1 duplicate and 1 invalid email, when I import, then report shows 4 imported, 1 duplicate, 1 invalid email; tokens are unique
+* Given a sheet without a name column, when I preview, then the sheet is skipped with the reason
+* Given re-importing the same file, when I confirm, then rows are updated (merged), not duplicated
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-341"
+"Story","109","13","","E13 Seminar Campaigns","SPR-342 Email campaign with dry run and limits","*Story:* Resumable sending.
+
+h3. Acceptance criteria
+* Given dry run ticked, when I send invites, then nothing is sent and the log shows simulated lines
+* Given daily limit 3 and 5 pending, when I send, then 3 are sent, status Sent Today = 3, and the button reads Resume Sending (2 pending)
+* Given Send Test to Myself, when I click, then I receive ""[TEST] …"" and a test log entry exists
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-341,SPR-321
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-342"
+"Story","110","13","","E13 Seminar Campaigns","SPR-343 Public seminar page and Q&A","*Story:* Token-based registration.
+
+h3. Acceptance criteria
+* Given a valid token link, when I reserve an in-person seat and ask a question, then the dashboard shows the registration and the question within 5 s
+* Given a bad token, when I open the link, then I see ""This link doesn't look right""
+* Given 6 questions within a minute, when I submit, then the 6th is blocked with the rate message
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Depends on: SPR-341
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-343"
+"Story","111","13","","E13 Seminar Campaigns","SPR-344 Reply to a question","*Story:* Reply emailed and saved.
+
+h3. Acceptance criteria
+* Given an unanswered question, when I reply, then the reply is saved, marked emailed, and the invitee receives ""Re: your question…""
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
+* Depends on: SPR-343
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E13","sprint-S3","spr-344"
+"Story","112","13","","E13 Seminar Campaigns","SPR-345 WhatsApp blast and exports","*Story:* Manual WhatsApp flow.
+
+h3. Acceptance criteria
+* Given filtered candidates with phones, when I start the blast, then each chat opens in one window with the rendered message; the candidate is marked WA✓ when opened
+* Given I export WhatsApp CSV, when the file downloads, then Name, Phone, Message columns
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S4
+* Depends on: SPR-341
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E13","sprint-S4","spr-345"
+"Story","113","13","","E13 Seminar Campaigns","SPR-346 Seminar settings and banner","*Story:* Configuration rules.
+
+h3. Acceptance criteria
+* Given a 3 MB banner, when I upload, then I am blocked at 2 MB
+* Given a 500 px wide image, when I upload, then I am blocked (min 600 px)
+* Given seat limit reached, when a new invitee registers, then registration is not blocked (gap G-31) — record
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S4
+* Epic: E13 Seminar Campaigns
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E13","sprint-S4","spr-346"
+"Story","114","14","","E14 Admin Tools & Audit","SPR-361 Activity logs","*Story:* Audit coverage and export.
+
+h3. Acceptance criteria
+* Given a login, user add, candidate add, transaction create, when I open System Logs, then each has an entry with my name and time; search and paging work; Export CSV downloads
+* Given a candidate update or interview change, when I check, then no entry exists (gap G-23) — record
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E14 Admin Tools & Audit
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E14","sprint-S3","spr-361"
+"Story","115","14","","E14 Admin Tools & Audit","SPR-362 Address book","*Story:* Directory correctness.
+
+h3. Acceptance criteria
+* Given staff and active candidates, when I open Address Book, then staff show email; candidates show phone(s) and batch; Call / Mail links work; filter and export work
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E14 Admin Tools & Audit
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E14","sprint-S3","spr-362"
+"Story","116","14","","E14 Admin Tools & Audit","SPR-363 Cloud setup (QA only)","*Story:* Connection management.
+
+h3. Acceptance criteria
+* Given an invalid config JSON, when I click Connect & Save, then I am told which field is missing
+* Given a valid QA config, when I connect, then the app reloads connected; Disconnect reverts
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S5
+* Note: QA only
+* Epic: E14 Admin Tools & Audit
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E14","sprint-S5","spr-363"
+"Story","117","14","","E14 Admin Tools & Audit","SPR-364 Test runner safety (QA only)","*Story:* Known destructive test.
+
+h3. Acceptance criteria
+* Given QA with a backup, when I run the full suite, then results show; verify whether Office Cash (cash-01) still exists (gap G-22) and file a P0 if deleted
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S5
+* Depends on: SPR-227
+* Note: Never run on production
+* Epic: E14 Admin Tools & Audit
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E14","sprint-S5","spr-364"
+"Story","118","15","","E15 Cross-cutting Quality","SPR-381 Stale build self-recovery","*Story:* Deploy resilience.
+
+h3. Acceptance criteria
+* Given a tab left open across a production deploy, when I navigate to another screen, then the page reloads itself at most once and works; no blank screen
+* Given the chunk is still missing, when the reload completes, then I see ""This page could not be loaded"" with a Reload button
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E15","sprint-S2","spr-381"
+"Story","119","15","","E15 Cross-cutting Quality","SPR-382 Phone performance","*Story:* Public pages on 4G.
+
+h3. Acceptance criteria
+* Given Chrome DevTools Fast 3G/4G throttling and 4× CPU, when I open the home and an event page, then content appears within 3 s and 4 s respectively
+
+h3. Details
+* Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E15","sprint-S3","spr-382"
+"Story","120","15","","E15 Cross-cutting Quality","SPR-383 Permissions matrix","*Story:* Every route × role.
+
+h3. Acceptance criteria
+* Given the screens table in SRS §8.1, when I try each route as master, admin, staff, candidate, anonymous, then behaviour matches the table; deviations are filed
+
+h3. Details
+* Priority: P0   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-107
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E15","sprint-S2","spr-383"
+"Story","121","15","","E15 Cross-cutting Quality","SPR-384 Cross-browser smoke","*Story:* Tier 1 browsers.
+
+h3. Acceptance criteria
+* Given Chrome, Edge, Firefox, Android Chrome, iOS Safari, when I run the smoke set (login, community, event register, website contact), then no functional differences or console errors
+
+h3. Details
+* Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E15","sprint-S3","spr-384"
+"Story","122","15","","E15 Cross-cutting Quality","SPR-385 Real-time sync","*Story:* Two-browser checks.
+
+h3. Acceptance criteria
+* Given two staff browsers, when one adds a candidate, posts an announcement, registers on an event, then the other sees each change within 5 s without reload
+
+h3. Details
+* Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E15","sprint-S2","spr-385"
+"Story","123","15","","E15 Cross-cutting Quality","SPR-386 In-app self-tests","*Story:* Built-in suites stay green.
+
+h3. Acceptance criteria
+* Given master, when I run Community module tests and Events tests (Admin → Test Runner is excluded), then all pass
+
+h3. Details
+* Priority: P3   * Effort: 1 pts   * Suggested sprint: S2
+* Epic: E15 Cross-cutting Quality
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E15","sprint-S2","spr-386"
