@@ -111,10 +111,59 @@ export interface SprEvent {
 
   recap: EventRecap;
 
+  /** Admin-edited invitation email (Invite tab). Absent = the built-in default. */
+  inviteTemplate?: EventInviteTemplate;
+
   createdAt: string;
   createdBy: string;
   updatedAt: string;
   updatedBy: string;
+}
+
+/**
+ * One person on the event's invite list (uploaded from Excel/CSV on the
+ * admin "Invite" tab). Collection events_invites. Whether they went on to
+ * register is derived in the UI by matching email/mobile against
+ * events_registrations — never double-tracked here.
+ */
+export type InviteStatus = 'pending' | 'sent' | 'failed' | 'no_email';
+
+export interface EventInvite {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;   // normalized lowercase; '' when the row had only a mobile number
+  mobile: string;  // E.164 or ''
+  status: InviteStatus;
+  /** How many invitation emails were sent to this person (resends included). */
+  sentCount: number;
+  sentAt?: string;
+  lastError?: string;
+  /** File the row came from, for the admin's reference. */
+  source: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+/**
+ * The editable parts of the invitation email. Plain text with {{placeholders}}
+ * and **bold**; the banner, facts box, button and footer are laid out by the
+ * template in events/lib/emails.ts.
+ */
+export interface EventInviteTemplate {
+  subject: string;
+  headline: string;
+  message: string;
+  buttonLabel: string;
+  closing: string;
+  includeHighlights: boolean;
+  includeAgenda: boolean;
+  /**
+   * Registration link to put in the email instead of this event's page on the
+   * current site — e.g. the production link when the campaign is run from QA.
+   * '' = this site's own page. ?ref=email is appended either way.
+   */
+  linkOverride?: string;
 }
 
 /**
