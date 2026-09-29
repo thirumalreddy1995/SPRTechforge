@@ -228,6 +228,9 @@ export const PublicEventPage: React.FC = () => {
   const canRegister = ev.status !== 'cancelled' && phase !== 'past' && window_.open && !done && !alreadyRegistered;
 
   const scrollToForm = () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // After submit the side panel swaps to the confirmation card. On a phone that
+  // panel sits below the description, so scroll to the panel, not the page top.
+  const scrollToPanel = () => requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
   const setF = (patch: Partial<RegistrationFormInput>) => setForm(prev => ({ ...prev, ...patch }));
 
@@ -262,7 +265,7 @@ export const PublicEventPage: React.FC = () => {
         if (existing.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid')) {
           fetchPrivateDetails(ev.id).then(setPriv).catch(() => {});
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToPanel();
         return;
       }
 
@@ -307,7 +310,7 @@ export const PublicEventPage: React.FC = () => {
 
       const reg = outcome.registration;
       setDone(reg);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToPanel();
 
       let privDetails: EventPrivateDetails | null = null;
       if (reg.status === 'confirmed' && (ev.mode === 'online' || ev.mode === 'hybrid')) {
