@@ -108,7 +108,11 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 /** New screen → start at the top (the browser keeps the scroll offset across hash routes). */
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const { noteRoute } = useApp();
   React.useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); }, [pathname]);
+  // The router navigates with pushState (no hashchange event), so tell the
+  // data context where we are; heavy collections attach only on their pages.
+  React.useEffect(() => { noteRoute(pathname); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 };
 
