@@ -1,0 +1,65 @@
+"Issue Type","Issue ID","Parent ID","Epic Name","Epic Link","Summary","Description","Priority","Story Points","Labels","Labels","Labels"
+"Epic","1","","E08 Events — Administration","","E08 Events — Administration","h3. Scope
+Event editor wizard, publish rules, event dashboard, registrants, invite by email (Excel/CSV upload, editable invitation, outbox send), check-in, recap, convert to candidate
+
+h3. Requirements
+SRS/BRS v2.1 — MOD-27
+
+h3. Definition of done
+All stories in this epic executed; P0/P1 bugs fixed and re-tested; results recorded in SPR-Testing.xlsx.","High","","E08","srs-v2.1","release-2026-09"
+"Story","2","1","","E08 Events — Administration","SPR-252 Invite by email: upload a contact list","*Story:* Excel/CSV import with de-duplication (FR-27.13, FR-27.17).
+
+h3. Acceptance criteria
+* Given an Excel file with Full Name, Email ID and Mobile Number columns (50 rows, 3 repeated), when I upload it on the Invite by email tab, then I see ""47 added · 3 repeated in the file"", the rows appear as Not sent yet and the counters update
+* Given the same file, when I upload it again, then the summary says 0 added and nothing is duplicated
+* Given a CSV without a header row and a row with only a mobile number, when I upload it, then emails and mobiles are still recognised; the mobile-only row shows ""Mobile only"" and is counted under Mobile only
+* Given a file whose rows have no email or mobile, when I upload it, then the summary says how many rows had no usable email or mobile and nothing is added
+* Given a list with people on it, when I search, filter by status, export CSV, remove one row and Clear list, then each works and the counters follow
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-244
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E08","sprint-S2","spr-252"
+"Story","3","1","","E08 Events — Administration","SPR-253 Invite by email: edit, preview and test the invitation","*Story:* Per-event wording with placeholders and a live preview (FR-27.14, FR-27.15).
+
+h3. Acceptance criteria
+* Given the default wording, when I open the tab, then the preview shows banner, headline, message, facts box (when, where, speaker, free), the learning points, an orange button, closing line and an opt-out line
+* Given I change the subject and message using {{first_name}} and **bold**, when I look at the preview, then the placeholders are replaced with the first person's details and the bold text is bold
+* Given edited wording, when I click Save wording and reload the page, then the wording persists; Reset to default restores the built-in text
+* Given my address in ""Send a test to yourself"", when I click Send test, then I receive the email with a [TEST] subject within a couple of minutes and every link opens the event page with ?ref=email
+* Given the live site's event link pasted in ""Registration link to use"" (on QA), when I look at the preview and send a test, then the button and links use the live link with ?ref=email; a plain ""sprtechforge.com"" shows a red hint and is ignored
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-252
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E08","sprint-S2","spr-253"
+"Story","4","1","","E08 Events — Administration","SPR-254 Invite by email: send to the list and track registrations","*Story:* Outbox send with resumable statuses and attribution (FR-27.16, FR-27.17).
+
+h3. Acceptance criteria
+* Given 5 people Not sent yet and 1 Mobile only, when I click Send invitation, then the button says 5 people, a confirmation appears, progress reaches 5/5 and the five rows become Invited with a time
+* Given one invited person registers through the emailed button, when I open the Overview tab, then Registrations by source shows email = 1 and that person's row shows Registered ✓
+* Given a send in progress, when I click Stop, then the remaining rows stay Not sent yet and the button offers them again
+* Given a row marked Failed, when I tick Include failed and send, then it is retried; with ""Also resend"" ticked, Invited rows are included and show ×2 afterwards
+* Given a draft (unpublished) event, when I try to send, then I am told to publish first and nothing is sent
+
+h3. Details
+* Priority: P0   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-253,SPR-282
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E08","sprint-S2","spr-254"
+"Story","5","1","","E08 Events — Administration","SPR-255 Post-event follow-up survey","*Story:* Follow-up email with Yes/No buttons, public survey page with two branches, Feedback tab (FR-27.18–20, FR-28.17, BR-27.4).
+
+h3. Acceptance criteria
+* Given a completed event and a list of registrants uploaded on the Invite tab, when I switch ""What to send"" to Follow-up survey, set the Next session label and send a test to myself, then the mail asks ""Did you join the live session?"" with a Yes and a No button; each opens the survey page with that answer and my email pre-filled; the next session text appears in the mail
+* Given the survey page opened from the No button, when I pick ""link did not work on my phone"", next session Yes, recording Yes, course Maybe, mode Online, time Evening and submit, then a thank-you card confirms the next session details and the recording; the Feedback tab shows my row once with the reason, and the ""Why people did not join"" bar updates
+* Given the same email opens the page again and answers Yes with 4 stars, when I submit, then the earlier row is updated, not duplicated; Avg rating and Joined counters update
+* Given the page with no answer chosen or an invalid email, when I try to submit, then I am blocked with a clear message and nothing is saved
+* Given answers on the Feedback tab, when I filter Interested in course, click Copy emails, and Export CSV, then the filter keeps only yes/maybe rows, the clipboard holds their emails, and the CSV contains reason, next session, course interest and comments
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-252,SPR-254
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E08","sprint-S2","spr-255"

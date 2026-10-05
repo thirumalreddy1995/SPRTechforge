@@ -111,10 +111,104 @@ export interface SprEvent {
 
   recap: EventRecap;
 
+  /** Admin-edited invitation email (Invite tab). Absent = the built-in default. */
+  inviteTemplate?: EventInviteTemplate;
+  /** Admin-edited post-event follow-up email (Invite tab, "Follow-up survey" mode). Absent = the built-in default. */
+  followupTemplate?: EventInviteTemplate;
+
   createdAt: string;
   createdBy: string;
   updatedAt: string;
   updatedBy: string;
+}
+
+/**
+ * One person on the event's invite list (uploaded from Excel/CSV on the
+ * admin "Invite" tab). Collection events_invites. Whether they went on to
+ * register is derived in the UI by matching email/mobile against
+ * events_registrations — never double-tracked here.
+ */
+export type InviteStatus = 'pending' | 'sent' | 'failed' | 'no_email';
+
+export interface EventInvite {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;   // normalized lowercase; '' when the row had only a mobile number
+  mobile: string;  // E.164 or ''
+  status: InviteStatus;
+  /** How many invitation emails were sent to this person (resends included). */
+  sentCount: number;
+  sentAt?: string;
+  lastError?: string;
+  /** File the row came from, for the admin's reference. */
+  source: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+/**
+ * The editable parts of the invitation email. Plain text with {{placeholders}}
+ * and **bold**; the banner, facts box, button and footer are laid out by the
+ * template in events/lib/emails.ts.
+ */
+export interface EventInviteTemplate {
+  subject: string;
+  headline: string;
+  message: string;
+  buttonLabel: string;
+  closing: string;
+  includeHighlights: boolean;
+  includeAgenda: boolean;
+  /**
+   * Registration link to put in the email instead of this event's page on the
+   * current site — e.g. the production link when the campaign is run from QA.
+   * '' = this site's own page. ?ref=email is appended either way.
+   * For the follow-up survey email this is the survey page link instead.
+   */
+  linkOverride?: string;
+  /** Follow-up survey only: how the next session is described, e.g. "Saturday 10 Oct, 7:00 PM IST". */
+  nextSessionLabel?: string;
+}
+
+/** Why someone did not join the live session (follow-up survey). */
+export type FeedbackReason = 'link_mobile' | 'link_failed' | 'busy' | 'forgot' | 'no_details' | 'other';
+export type CourseInterest = 'yes' | 'maybe' | 'no';
+export type YesNoMaybe = 'yes' | 'no' | 'maybe';
+
+/**
+ * One post-event survey response. Collection events_feedback; one per
+ * event + email (the document id is derived from them, so re-submitting
+ * updates the earlier answer instead of duplicating it).
+ */
+export interface EventFeedback {
+  id: string;
+  eventId: string;
+  eventSlug: string;
+  eventTitle: string;
+  name: string;
+  email: string;    // normalized lowercase
+  mobile: string;   // E.164 or ''
+  /** Registration code when the email matched a registration, else ''. */
+  registrationCode: string;
+  joined: boolean;
+  // joined = true
+  rating: number;            // 1–5, 0 = not given
+  liked: string[];           // what they liked most
+  improve: string;           // free text
+  // joined = false
+  reason: FeedbackReason | '';
+  reasonOther: string;
+  nextSession: YesNoMaybe | '';
+  wantRecording: boolean;
+  // both
+  courseInterest: CourseInterest | '';
+  preferredMode: 'online' | 'offline' | 'either' | '';
+  callTime: string;
+  comments: string;
+  submittedAt: string;
+  updatedAt: string;
+  source: string;            // 'email' when opened from the follow-up mail, else 'direct'
 }
 
 /**

@@ -27,6 +27,8 @@ import {
 } from 'firebase/firestore';
 import {
   EventCounters,
+  EventFeedback,
+  EventInvite,
   EventPrivateDetails,
   EventRegistration,
   SprEvent,
@@ -38,6 +40,8 @@ export const EVENT_COLLECTIONS = {
   events: 'events_events',
   registrations: 'events_registrations',
   private: 'events_private',
+  invites: 'events_invites',
+  feedback: 'events_feedback',
 } as const;
 
 const db = () => getFirestore(getApp());
@@ -119,15 +123,67 @@ export const deleteEvent = async (id: string): Promise<void> => {
   // Registrations first, so a failure midway can't leave orphaned records
   // pointing at a deleted event.
   const regs = await getDocs(query(collection(db(), EVENT_COLLECTIONS.registrations), where('eventId', '==', id)));
-  const refs = regs.docs.map(d => d.ref);
-  const CHUNK = 450; // Firestore caps a write batch at 500 ops
-  for (let i = 0; i < refs.length; i += CHUNK) {
-    const batch = writeBatch(db());
-    refs.slice(i, i + CHUNK).forEach(r => batch.delete(r));
-    await batch.commit();
-  }
+  const invites = await getDocs(query(collection(db(), EVENT_COLLECTIONS.invites), where('eventId', '==', id)));
+  const feedback = await getDocs(query(collection(db(), EVENT_COLLECTIONS.feedback), where('eventId', '==', id)));
+  await deleteRefs([...regs.docs.map(d => d.ref), ...invites.docs.map(d => d.ref), ...feedback.docs.map(d => d.ref)]);
   await deleteDoc(doc(db(), EVENT_COLLECTIONS.private, id)).catch(() => { /* may not exist */ });
   await deleteDoc(doc(db(), EVENT_COLLECTIONS.events, id));
+};
+
+const CHUNK = 450; // Firestore caps a write batch at 500 ops
+
+const deleteRefs = async (refs: { path: string }[]): Promise<void> => {
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = writeBatch(db());
+    refs.slice(i, i + CHUNK).forEach(r => batch.delete(r as any));
+    await batch.commit();
+  }
+};
+
+// --- Invite list (admin "Invite" tab) ---
+
+export const subscribeInvites = (eventId: string, cb: (items: EventInvite[]) => void, onError?: (e: any) => void) =>
+  onSnapshot(
+    query(collection(db(), EVENT_COLLECTIONS.invites), where('eventId', '==', eventId)),
+    snap => {
+      const items: EventInvite[] = [];
+      snap.forEach(d => items.push({ ...(d.data() as any), id: d.id }));
+      cb(items);
+    },
+    err => { console.error('Invites subscribe failed:', err); onError?.(err); },
+  );
+
+export const addInvites = async (items: EventInvite[]): Promise<void> => {
+  for (let i = 0; i < items.length; i += CHUNK) {
+    const batch = writeBatch(db());
+    items.slice(i, i + CHUNK).forEach(inv => batch.set(doc(db(), EVENT_COLLECTIONS.invites, inv.id), stripUndefined(inv)));
+    await batch.commit();
+  }
+};
+
+export const updateInvite = async (id: string, data: Partial<EventInvite>): Promise<void> => {
+  await updateDoc(doc(db(), EVENT_COLLECTIONS.invites, id), stripUndefined(data));
+};
+
+export const deleteInvites = async (ids: string[]): Promise<void> => {
+  await deleteRefs(ids.map(id => doc(db(), EVENT_COLLECTIONS.invites, id)));
+};
+
+// --- Post-event feedback (admin "Feedback" tab) ---
+
+export const subscribeFeedback = (eventId: string, cb: (items: EventFeedback[]) => void, onError?: (e: any) => void) =>
+  onSnapshot(
+    query(collection(db(), EVENT_COLLECTIONS.feedback), where('eventId', '==', eventId)),
+    snap => {
+      const items: EventFeedback[] = [];
+      snap.forEach(d => items.push({ ...(d.data() as any), id: d.id }));
+      cb(items);
+    },
+    err => { console.error('Feedback subscribe failed:', err); onError?.(err); },
+  );
+
+export const deleteFeedback = async (ids: string[]): Promise<void> => {
+  await deleteRefs(ids.map(id => doc(db(), EVENT_COLLECTIONS.feedback, id)));
 };
 
 export const savePrivateDetails = async (priv: EventPrivateDetails): Promise<void> => {

@@ -910,7 +910,23 @@ Removed on 2026-09-15. `/email` redirects to Community. Outbound email is now de
 - **FR-27.11** Check-in tab: mark Attended / No-show on the day. Recap tab: recording link, final attendee count, photo links, notes.
 - **FR-27.12** Events list: every event with status, date, counters and quick actions.
 
+#### Expected behaviour — inviting people by email ("✉ Invite by email" tab)
+
+- **FR-27.13** Upload a contact list as Excel (.xlsx/.xls) or CSV. Name, Email and Mobile columns are detected from the header row (any wording such as "Email ID", "Mobile Number", "Full Name"); a file without a header row is read by the shape of each cell. A "Download sample CSV" button gives the layout. After upload the admin sees "N added · N with a mobile number only · N already on the list · N repeated in the file · N rows had no usable email or mobile". Uploading the same file twice adds nobody.
+- **FR-27.14** The invitation email is editable per event: Subject line, Headline, Message (plain text; blank line = new paragraph; `**text**` = bold), Button text, Closing line, "Include What you will learn", "Include the agenda", and an optional "Registration link to use". Placeholders: `{{first_name}}`, `{{name}}`, `{{event_title}}`, `{{short_description}}`, `{{date}}`, `{{time}}`, `{{when}}`, `{{where}}`, `{{speaker}}`, `{{link}}`. A live preview shows the email as the first person on the list would see it; "Reset to default" restores the built-in wording; "Save wording" stores it on the event; "Send test" emails the preview to any address with subject prefixed "[TEST]".
+- **FR-27.15** The email layout is fixed: banner (clickable), headline, message, a facts box (When, Where, Speaker, Cost: Free), the "What you will take away" bullets, the orange button, the closing line, a copy-paste link and an opt-out line. Every link carries `?ref=email`, so invited people who register appear under source **email** in "Registrations by source". When "Registration link to use" holds a full https:// link (for example the live site's link while the campaign is run from QA), the button and links use it instead of this site's page; anything that is not a full link is ignored.
+- **FR-27.16** "Send invitation to N people" sends to everyone with an email whose status is Not sent yet (plus Failed when "Include failed" is ticked, plus Invited when "Also resend" is ticked), after a confirmation. Emails go through the outbox (about 24 per minute). Each person's row becomes Invited (with time and a ×N count for resends) or Failed (reason on hover); a Stop button leaves the rest as Not sent yet so the run can be resumed. Mobile-only rows are never emailed; "Copy WhatsApp message" gives the same invitation as plain text for them.
+- **FR-27.17** Counters: On the list, Not sent yet, Invited, Failed, Mobile only, Registered (invitees matched to a registration by email or mobile). The table can be searched, filtered by those statuses, exported as CSV (with status, sent time, error and source file) and cleared; single rows can be removed.
+
+#### Expected behaviour — post-event follow-up survey ("✉ Invite by email" tab, mode "Follow-up survey", and the "📝 Feedback" tab)
+
+- **FR-27.18** The Invite tab has a "What to send" switch: *Invitation to register* (FR-27.14–16) or *Follow-up survey (after the event)*. Each mode keeps its own editable wording (subject, headline, message, "Yes" button text, closing, "Next session" label, optional survey-page link). Switching with unsaved wording asks for confirmation. The follow-up can be sent for a completed event; the invitation still requires a published one.
+- **FR-27.19** The follow-up email asks "Did you join the live session?" with two buttons, **✅ Yes, I joined** and **❌ No, I could not join**, that open the public survey page with the person's answer and email pre-filled; a copy-paste link and an opt-out line follow. `{{next_session}}` in the wording is replaced by the Next session label.
+- **FR-27.20** Feedback tab: counters Responses, Joined, Did not join, Avg rating, Course yes/maybe, Next session yes/maybe; a "Why people did not join" bar list with the count of link-related failures; a "What attendees liked" bar list; "Copy emails" for people interested in the course and for people who want the next session; the plain survey link for WhatsApp; a searchable table (filters All, Joined, Did not join, Interested in course, Want next session) with Export CSV; master can delete a row.
+
 #### Rules
+
+- **BR-27.4** One survey answer per event and email: answering again updates the earlier answer rather than adding a second row.
 
 - **BR-27.1** A published event with registrations cannot be unpublished; cancel or (master) delete it.
 - **BR-27.2** The public link never changes after publishing, even if the title is edited.
@@ -931,6 +947,17 @@ Removed on 2026-09-15. `/email` redirects to Community. Outbound email is now de
 | TS-27.11 | Positive | Convert attendee with ₹5,000 sign-up | Candidate created; Income entry in Finance. |
 | TS-27.12 | Security | Staff opens Events management | Redirected. |
 | TS-27.13 | Security | Non-master looks for Delete permanently | Not offered. |
+| TS-27.14 | Positive | Upload an Excel file with Name / Email ID / Mobile Number columns, 50 rows, 3 duplicates | 47 added; "3 repeated in the file"; second upload adds 0. |
+| TS-27.15 | Negative | Upload a file with a name column only | "N rows had no usable email or mobile"; nothing added. |
+| TS-27.16 | Positive | Edit the subject and message, Save wording, reload | Wording persists; preview matches; "Send test" mail arrives with [TEST] subject. |
+| TS-27.17 | Positive | Send invitation to 5 people; one registers via the emailed button | Five rows Invited; "Registrations by source" shows email = 1; that row shows Registered ✓. |
+| TS-27.18 | Positive | Paste the live link into "Registration link to use" on QA and send | Email button opens the live site with `?ref=email`; registration lands on the live site. |
+| TS-27.19 | Negative | Type "sprtechforge.com" (no https://) in "Registration link to use" | Red hint; this site's own link is used. |
+| TS-27.20 | Positive | Stop during a send | Remaining rows stay Not sent yet; the button offers them again. |
+| TS-27.21 | Positive | Switch to Follow-up survey, set Next session, Send test | Mail has Yes and No buttons; each opens the survey page with the matching answer and the email pre-filled; next session text appears. |
+| TS-27.22 | Positive | Answer "No, link did not work on my phone, next session Yes, course Maybe" from the email | Feedback tab shows the row once; counters and the reason bar update; CSV has the reason. |
+| TS-27.23 | Positive | Same email answers again as "Yes, 4 stars" | The earlier row is updated, not duplicated. |
+| TS-27.24 | Negative | Submit without choosing Yes/No, or with an invalid email | Blocked with a message; nothing saved. |
 
 ---
 
@@ -963,6 +990,7 @@ Removed on 2026-09-15. `/email` redirects to Community. Outbound email is now de
 - **FR-28.14** `sprtechforge.com/webinar` (optionally with `?ref=code`) opens the next upcoming event; with none, the events list.
 - **FR-28.15** A link to an event published in the last 30 minutes still opens the event (its poster preview appears after the next scheduled rebuild). A link to an unknown event shows the app's "event link doesn't look right" page, never a blank 404.
 - **FR-28.16** The site publishes `sitemap.xml` (home plus every published event) and `robots.txt`.
+- **FR-28.17** Public survey page `/#/events/<event>/feedback` (no login): "Did you join the live session?" Yes/No. **Yes** → rating 1–5 (required), what they liked (multi-select), what to improve. **No** → what stopped them (link did not work on my phone / link did not open / busy / forgot / did not receive details / other, required), join the next session on *<next session label>* Yes/Maybe/No (required), want the recording Yes/No. **Both** → interested in the programme Yes/Maybe/Not now (required) with preferred mode and best time to call when not "Not now", free comments, name, email (required, valid), mobile. The email in the link pre-fills the form and matches the registration (code shown); a second visit pre-fills the earlier answer. A thank-you card confirms what happens next and offers the WhatsApp community.
 
 | TS-ID | Type | Scenario | Expected |
 | --- | --- | --- | --- |

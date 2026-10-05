@@ -11,7 +11,9 @@ import {
 import { youtubeVideoId, youtubeEmbedUrl } from '../lib/video';
 import { buildShareText } from '../components/shared';
 import { emptyCounters, emptyPrivateDetails } from '../services/eventsDb';
-import { SprEvent } from '../types';
+import { EventInvite, SprEvent } from '../types';
+import { parseContactRows, planInvites, registeredInviteIds, renderInviteText, inviteMessageToHtml, inviteVars, defaultInviteTemplate, inviteWhatsAppText, defaultFollowupTemplate, followupLinkUrl, followupWhatsAppText } from '../lib/invites';
+import { inviteEmailHtml, followupEmailHtml } from '../lib/emails';
 
 export interface EventsTestResult {
   name: string;
@@ -267,6 +269,124 @@ const TESTS: { name: string; fn: () => void }[] = [
       assert(seatsRemaining(ev) === 3, `expected 3 seats, got ${seatsRemaining(ev)}`);
       const full = baseEvent({ capacity: 10, counters: { confirmed: 12, waitlisted: 0 } });
       assert(seatsRemaining(full) === 0, 'overfull must clamp to 0, never negative');
+    },
+  },
+  {
+    name: 'Invite list: header row detected, columns mapped, phones normalized',
+    fn: () => {
+      const rows = [
+        ['S.No', 'Full Name', 'Email ID', 'Mobile Number'],
+        [1, 'Priya Sharma', 'Priya@Example.com', '98765 43210'],
+        [2, 'Rahul Verma', '', '+91 98765-43211'],
+        [3, '', 'no-at-sign', 'abc'],
+        [4, 'Only Name', '', ''],
+      ];
+      const r = parseContactRows(rows);
+      assert(r.headerRow === 0, 'header row not detected');
+      assert(r.contacts.length === 2, `expected 2 contacts, got ${r.contacts.length}`);
+      assert(r.contacts[0].email === 'priya@example.com' && r.contacts[0].mobile === '+919876543210' && r.contacts[0].name === 'Priya Sharma', 'first contact wrong: ' + JSON.stringify(r.contacts[0]));
+      assert(r.contacts[1].email === '' && r.contacts[1].mobile === '+919876543211', 'mobile-only row wrong');
+      assert(r.unusable === 2, `expected 2 unusable rows, got ${r.unusable}`);
+    },
+  },
+  {
+    name: 'Invite list: no header row — cells are recognised by shape',
+    fn: () => {
+      const rows = [
+        ['9876543210', 'Anita', 'anita@example.com'],
+        ['bala@example.com'],
+        ['', ''],
+      ];
+      const r = parseContactRows(rows);
+      assert(r.headerRow === null, 'should have no header row');
+      assert(r.contacts.length === 2, `expected 2 contacts, got ${r.contacts.length}`);
+      assert(r.contacts[0].name === 'Anita' && r.contacts[0].email === 'anita@example.com' && r.contacts[0].mobile === '+919876543210', 'shape detection wrong: ' + JSON.stringify(r.contacts[0]));
+      assert(r.contacts[1].email === 'bala@example.com' && r.contacts[1].name === '', 'email-only row wrong');
+    },
+  },
+  {
+    name: 'Invite list: duplicates in file and already-listed people are skipped',
+    fn: () => {
+      const existing: EventInvite[] = [{ id: 'inv-1', eventId: 'evt-test', name: 'Old', email: 'old@example.com', mobile: '', status: 'sent', sentCount: 1, source: 'a.csv', createdAt: '', createdBy: '' }];
+      const contacts = parseContactRows([
+        ['Name', 'Email', 'Mobile'],
+        ['Old Person', 'OLD@example.com', ''],
+        ['New', 'new@example.com', '9876543210'],
+        ['New again', 'new@example.com', ''],
+        ['Same phone', '', '9876543210'],
+        ['Phone only', '', '9876543299'],
+      ]).contacts;
+      const plan = planInvites(contacts, existing, { eventId: 'evt-test', userId: 'u1', source: 'b.csv', now: '2026-01-01T00:00:00.000Z' });
+      assert(plan.toAdd.length === 2, `expected 2 to add, got ${plan.toAdd.length}`);
+      assert(plan.alreadyListed === 1, 'already-listed count wrong');
+      assert(plan.duplicatesInFile === 2, `duplicates-in-file wrong: ${plan.duplicatesInFile}`);
+      assert(plan.mobileOnly === 1 && plan.toAdd[1].status === 'no_email', 'mobile-only row should be no_email');
+      assert(plan.toAdd[0].status === 'pending' && plan.toAdd[0].eventId === 'evt-test' && plan.toAdd[0].source === 'b.csv', 'new invite fields wrong');
+    },
+  },
+  {
+    name: 'Invite list: registered invitees matched by email or mobile',
+    fn: () => {
+      const invites: EventInvite[] = [
+        { id: 'a', eventId: 'e', name: '', email: 'a@example.com', mobile: '', status: 'sent', sentCount: 1, source: '', createdAt: '', createdBy: '' },
+        { id: 'b', eventId: 'e', name: '', email: '', mobile: '+919876543210', status: 'no_email', sentCount: 0, source: '', createdAt: '', createdBy: '' },
+        { id: 'c', eventId: 'e', name: '', email: 'c@example.com', mobile: '', status: 'sent', sentCount: 1, source: '', createdAt: '', createdBy: '' },
+      ];
+      const regs = [
+        { email: 'A@example.com', mobile: '+910000000000', status: 'confirmed' },
+        { email: 'x@example.com', mobile: '+919876543210', status: 'attended' },
+        { email: 'c@example.com', mobile: '', status: 'cancelled' },
+      ];
+      const set = registeredInviteIds(invites, regs);
+      assert(set.has('a') && set.has('b') && !set.has('c'), `registered set wrong: ${[...set].join(',')}`);
+    },
+  },
+  {
+    name: 'Invite email: placeholders, bold, escaping, ?ref=email link',
+    fn: () => {
+      const ev = baseEvent({ title: 'AI & Testing', shortDescription: 'Short <b>desc</b>', speakers: [{ name: 'Thirumal Reddy S', title: 'Trainer' }], whatYouWillLearn: ['Point one', 'Point two'] });
+      const vars = inviteVars(ev, { name: 'priya sharma' });
+      assert(vars.first_name === 'priya' && vars.name === 'priya sharma', 'name vars wrong');
+      assert(inviteVars(ev).first_name === 'there', 'missing name should greet "there"');
+      assert(/\/e\/test-event\/\?ref=email$/.test(vars.link), `link should carry ?ref=email: ${vars.link}`);
+      assert(inviteVars(ev, {}, 'https://sprtechforge.com/e/live-slug/').link === 'https://sprtechforge.com/e/live-slug/?ref=email', 'link override should point at the pasted site with ?ref=email');
+      assert(inviteVars(ev, {}, 'https://sprtechforge.com/webinar?x=1').link === 'https://sprtechforge.com/webinar?x=1&ref=email', 'override with a query string should append &ref');
+      assert(inviteVars(ev, {}, 'https://sprtechforge.com/e/x/?ref=partner').link === 'https://sprtechforge.com/e/x/?ref=partner', 'an override that already has ?ref must be left alone');
+      assert(/\/e\/test-event\/\?ref=email$/.test(inviteVars(ev, {}, 'sprtechforge.com/no-scheme').link), 'a non-URL override must fall back to this site');
+      assert(inviteEmailHtml(ev, {}, { ...defaultInviteTemplate(), linkOverride: 'https://sprtechforge.com/e/live-slug/' }).includes('https://sprtechforge.com/e/live-slug/?ref=email'), 'email should use the override link');
+      assert(renderInviteText('Hi {{first_name}} — {{event_title}}', vars, false) === 'Hi priya — AI & Testing', 'plain render wrong');
+      assert(renderInviteText('{{event_title}} {{unknown}}', vars, true) === 'AI &amp; Testing {{unknown}}', 'escaped render / unknown placeholder wrong');
+      const html = inviteMessageToHtml('One **bold** line\nsecond line\n\nPara two {{short_description}}', vars);
+      assert(html.includes('<strong>bold</strong>') && html.includes('second line') && html.includes('<br/>'), 'bold / line break missing');
+      assert((html.match(/<p /g) || []).length === 2, 'expected 2 paragraphs');
+      assert(html.includes('Short &lt;b&gt;desc&lt;/b&gt;'), 'values must be HTML-escaped');
+      const full = inviteEmailHtml(ev, { name: 'Priya' }, defaultInviteTemplate());
+      assert(full.includes('?ref=email') && full.includes('Reserve my free seat') && full.includes('Point one') && full.includes('Thirumal Reddy S'), 'full email missing parts');
+      assert(full.includes('unsubscribe'), 'opt-out line missing');
+      const wa = inviteWhatsAppText(ev, defaultInviteTemplate());
+      assert(wa.includes('*free live session*') && wa.includes('?ref=email') && !wa.includes('&amp;') && !wa.includes('<p'), 'WhatsApp text wrong (plain text, no escaping, no HTML)');
+    },
+  },
+  {
+    name: 'Follow-up survey: links carry the answer and email, email has Yes/No buttons, next session renders',
+    fn: () => {
+      const ev = baseEvent({ title: 'AI & Testing', slug: 'ai-testing' });
+      const yes = followupLinkUrl(ev, 'yes', 'Priya@Example.com');
+      assert(yes.includes('#/events/ai-testing/feedback?') && yes.includes('joined=yes') && yes.includes('e=priya%40example.com') && yes.includes('ref=email'), `yes link wrong: ${yes}`);
+      const plain = followupLinkUrl(ev, '', '');
+      assert(!plain.includes('joined=') && !plain.includes('e=') && plain.includes('ref=email'), `plain link wrong: ${plain}`);
+      const over = followupLinkUrl(ev, 'no', 'a@b.co', 'https://sprtechforge.com/#/events/ai-testing/feedback');
+      assert(over.startsWith('https://sprtechforge.com/#/events/ai-testing/feedback?') && over.includes('joined=no'), `override link wrong: ${over}`);
+      const tpl = { ...defaultFollowupTemplate(), nextSessionLabel: 'Saturday 10 Oct, 7:00 PM IST' };
+      const html = followupEmailHtml(ev, { name: 'Priya Sharma', email: 'priya@example.com' }, tpl);
+      assert(html.includes('Yes, I joined') && html.includes('No, I could not join'), 'both buttons must be present');
+      assert(html.includes('joined=yes') && html.includes('joined=no') && html.includes('e=priya%40example.com'), 'buttons must deep-link with answer + email');
+      assert(html.includes('Saturday 10 Oct, 7:00 PM IST'), 'next session label must render in the message');
+      assert(html.includes('Hi Priya,'), 'first name greeting missing');
+      assert(renderInviteText('x {{next_session}} y', { ...inviteVars(ev), next_session: 'SAT' } as any, false) === 'x SAT y', 'next_session placeholder not rendered');
+      assert(renderInviteText('x {{next_session}} y', inviteVars(ev), false) === 'x {{next_session}} y', 'undefined placeholder must be left alone');
+      const wa = followupWhatsAppText(ev, tpl);
+      assert(wa.includes('Saturday 10 Oct') && wa.includes('/feedback') && !wa.includes('<'), 'WhatsApp follow-up text wrong');
     },
   },
 ];

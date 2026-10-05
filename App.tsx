@@ -60,6 +60,7 @@ const CommunityHome = named(() => import('./community/pages/CommunityHome'), 'Co
 const EventsAdminList = named(() => import('./events/pages/EventsAdminList'), 'EventsAdminList');
 const EventEditor = named(() => import('./events/pages/EventEditor'), 'EventEditor');
 const EventAdminDetail = named(() => import('./events/pages/EventAdminDetail'), 'EventAdminDetail');
+const EventFeedbackPage = named(() => import('./events/pages/EventFeedbackPage'), 'EventFeedbackPage');
 
 const SeminarDashboard = named(() => import('./seminar/pages/SeminarDashboard'), 'SeminarDashboard');
 const SeminarImport = named(() => import('./seminar/pages/SeminarImport'), 'SeminarImport');
@@ -108,7 +109,11 @@ const MasterRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 /** New screen → start at the top (the browser keeps the scroll offset across hash routes). */
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const { noteRoute } = useApp();
   React.useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); }, [pathname]);
+  // The router navigates with pushState (no hashchange event), so tell the
+  // data context where we are; heavy collections attach only on their pages.
+  React.useEffect(() => { noteRoute(pathname); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 };
 
@@ -179,6 +184,7 @@ const AppRoutes = () => {
         <Route path="/events/manage/view/:id" element={<AdminRoute><Layout><EventAdminDetail /></Layout></AdminRoute>} />
         {/* Public — anyone with the link, no login */}
         <Route path="/events" element={<PublicEventsList />} />
+        <Route path="/events/:slug/feedback" element={<EventFeedbackPage />} />
         <Route path="/events/:slug" element={<PublicEventPage />} />
 
         {/* Community — the home page for every logged-in user: announcements, celebrations, events, daily learning */}

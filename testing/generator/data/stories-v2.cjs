@@ -8,7 +8,7 @@ const EPICS = [
   ['E05', 'Training Delivery', 'Curriculum, attendance, progress monitor, candidate training dashboard', 'MOD-09, MOD-10, MOD-11'],
   ['E06', 'Interviews & Preparation', 'Scheduling, conflicts, results, question bank & bulk upload, prompt practice', 'MOD-12, MOD-13, MOD-14'],
   ['E07', 'Finance (master)', 'Accounts, journal entries, statements, balance sheet, P&L, trial balance, payroll, reports & backup', 'MOD-15, MOD-16, MOD-17'],
-  ['E08', 'Events — Administration', 'Event editor wizard, publish rules, event dashboard, registrants, check-in, recap, convert to candidate', 'MOD-27'],
+  ['E08', 'Events — Administration', 'Event editor wizard, publish rules, event dashboard, registrants, invite by email (Excel/CSV upload, editable invitation, outbox send), check-in, recap, convert to candidate', 'MOD-27'],
   ['E09', 'Events — Public Registration & Emails', 'Event pages on phone/desktop, registration rules, success card, confirmation & reminder emails', 'MOD-28'],
   ['E10', 'Marketing Links & Attribution', 'Share pages with poster previews, short link, ref codes, source table, sitemap', 'MOD-28'],
   ['E11', 'Public Website & Content Management', 'Website sections and contact actions, enquiry form, admin banners/photos/testimonials/numbers', 'MOD-25, MOD-29'],
@@ -319,6 +319,34 @@ const STORIES = [
     G('I cancel with a reason and notify', 'I confirm', 'registrants receive the cancellation email; the public page shows cancelled'),
     G('I am a non-master admin', 'I look for Delete permanently', 'it is not offered'),
   ], 'P0', 2, 'S2', 'SPR-244'),
+  s('SPR-252', 'E08', 'Invite by email: upload a contact list', 'Excel/CSV import with de-duplication (FR-27.13, FR-27.17).', [
+    G('an Excel file with Full Name, Email ID and Mobile Number columns (50 rows, 3 repeated)', 'I upload it on the Invite by email tab', 'I see "47 added · 3 repeated in the file", the rows appear as Not sent yet and the counters update'),
+    G('the same file', 'I upload it again', 'the summary says 0 added and nothing is duplicated'),
+    G('a CSV without a header row and a row with only a mobile number', 'I upload it', 'emails and mobiles are still recognised; the mobile-only row shows "Mobile only" and is counted under Mobile only'),
+    G('a file whose rows have no email or mobile', 'I upload it', 'the summary says how many rows had no usable email or mobile and nothing is added'),
+    G('a list with people on it', 'I search, filter by status, export CSV, remove one row and Clear list', 'each works and the counters follow'),
+  ], 'P1', 3, 'S2', 'SPR-244'),
+  s('SPR-253', 'E08', 'Invite by email: edit, preview and test the invitation', 'Per-event wording with placeholders and a live preview (FR-27.14, FR-27.15).', [
+    G('the default wording', 'I open the tab', 'the preview shows banner, headline, message, facts box (when, where, speaker, free), the learning points, an orange button, closing line and an opt-out line'),
+    G('I change the subject and message using {{first_name}} and **bold**', 'I look at the preview', 'the placeholders are replaced with the first person\'s details and the bold text is bold'),
+    G('edited wording', 'I click Save wording and reload the page', 'the wording persists; Reset to default restores the built-in text'),
+    G('my address in "Send a test to yourself"', 'I click Send test', 'I receive the email with a [TEST] subject within a couple of minutes and every link opens the event page with ?ref=email'),
+    G('the live site\'s event link pasted in "Registration link to use" (on QA)', 'I look at the preview and send a test', 'the button and links use the live link with ?ref=email; a plain "sprtechforge.com" shows a red hint and is ignored'),
+  ], 'P1', 3, 'S2', 'SPR-252'),
+  s('SPR-254', 'E08', 'Invite by email: send to the list and track registrations', 'Outbox send with resumable statuses and attribution (FR-27.16, FR-27.17).', [
+    G('5 people Not sent yet and 1 Mobile only', 'I click Send invitation', 'the button says 5 people, a confirmation appears, progress reaches 5/5 and the five rows become Invited with a time'),
+    G('one invited person registers through the emailed button', 'I open the Overview tab', 'Registrations by source shows email = 1 and that person\'s row shows Registered ✓'),
+    G('a send in progress', 'I click Stop', 'the remaining rows stay Not sent yet and the button offers them again'),
+    G('a row marked Failed', 'I tick Include failed and send', 'it is retried; with "Also resend" ticked, Invited rows are included and show ×2 afterwards'),
+    G('a draft (unpublished) event', 'I try to send', 'I am told to publish first and nothing is sent'),
+  ], 'P0', 3, 'S2', 'SPR-253,SPR-282'),
+  s('SPR-255', 'E08', 'Post-event follow-up survey', 'Follow-up email with Yes/No buttons, public survey page with two branches, Feedback tab (FR-27.18–20, FR-28.17, BR-27.4).', [
+    G('a completed event and a list of registrants uploaded on the Invite tab', 'I switch "What to send" to Follow-up survey, set the Next session label and send a test to myself', 'the mail asks "Did you join the live session?" with a Yes and a No button; each opens the survey page with that answer and my email pre-filled; the next session text appears in the mail'),
+    G('the survey page opened from the No button', 'I pick "link did not work on my phone", next session Yes, recording Yes, course Maybe, mode Online, time Evening and submit', 'a thank-you card confirms the next session details and the recording; the Feedback tab shows my row once with the reason, and the "Why people did not join" bar updates'),
+    G('the same email opens the page again and answers Yes with 4 stars', 'I submit', 'the earlier row is updated, not duplicated; Avg rating and Joined counters update'),
+    G('the page with no answer chosen or an invalid email', 'I try to submit', 'I am blocked with a clear message and nothing is saved'),
+    G('answers on the Feedback tab', 'I filter Interested in course, click Copy emails, and Export CSV', 'the filter keeps only yes/maybe rows, the clipboard holds their emails, and the CSV contains reason, next session, course interest and comments'),
+  ], 'P1', 3, 'S2', 'SPR-252,SPR-254'),
 
   // ── E09 ──
   s('SPR-261', 'E09', 'Event page renders on phone and desktop', 'Content and layout.', [

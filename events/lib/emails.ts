@@ -4,10 +4,11 @@
 // CID-embedded because Gmail strips data: images.
 
 import { emailService, isEmailConfigured } from '../../services/emailService';
-import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
+import { EventInviteTemplate, EventPrivateDetails, EventRegistration, SprEvent } from '../types';
 import { formatISTRange } from './datetime';
 import { escapeHtml } from '../../seminar/lib/template';
 import { googleCalendarUrl } from './ics';
+import { followupLinkUrl, inviteMessageToHtml, inviteVars, renderInviteText } from './invites';
 
 const BANNER_CID = 'event-banner';
 
@@ -18,14 +19,14 @@ const eventPageUrl = (ev: SprEvent): string => `${window.location.origin}/e/${ev
 /** Where the deploy publishes the event banner as a plain JPEG (scripts/build-share-pages.mjs). */
 const hostedBannerUrl = (ev: SprEvent): string => `${eventPageUrl(ev)}banner.jpg`;
 
-const wrap = (ev: SprEvent, inner: string): string => {
+const wrap = (ev: SprEvent, inner: string, bannerLink: string = eventPageUrl(ev)): string => {
   // data: banners render as cid:… here; sendEventEmail swaps that for the hosted
   // JPEG when it exists, so the picture is a normal linked image, not an attachment.
   const bannerSrc = ev.bannerUrl
     ? (ev.bannerUrl.startsWith('data:') ? `cid:${BANNER_CID}` : ev.bannerUrl)
     : '';
   const banner = bannerSrc
-    ? `<a href="${escapeHtml(eventPageUrl(ev))}" style="display:block;text-decoration:none;"><img src="${bannerSrc}" alt="${escapeHtml(ev.title)}" style="width:100%;max-width:600px;height:auto;display:block;border-radius:8px;margin:0 auto 16px auto;border:0;"/></a>`
+    ? `<a href="${escapeHtml(bannerLink)}" style="display:block;text-decoration:none;"><img src="${bannerSrc}" alt="${escapeHtml(ev.title)}" style="width:100%;max-width:600px;height:auto;display:block;border-radius:8px;margin:0 auto 16px auto;border:0;"/></a>`
     : '';
   return `<div style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:15px;line-height:1.6;">
     ${banner}${inner}
@@ -141,6 +142,62 @@ export const customMessageEmailHtml = (ev: SprEvent, reg: EventRegistration, pri
       <p style="margin:6px 0 0 0;"><strong>Your registration code:</strong> <span style="font-family:monospace;font-weight:bold;">${escapeHtml(reg.registrationCode)}</span></p>
     </div>
   `);
+};
+
+/**
+ * Invitation to register (Invite tab). The admin edits the words; this lays
+ * them out: banner → headline → message → facts box → highlights → big button
+ * → closing → opt-out line. Every link carries ?ref=email for attribution.
+ */
+export const inviteEmailHtml = (ev: SprEvent, person: { name?: string }, tpl: EventInviteTemplate): string => {
+  const vars = inviteVars(ev, person, tpl.linkOverride);
+  const link = vars.link;
+  const highlights = (ev.whatYouWillLearn || []).map(s => s.trim()).filter(Boolean).slice(0, 6);
+  const agenda = (ev.agenda || []).filter(a => (a.title || '').trim());
+  const facts = [
+    `<p style="margin:0 0 4px 0;">📅 <strong>When:</strong> ${escapeHtml(vars.when)}</p>`,
+    `<p style="margin:0 0 4px 0;">${ev.mode === 'offline' ? '📍' : '💻'} <strong>Where:</strong> ${escapeHtml(vars.where.charAt(0).toUpperCase() + vars.where.slice(1))}</p>`,
+    vars.speaker ? `<p style="margin:0 0 4px 0;">🎤 <strong>Speaker:</strong> ${escapeHtml(vars.speaker)}${ev.speakers[0]?.title ? ` — ${escapeHtml(ev.speakers[0].title)}` : ''}</p>` : '',
+    `<p style="margin:0;">🎟️ <strong>Cost:</strong> Free — registration required</p>`,
+  ].join('');
+  const button = `<p style="text-align:center;margin:26px 0 8px 0;"><a href="${escapeHtml(link)}" style="display:inline-block;background:#ea580c;color:#ffffff;padding:15px 34px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;">${escapeHtml(renderInviteText(tpl.buttonLabel, vars, false) || 'Register free →')}</a></p>
+    <p style="text-align:center;margin:0 0 22px 0;color:#6b7280;font-size:12px;">Free · takes 30 seconds · the joining link is emailed to you</p>`;
+  return wrap(ev, `
+    <h2 style="color:#1e3a8a;font-size:24px;line-height:1.25;margin:0 0 14px 0;">${renderInviteText(tpl.headline, vars, true)}</h2>
+    ${inviteMessageToHtml(tpl.message, vars)}
+    <div style="margin:18px 0;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:14px;">${facts}</div>
+    ${tpl.includeHighlights && highlights.length ? `<p style="margin:0 0 6px 0;"><strong>What you will take away</strong></p><ul style="margin:0 0 16px 0;padding-left:20px;">${highlights.map(h => `<li style="margin:3px 0;">${escapeHtml(h)}</li>`).join('')}</ul>` : ''}
+    ${tpl.includeAgenda && agenda.length ? `<p style="margin:0 0 6px 0;"><strong>Agenda</strong></p><table style="border-collapse:collapse;margin:0 0 16px 0;font-size:14px;">${agenda.map(a => `<tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">${escapeHtml(a.time || '')}</td><td style="padding:2px 0;">${escapeHtml(a.title)}</td></tr>`).join('')}</table>` : ''}
+    ${button}
+    ${tpl.closing.trim() ? `<p style="color:#374151;margin:0 0 14px 0;">${renderInviteText(tpl.closing, vars, true).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}</p>` : ''}
+    <p style="font-size:12px;color:#9ca3af;margin:0;">Button not working? Open this link: <a href="${escapeHtml(link)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(link)}</a></p>
+    <p style="font-size:11px;color:#9ca3af;margin:12px 0 0 0;">You are receiving this invitation because you shared your contact details with SPR TechForge. Not interested? Reply with "unsubscribe" and we will not email you about events again.</p>
+  `, link);
+};
+
+/**
+ * Post-event follow-up (Invite tab, "Follow-up survey" mode). Two buttons send
+ * the reader to the survey page with their answer and email pre-filled, so the
+ * page can branch (how was it? / what stopped you?) without asking again.
+ */
+export const followupEmailHtml = (ev: SprEvent, person: { name?: string; email?: string }, tpl: EventInviteTemplate): string => {
+  const vars = { ...inviteVars(ev, person, undefined), next_session: tpl.nextSessionLabel || '' };
+  const yes = followupLinkUrl(ev, 'yes', person.email || '', tpl.linkOverride);
+  const no = followupLinkUrl(ev, 'no', person.email || '', tpl.linkOverride);
+  const plain = followupLinkUrl(ev, '', person.email || '', tpl.linkOverride);
+  return wrap(ev, `
+    <h2 style="color:#1e3a8a;font-size:24px;line-height:1.25;margin:0 0 14px 0;">${renderInviteText(tpl.headline, vars, true)}</h2>
+    ${inviteMessageToHtml(tpl.message, vars as any)}
+    <p style="margin:22px 0 10px 0;font-weight:bold;font-size:17px;color:#111827;">Did you join the live session?</p>
+    <table role="presentation" style="border-collapse:collapse;margin:0 0 8px 0;"><tr>
+      <td style="padding:0 12px 12px 0;"><a href="${escapeHtml(yes)}" style="display:inline-block;background:#16a34a;color:#ffffff;padding:15px 30px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;">✅ ${escapeHtml(renderInviteText(tpl.buttonLabel, vars, false) || 'Yes, I joined')}</a></td>
+      <td style="padding:0 0 12px 0;"><a href="${escapeHtml(no)}" style="display:inline-block;background:#dc2626;color:#ffffff;padding:15px 30px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;">❌ No, I could not join</a></td>
+    </tr></table>
+    <p style="margin:0 0 22px 0;color:#6b7280;font-size:13px;">Two minutes, five questions, no login.</p>
+    ${tpl.closing.trim() ? `<p style="color:#374151;margin:0 0 14px 0;">${renderInviteText(tpl.closing, vars, true).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}</p>` : ''}
+    <p style="font-size:12px;color:#9ca3af;margin:0;">Buttons not working? Open this link: <a href="${escapeHtml(plain)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(plain)}</a></p>
+    <p style="font-size:11px;color:#9ca3af;margin:12px 0 0 0;">You are receiving this because you registered for this event with SPR TechForge. Reply "unsubscribe" and we will not email you about events again.</p>
+  `, plain);
 };
 
 export interface EventEmailOptions {

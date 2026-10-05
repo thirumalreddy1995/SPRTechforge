@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {User, Candidate, Account, Transaction, AccountType, CandidateStatus, PasswordResetRequest, ActivityLog, TrainingModule, TrainingTopic, TrainingLog, Toast, InterviewModule, InterviewQuestion, CandidateProfile, InterviewSchedule, TransactionType, Enquiry, EnquiryNote, WebLead, WebLeadStatus, InterviewPrepSession, AuditEvent, AuditEventCategory, AuditEventType, AppNotification, NotificationType} from '../types';
 import * as utils from '../utils';
 import { cloudService } from '../services/cloud';
@@ -10,6 +10,8 @@ interface AppContextType {
   user: User | null;
   login: (username?: string, pass?: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  /** Called by the router (App.tsx) on every navigation so route-gated collections can attach. */
+  noteRoute: (path: string) => void;
   isInitialized: boolean;
 
   toast: Toast | null;
@@ -181,6 +183,33 @@ const DEFAULT_STATUSES: string[] = [
   CandidateStatus.Placed,
   CandidateStatus.Discontinued
 ];
+
+/**
+ * Which staff pages need which of the heavier collections. Everything else
+ * (users, candidates, accounts, enquiries, web leads, interviews,
+ * notifications — a few dozen documents) streams on every login. A collection
+ * listed here starts streaming the first time the signed-in user opens one of
+ * its pages and then stays attached until logout, so navigating back and forth
+ * never re-reads it. Measured on production 2026-09-30: activity logs and
+ * interview-prep sessions alone were ~80% of the documents read per login.
+ */
+const ROUTE_GATED_COLLECTIONS: Record<string, string[]> = {
+  activityLogs: ['/admin/logs'],
+  interviewPrepSessions: ['/training/interview-prep'],
+  interviewQuestions: ['/training/interview-questions'],
+  interviewModules: ['/training/interview-questions'],
+  trainingLogs: ['/training', '/candidates', '/dashboard'],
+  trainingModules: ['/training', '/candidates'],
+  trainingTopics: ['/training', '/candidates', '/dashboard'],
+  transactions: ['/finance', '/dashboard', '/candidates', '/training/interview-prep', '/admin'],
+  candidateProfiles: ['/candidates', '/community'],
+};
+
+/** Current HashRouter path without the query string, e.g. "/training/attendance". */
+const currentRoutePath = (): string => (window.location.hash || '#/').replace(/^#/, '').split('?')[0] || '/';
+
+export const routeNeedsCollection = (path: string, prefixes: string[]): boolean =>
+  prefixes.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p));
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -427,29 +456,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // would multiply reads by the number of registrants. Now those pages fetch
   // only what they need; the full dataset attaches on login and detaches on
   // logout.
+  //
+  // Since 2026-09-30 the heavier collections (see ROUTE_GATED_COLLECTIONS) are
+  // attached lazily: a staff login costs ~150 document reads instead of ~1,000,
+  // which is what exhausted the free daily quota during the webinar campaign.
   useEffect(() => {
     if (!isCloudEnabled || !user) return;
     const unsubCand = cloudService.subscribe('candidates', setCandidates);
-    const unsubProf = cloudService.subscribe('candidateProfiles', setCandidateProfiles);
     const unsubInter = cloudService.subscribe('interviews', setInterviews);
     const unsubAcc = cloudService.subscribe('accounts', d => { if (d.length > 0) setAccounts(d); else setAccounts(DEFAULT_ACCOUNTS); });
-    const unsubTrans = cloudService.subscribe('transactions', setTransactions);
-    const unsubMods = cloudService.subscribe('trainingModules', setTrainingModules);
-    const unsubTops = cloudService.subscribe('trainingTopics', setTrainingTopics);
-    const unsubLogs = cloudService.subscribe('trainingLogs', setTrainingLogs);
-    const unsubIntM = cloudService.subscribe('interviewModules', setInterviewModules);
-    const unsubIntQ = cloudService.subscribe('interviewQuestions', setInterviewQuestions);
-    const unsubAct = cloudService.subscribe('activityLogs', setActivityLogs);
     const unsubEnq = cloudService.subscribe('enquiries', setEnquiries);
     const unsubWebLeads = cloudService.subscribe('webLeads', setWebLeads);
-    const unsubPrepSessions = cloudService.subscribe('interviewPrepSessions', setInterviewPrepSessions);
     const unsubNotifs = cloudService.subscribe('notifications', setNotifications);
+    return () => { unsubCand(); unsubInter(); unsubAcc(); unsubEnq(); unsubWebLeads(); unsubNotifs(); };
+  }, [isCloudEnabled, user?.id]);
 
-    return () => {
-      unsubCand(); unsubProf(); unsubInter(); unsubAcc(); unsubTrans();
-      unsubMods(); unsubTops(); unsubLogs(); unsubIntM(); unsubIntQ(); unsubAct(); unsubEnq(); unsubWebLeads(); unsubPrepSessions();
-      unsubNotifs();
-    };
+  // Route-gated collections: remember which ones this session has needed so far.
+  const [routePath, setRoutePath] = useState<string>(currentRoutePath);
+  const [activatedCollections, setActivatedCollections] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const onHash = () => setRoutePath(currentRoutePath());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => { if (!user) setActivatedCollections(new Set()); }, [user?.id]);
+  useEffect(() => {
+    if (!user) return;
+    // Non-master users never see the Dashboard (/dashboard redirects them to
+    // /community), so its finance/training data must not attach for them.
+    const effectivePath = routePath === '/dashboard' && !utils.isMasterUser(user) ? '/community' : routePath;
+    const needed = Object.entries(ROUTE_GATED_COLLECTIONS)
+      .filter(([name, prefixes]) => !activatedCollections.has(name) && routeNeedsCollection(effectivePath, prefixes))
+      .map(([name]) => name);
+    if (needed.length) setActivatedCollections(prev => new Set([...prev, ...needed]));
+  }, [routePath, user?.id, activatedCollections]);
+
+  const gatedSetters: Record<string, (d: any[]) => void> = {
+    activityLogs: setActivityLogs,
+    interviewPrepSessions: setInterviewPrepSessions,
+    interviewQuestions: setInterviewQuestions,
+    interviewModules: setInterviewModules,
+    trainingLogs: setTrainingLogs,
+    trainingModules: setTrainingModules,
+    trainingTopics: setTrainingTopics,
+    transactions: setTransactions,
+    candidateProfiles: setCandidateProfiles,
+  };
+  // One listener per activated collection, opened once and kept for the session
+  // (re-subscribing would re-read every document from the server).
+  const gatedUnsubs = useRef<Map<string, () => void>>(new Map());
+  const activatedKey = [...activatedCollections].sort().join(',');
+  useEffect(() => {
+    if (!isCloudEnabled || !user) return;
+    activatedCollections.forEach(name => {
+      if (!gatedUnsubs.current.has(name)) gatedUnsubs.current.set(name, cloudService.subscribe(name, gatedSetters[name]));
+    });
+  }, [isCloudEnabled, user?.id, activatedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const closeAll = () => { gatedUnsubs.current.forEach(u => u()); gatedUnsubs.current.clear(); };
+    if (!isCloudEnabled || !user) closeAll();
+    return closeAll;
   }, [isCloudEnabled, user?.id]);
 
   // Email bridge config is resolved at runtime (localStorage → Firestore →
@@ -877,7 +943,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, login, logout, isInitialized, toast, showToast,
+      user, login, logout, noteRoute: setRoutePath, isInitialized, toast, showToast,
       users, addUser, updateUser, deleteUser,
       candidates, addCandidate, updateCandidate, deleteCandidate,
       candidateProfiles, updateCandidateProfile,
