@@ -21,6 +21,7 @@ import { CopyButton, EmptyState, StatusBadge, TextArea, TypeBadge, publicEventUr
 import { cancellationEmailHtml, customMessageEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
 import { getEmailBridgeConfig } from '../../services/messagingConfig';
 import { EventInvitePanel } from './EventInvitePanel';
+import { EventFeedbackPanel } from './EventFeedbackPanel';
 
 const PAGE_SIZE = 25;
 const REMINDER_COOLDOWN_MS = 12 * 60 * 60 * 1000;
@@ -72,7 +73,7 @@ export const EventAdminDetail: React.FC = () => {
   const [allRegs, setAllRegs] = useState<EventRegistration[]>([]);
   const [priv, setPriv] = useState<EventPrivateDetails | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<'overview' | 'registrations' | 'invite' | 'checkin' | 'recap'>('overview');
+  const [tab, setTab] = useState<'overview' | 'registrations' | 'invite' | 'feedback' | 'checkin' | 'recap'>('overview');
 
   // Registrations tab state
   const [q, setQ] = useState('');
@@ -487,6 +488,7 @@ export const EventAdminDetail: React.FC = () => {
           ['overview', 'Overview'],
           ['registrations', `Registrations (${counts.total})`],
           ['invite', '✉ Invite by email'],
+          ['feedback', '📝 Feedback'],
           ['checkin', 'Check-in'],
           ['recap', 'Recap'],
         ] as const).map(([key, label]) => (
@@ -712,6 +714,9 @@ export const EventAdminDetail: React.FC = () => {
 
       {/* ---------- INVITE ---------- */}
       {tab === 'invite' && <EventInvitePanel ev={ev} regs={regs} />}
+
+      {/* ---------- FEEDBACK ---------- */}
+      {tab === 'feedback' && <EventFeedbackPanel ev={ev} />}
 
       {/* ---------- CHECK-IN ---------- */}
       {tab === 'checkin' && (

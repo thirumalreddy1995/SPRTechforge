@@ -340,6 +340,13 @@ const STORIES = [
     G('a row marked Failed', 'I tick Include failed and send', 'it is retried; with "Also resend" ticked, Invited rows are included and show ×2 afterwards'),
     G('a draft (unpublished) event', 'I try to send', 'I am told to publish first and nothing is sent'),
   ], 'P0', 3, 'S2', 'SPR-253,SPR-282'),
+  s('SPR-255', 'E08', 'Post-event follow-up survey', 'Follow-up email with Yes/No buttons, public survey page with two branches, Feedback tab (FR-27.18–20, FR-28.17, BR-27.4).', [
+    G('a completed event and a list of registrants uploaded on the Invite tab', 'I switch "What to send" to Follow-up survey, set the Next session label and send a test to myself', 'the mail asks "Did you join the live session?" with a Yes and a No button; each opens the survey page with that answer and my email pre-filled; the next session text appears in the mail'),
+    G('the survey page opened from the No button', 'I pick "link did not work on my phone", next session Yes, recording Yes, course Maybe, mode Online, time Evening and submit', 'a thank-you card confirms the next session details and the recording; the Feedback tab shows my row once with the reason, and the "Why people did not join" bar updates'),
+    G('the same email opens the page again and answers Yes with 4 stars', 'I submit', 'the earlier row is updated, not duplicated; Avg rating and Joined counters update'),
+    G('the page with no answer chosen or an invalid email', 'I try to submit', 'I am blocked with a clear message and nothing is saved'),
+    G('answers on the Feedback tab', 'I filter Interested in course, click Copy emails, and Export CSV', 'the filter keeps only yes/maybe rows, the clipboard holds their emails, and the CSV contains reason, next session, course interest and comments'),
+  ], 'P1', 3, 'S2', 'SPR-252,SPR-254'),
 
   // ── E09 ──
   s('SPR-261', 'E09', 'Event page renders on phone and desktop', 'Content and layout.', [
