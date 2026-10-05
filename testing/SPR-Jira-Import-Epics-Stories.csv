@@ -837,7 +837,21 @@ h3. Details
 * Depends on: SPR-253,SPR-282
 * Epic: E08 Events — Administration
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E08","sprint-S2","spr-254"
-"Story","79","9","","E09 Events — Public Registration & Emails","SPR-261 Event page renders on phone and desktop","*Story:* Content and layout.
+"Story","79","8","","E08 Events — Administration","SPR-255 Post-event follow-up survey","*Story:* Follow-up email with Yes/No buttons, public survey page with two branches, Feedback tab (FR-27.18–20, FR-28.17, BR-27.4).
+
+h3. Acceptance criteria
+* Given a completed event and a list of registrants uploaded on the Invite tab, when I switch ""What to send"" to Follow-up survey, set the Next session label and send a test to myself, then the mail asks ""Did you join the live session?"" with a Yes and a No button; each opens the survey page with that answer and my email pre-filled; the next session text appears in the mail
+* Given the survey page opened from the No button, when I pick ""link did not work on my phone"", next session Yes, recording Yes, course Maybe, mode Online, time Evening and submit, then a thank-you card confirms the next session details and the recording; the Feedback tab shows my row once with the reason, and the ""Why people did not join"" bar updates
+* Given the same email opens the page again and answers Yes with 4 stars, when I submit, then the earlier row is updated, not duplicated; Avg rating and Joined counters update
+* Given the page with no answer chosen or an invalid email, when I try to submit, then I am blocked with a clear message and nothing is saved
+* Given answers on the Feedback tab, when I filter Interested in course, click Copy emails, and Export CSV, then the filter keeps only yes/maybe rows, the clipboard holds their emails, and the CSV contains reason, next session, course interest and comments
+
+h3. Details
+* Priority: P1   * Effort: 3 pts   * Suggested sprint: S2
+* Depends on: SPR-252,SPR-254
+* Epic: E08 Events — Administration
+* Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E08","sprint-S2","spr-255"
+"Story","80","9","","E09 Events — Public Registration & Emails","SPR-261 Event page renders on phone and desktop","*Story:* Content and layout.
 
 h3. Acceptance criteria
 * Given a published event, when I open it on a 390 px phone, then banner, badges, title, details, sections, form and footer render without horizontal scroll; sticky Register bar appears only when the form is off screen
@@ -849,7 +863,7 @@ h3. Details
 * Depends on: SPR-244
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-261"
-"Story","80","9","","E09 Events — Public Registration & Emails","SPR-262 Registration validation","*Story:* Field rules and bot guard.
+"Story","81","9","","E09 Events — Public Registration & Emails","SPR-262 Registration validation","*Story:* Field rules and bot guard.
 
 h3. Acceptance criteria
 * Given a 9-digit Indian mobile, when I submit, then I see ""Enter valid Mobile number""
@@ -862,7 +876,7 @@ h3. Details
 * Depends on: SPR-261
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-262"
-"Story","81","9","","E09 Events — Public Registration & Emails","SPR-263 Successful registration and success card","*Story:* Everything a registrant needs.
+"Story","82","9","","E09 Events — Public Registration & Emails","SPR-263 Successful registration and success card","*Story:* Everything a registrant needs.
 
 h3. Acceptance criteria
 * Given valid details, when I submit, then a code SPR-WEB-XXXXXXX, Join Meeting on <platform> button (real link), WhatsApp community button, Google Calendar, .ics, Invite a friend, email status and website link are shown
@@ -874,7 +888,7 @@ h3. Details
 * Depends on: SPR-262
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-263"
-"Story","82","9","","E09 Events — Public Registration & Emails","SPR-264 Duplicate registration and contact correction","*Story:* Same email or mobile.
+"Story","83","9","","E09 Events — Public Registration & Emails","SPR-264 Duplicate registration and contact correction","*Story:* Same email or mobile.
 
 h3. Acceptance criteria
 * Given an existing registration, when I register again with the same email or mobile, then the already-registered card shows my code
@@ -885,7 +899,7 @@ h3. Details
 * Depends on: SPR-263
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E09","sprint-S2","spr-264"
-"Story","83","9","","E09 Events — Public Registration & Emails","SPR-265 Waitlist path","*Story:* Limited capacity behaviour.
+"Story","84","9","","E09 Events — Public Registration & Emails","SPR-265 Waitlist path","*Story:* Limited capacity behaviour.
 
 h3. Acceptance criteria
 * Given a full event with waitlist, when I register, then I am waitlisted; the card and email say so and no Join button is shown
@@ -896,7 +910,7 @@ h3. Details
 * Depends on: SPR-243
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E09","sprint-S2","spr-265"
-"Story","84","9","","E09 Events — Public Registration & Emails","SPR-266 Confirmation email content","*Story:* Rendering across clients.
+"Story","85","9","","E09 Events — Public Registration & Emails","SPR-266 Confirmation email content","*Story:* Rendering across clients.
 
 h3. Acceptance criteria
 * Given a registration, when I open the email in Gmail app, Outlook and Apple Mail, then from admin@sprtechforge.com; banner as image not attachment; Join button; code; community box; contact footer; logo; map-linked address
@@ -907,7 +921,7 @@ h3. Details
 * Depends on: SPR-263,SPR-321
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E09","sprint-S1","spr-266"
-"Story","85","9","","E09 Events — Public Registration & Emails","SPR-267 Reminder and cancellation emails","*Story:* Templates share the footer.
+"Story","86","9","","E09 Events — Public Registration & Emails","SPR-267 Reminder and cancellation emails","*Story:* Templates share the footer.
 
 h3. Acceptance criteria
 * Given the admin sends a reminder message, when I receive it, then my message text appears above the event block with Join button and community box
@@ -918,7 +932,7 @@ h3. Details
 * Depends on: SPR-248,SPR-251
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E09","sprint-S2","spr-267"
-"Story","86","9","","E09 Events — Public Registration & Emails","SPR-268 Public events list","*Story:* Listing rules.
+"Story","87","9","","E09 Events — Public Registration & Emails","SPR-268 Public events list","*Story:* Listing rules.
 
 h3. Acceptance criteria
 * Given published upcoming and a cancelled event, when I open /events, then upcoming ones show with banners and Register free; cancelled is flagged; drafts are absent
@@ -928,7 +942,7 @@ h3. Details
 * Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E09","sprint-S1","spr-268"
-"Story","87","9","","E09 Events — Public Registration & Emails","SPR-269 Invite a friend and calendar files","*Story:* Sharing from the success card.
+"Story","88","9","","E09 Events — Public Registration & Emails","SPR-269 Invite a friend and calendar files","*Story:* Sharing from the success card.
 
 h3. Acceptance criteria
 * Given the success card, when I tap Invite a friend on WhatsApp, then WhatsApp opens with plain text (no broken characters) containing the /e/<slug>/ link
@@ -939,7 +953,7 @@ h3. Details
 * Depends on: SPR-263
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E09","sprint-S2","spr-269"
-"Story","88","9","","E09 Events — Public Registration & Emails","SPR-270 Burst registration (QA load)","*Story:* Reliability under load.
+"Story","89","9","","E09 Events — Public Registration & Emails","SPR-270 Burst registration (QA load)","*Story:* Reliability under load.
 
 h3. Acceptance criteria
 * Given a QA event with unlimited capacity, when we fire 300 registrations at 100 concurrency, then 100% succeed, codes are unique, counters are exact, and the outbox drains at 24/min with 0 failures
@@ -950,7 +964,7 @@ h3. Details
 * Note: Use the load script on QA only
 * Epic: E09 Events — Public Registration & Emails
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","3","E09","sprint-S3","spr-270"
-"Story","89","10","","E10 Marketing Links & Attribution","SPR-281 Share link preview shows the event poster","*Story:* WhatsApp / LinkedIn previews.
+"Story","90","10","","E10 Marketing Links & Attribution","SPR-281 Share link preview shows the event poster","*Story:* WhatsApp / LinkedIn previews.
 
 h3. Acceptance criteria
 * Given a published event (rebuilt), when I paste /e/<slug>/ in WhatsApp, then the card shows the event banner, title and IST date
@@ -962,7 +976,7 @@ h3. Details
 * Depends on: SPR-244
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E10","sprint-S1","spr-281"
-"Story","90","10","","E10 Marketing Links & Attribution","SPR-282 Share page forwards humans into the app","*Story:* Redirect behaviour.
+"Story","91","10","","E10 Marketing Links & Attribution","SPR-282 Share page forwards humans into the app","*Story:* Redirect behaviour.
 
 h3. Acceptance criteria
 * Given /e/<slug>/?ref=abc, when I open it, then I land on /#/events/<slug>?ref=abc
@@ -972,7 +986,7 @@ h3. Details
 * Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E10","sprint-S1","spr-282"
-"Story","91","10","","E10 Marketing Links & Attribution","SPR-283 Short link /webinar","*Story:* Always the next upcoming event.
+"Story","92","10","","E10 Marketing Links & Attribution","SPR-283 Short link /webinar","*Story:* Always the next upcoming event.
 
 h3. Acceptance criteria
 * Given one upcoming published event, when I open /webinar?ref=x, then I land on that event with ?ref=x kept and the preview shows its poster
@@ -982,7 +996,7 @@ h3. Details
 * Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E10","sprint-S1","spr-283"
-"Story","92","10","","E10 Marketing Links & Attribution","SPR-284 Ref code attribution end to end","*Story:* Influencer tracking.
+"Story","93","10","","E10 Marketing Links & Attribution","SPR-284 Ref code attribution end to end","*Story:* Influencer tracking.
 
 h3. Acceptance criteria
 * Given a link with ?ref=inf1, when I register after visiting the home page and coming back, then the admin source table shows inf1 with 1 and the CSV Source column says inf1
@@ -994,7 +1008,7 @@ h3. Details
 * Depends on: SPR-263
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E10","sprint-S1","spr-284"
-"Story","93","10","","E10 Marketing Links & Attribution","SPR-285 Influencer link builder","*Story:* Admin tooling.
+"Story","94","10","","E10 Marketing Links & Attribution","SPR-285 Influencer link builder","*Story:* Admin tooling.
 
 h3. Acceptance criteria
 * Given the share card, when I type a code, then the link ends with ?ref=<clean code>; Copy and Send via WhatsApp work; the /webinar hint is shown
@@ -1004,7 +1018,7 @@ h3. Details
 * Depends on: SPR-246
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E10","sprint-S2","spr-285"
-"Story","94","10","","E10 Marketing Links & Attribution","SPR-286 SEO files and structured data","*Story:* Crawler basics.
+"Story","95","10","","E10 Marketing Links & Attribution","SPR-286 SEO files and structured data","*Story:* Crawler basics.
 
 h3. Acceptance criteria
 * Given production, when I fetch /robots.txt and /sitemap.xml, then both return 200; sitemap lists home and every published share page
@@ -1014,7 +1028,7 @@ h3. Details
 * Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
 * Epic: E10 Marketing Links & Attribution
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E10","sprint-S3","spr-286"
-"Story","95","11","","E11 Public Website & Content Management","SPR-301 Website renders correctly on a phone","*Story:* Layout at 390 px.
+"Story","96","11","","E11 Public Website & Content Management","SPR-301 Website renders correctly on a phone","*Story:* Layout at 390 px.
 
 h3. Acceptance criteria
 * Given the home page on a phone, when I scroll top to bottom, then the header stays opaque, nothing shows through it, no horizontal scroll, dots sit below hero buttons on every slide, WhatsApp bubble does not cover footer text
@@ -1024,7 +1038,7 @@ h3. Details
 * Priority: P0   * Effort: 2 pts   * Suggested sprint: S1
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E11","sprint-S1","spr-301"
-"Story","96","11","","E11 Public Website & Content Management","SPR-302 Hero carousel behaviour","*Story:* Slides and side panels.
+"Story","97","11","","E11 Public Website & Content Management","SPR-302 Hero carousel behaviour","*Story:* Slides and side panels.
 
 h3. Acceptance criteria
 * Given default slides on desktop, when I click a track tile / service tile, then the page scrolls to Training / Services
@@ -1036,7 +1050,7 @@ h3. Details
 * Depends on: SPR-311
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-302"
-"Story","97","11","","E11 Public Website & Content Management","SPR-303 Contact actions","*Story:* Every contact element works.
+"Story","98","11","","E11 Public Website & Content Management","SPR-303 Contact actions","*Story:* Every contact element works.
 
 h3. Acceptance criteria
 * Given the Contact section on Android, iPhone and laptop, when I tap phone icon, number, WhatsApp chip, email icon, address, map pin, socials, then dialer, WhatsApp, mail app, Google Maps and social pages open
@@ -1045,7 +1059,7 @@ h3. Details
 * Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E11","sprint-S1","spr-303"
-"Story","98","11","","E11 Public Website & Content Management","SPR-304 Enquiry form validation and submission","*Story:* Lead capture.
+"Story","99","11","","E11 Public Website & Content Management","SPR-304 Enquiry form validation and submission","*Story:* Lead capture.
 
 h3. Acceptance criteria
 * Given empty form, when I submit, then name message; then mobile message for 9 digits; then the email-required message
@@ -1056,7 +1070,7 @@ h3. Details
 * Depends on: SPR-163
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E11","sprint-S1","spr-304"
-"Story","99","11","","E11 Public Website & Content Management","SPR-305 Testimonials and gallery carousels","*Story:* Single-row carousels.
+"Story","100","11","","E11 Public Website & Content Management","SPR-305 Testimonials and gallery carousels","*Story:* Single-row carousels.
 
 h3. Acceptance criteria
 * Given ≥2 testimonial images, when I view the section, then same-size cards in one row, arrows and dots work, auto-advance, tap enlarges
@@ -1068,7 +1082,7 @@ h3. Details
 * Depends on: SPR-312
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S2","spr-305"
-"Story","100","11","","E11 Public Website & Content Management","SPR-306 Upcoming events on the website","*Story:* Cross-module listing.
+"Story","101","11","","E11 Public Website & Content Management","SPR-306 Upcoming events on the website","*Story:* Cross-module listing.
 
 h3. Acceptance criteria
 * Given a published upcoming event, when I open the home page, then it appears with banner and Register free; past or draft events do not
@@ -1078,7 +1092,7 @@ h3. Details
 * Depends on: SPR-244
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E11","sprint-S1","spr-306"
-"Story","101","11","","E11 Public Website & Content Management","SPR-307 Numbers strip and FAQ","*Story:* Admin numbers and static content.
+"Story","102","11","","E11 Public Website & Content Management","SPR-307 Numbers strip and FAQ","*Story:* Admin numbers and static content.
 
 h3. Acceptance criteria
 * Given stats entered, when I view, then count-up numbers show; a 0 hides its tile; all 0 shows the promise line
@@ -1090,7 +1104,7 @@ h3. Details
 * Depends on: SPR-313
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E11","sprint-S2","spr-307"
-"Story","102","11","","E11 Public Website & Content Management","SPR-311 Admin manages hero banners","*Story:* Website Content → Hero banners.
+"Story","103","11","","E11 Public Website & Content Management","SPR-311 Admin manages hero banners","*Story:* Website Content → Hero banners.
 
 h3. Acceptance criteria
 * Given I add a banner with image, headline (≤90), sub-text, button and target, when I save, then it shows on the website first slide; Hide removes it; reorder changes order
@@ -1099,7 +1113,7 @@ h3. Details
 * Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-311"
-"Story","103","11","","E11 Public Website & Content Management","SPR-312 Admin manages photos and testimonials","*Story:* Image-only content.
+"Story","104","11","","E11 Public Website & Content Management","SPR-312 Admin manages photos and testimonials","*Story:* Image-only content.
 
 h3. Acceptance criteria
 * Given I upload 3 photos and caption one, when I reload the website, then they appear in the gallery with the caption
@@ -1110,7 +1124,7 @@ h3. Details
 * Priority: P1   * Effort: 2 pts   * Suggested sprint: S1
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E11","sprint-S1","spr-312"
-"Story","104","11","","E11 Public Website & Content Management","SPR-313 Admin manages numbers and links","*Story:* Settings validation.
+"Story","105","11","","E11 Public Website & Content Management","SPR-313 Admin manages numbers and links","*Story:* Settings validation.
 
 h3. Acceptance criteria
 * Given a URL without http, when I save, then I see ""Links must start with http:// or https://""
@@ -1121,7 +1135,7 @@ h3. Details
 * Priority: P1   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E11","sprint-S1","spr-313"
-"Story","105","11","","E11 Public Website & Content Management","SPR-314 Brand assets","*Story:* Real logo everywhere.
+"Story","106","11","","E11 Public Website & Content Management","SPR-314 Brand assets","*Story:* Real logo everywhere.
 
 h3. Acceptance criteria
 * Given website, login, event pages, sidebar, printed agreement, emails, browser tab, WhatsApp preview, when I check, then the official SPR logo is used, not a drawn substitute
@@ -1130,7 +1144,7 @@ h3. Details
 * Priority: P2   * Effort: 1 pts   * Suggested sprint: S2
 * Epic: E11 Public Website & Content Management
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E11","sprint-S2","spr-314"
-"Story","106","12","","E12 Communications & Email Outbox","SPR-321 Email bridge configuration","*Story:* Runtime settings for the master.
+"Story","107","12","","E12 Communications & Email Outbox","SPR-321 Email bridge configuration","*Story:* Runtime settings for the master.
 
 h3. Acceptance criteria
 * Given Communication Settings, when I click Test Email Connection, then it reports Outlook / Microsoft 365 and the sender
@@ -1141,7 +1155,7 @@ h3. Details
 * Priority: P0   * Effort: 1 pts   * Suggested sprint: S1
 * Epic: E12 Communications & Email Outbox
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","1","E12","sprint-S1","spr-321"
-"Story","107","12","","E12 Communications & Email Outbox","SPR-322 Outbox queues and drains","*Story:* Rate-limited delivery.
+"Story","108","12","","E12 Communications & Email Outbox","SPR-322 Outbox queues and drains","*Story:* Rate-limited delivery.
 
 h3. Acceptance criteria
 * Given a registration, when I refresh the outbox card, then Pending 1 → 0 within about a minute and Sent (24 h) increments; ""Worker trigger: installed""
@@ -1153,7 +1167,7 @@ h3. Details
 * Depends on: SPR-321
 * Epic: E12 Communications & Email Outbox
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","2","E12","sprint-S1","spr-322"
-"Story","108","12","","E12 Communications & Email Outbox","SPR-323 Send queued now and outbox sheet","*Story:* Manual controls.
+"Story","109","12","","E12 Communications & Email Outbox","SPR-323 Send queued now and outbox sheet","*Story:* Manual controls.
 
 h3. Acceptance criteria
 * Given pending rows, when I click Send queued now, then they are sent immediately
@@ -1164,7 +1178,7 @@ h3. Details
 * Depends on: SPR-322
 * Epic: E12 Communications & Email Outbox
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E12","sprint-S2","spr-323"
-"Story","109","12","","E12 Communications & Email Outbox","SPR-324 Idempotent confirmation","*Story:* No duplicate mails on retries.
+"Story","110","12","","E12 Communications & Email Outbox","SPR-324 Idempotent confirmation","*Story:* No duplicate mails on retries.
 
 h3. Acceptance criteria
 * Given a registrant clicks resend twice within seconds, when I inspect the outbox, then only one pending row exists for that event/email/subject
@@ -1174,7 +1188,7 @@ h3. Details
 * Depends on: SPR-264
 * Epic: E12 Communications & Email Outbox
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E12","sprint-S2","spr-324"
-"Story","110","12","","E12 Communications & Email Outbox","SPR-325 Storage test and fallback","*Story:* Uploads without a bucket.
+"Story","111","12","","E12 Communications & Email Outbox","SPR-325 Storage test and fallback","*Story:* Uploads without a bucket.
 
 h3. Acceptance criteria
 * Given production without Storage, when I click Test Firebase Storage, then the result explains the inline fallback and uploads still succeed as inline images
@@ -1183,7 +1197,7 @@ h3. Details
 * Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
 * Epic: E12 Communications & Email Outbox
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E12","sprint-S3","spr-325"
-"Story","111","13","","E13 Seminar Campaigns","SPR-341 Import invitees from Excel","*Story:* Mapping and dedupe.
+"Story","112","13","","E13 Seminar Campaigns","SPR-341 Import invitees from Excel","*Story:* Mapping and dedupe.
 
 h3. Acceptance criteria
 * Given the template with 5 rows including 1 duplicate and 1 invalid email, when I import, then report shows 4 imported, 1 duplicate, 1 invalid email; tokens are unique
@@ -1194,7 +1208,7 @@ h3. Details
 * Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-341"
-"Story","112","13","","E13 Seminar Campaigns","SPR-342 Email campaign with dry run and limits","*Story:* Resumable sending.
+"Story","113","13","","E13 Seminar Campaigns","SPR-342 Email campaign with dry run and limits","*Story:* Resumable sending.
 
 h3. Acceptance criteria
 * Given dry run ticked, when I send invites, then nothing is sent and the log shows simulated lines
@@ -1206,7 +1220,7 @@ h3. Details
 * Depends on: SPR-341,SPR-321
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-342"
-"Story","113","13","","E13 Seminar Campaigns","SPR-343 Public seminar page and Q&A","*Story:* Token-based registration.
+"Story","114","13","","E13 Seminar Campaigns","SPR-343 Public seminar page and Q&A","*Story:* Token-based registration.
 
 h3. Acceptance criteria
 * Given a valid token link, when I reserve an in-person seat and ask a question, then the dashboard shows the registration and the question within 5 s
@@ -1218,7 +1232,7 @@ h3. Details
 * Depends on: SPR-341
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E13","sprint-S3","spr-343"
-"Story","114","13","","E13 Seminar Campaigns","SPR-344 Reply to a question","*Story:* Reply emailed and saved.
+"Story","115","13","","E13 Seminar Campaigns","SPR-344 Reply to a question","*Story:* Reply emailed and saved.
 
 h3. Acceptance criteria
 * Given an unanswered question, when I reply, then the reply is saved, marked emailed, and the invitee receives ""Re: your question…""
@@ -1228,7 +1242,7 @@ h3. Details
 * Depends on: SPR-343
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E13","sprint-S3","spr-344"
-"Story","115","13","","E13 Seminar Campaigns","SPR-345 WhatsApp blast and exports","*Story:* Manual WhatsApp flow.
+"Story","116","13","","E13 Seminar Campaigns","SPR-345 WhatsApp blast and exports","*Story:* Manual WhatsApp flow.
 
 h3. Acceptance criteria
 * Given filtered candidates with phones, when I start the blast, then each chat opens in one window with the rendered message; the candidate is marked WA✓ when opened
@@ -1239,7 +1253,7 @@ h3. Details
 * Depends on: SPR-341
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E13","sprint-S4","spr-345"
-"Story","116","13","","E13 Seminar Campaigns","SPR-346 Seminar settings and banner","*Story:* Configuration rules.
+"Story","117","13","","E13 Seminar Campaigns","SPR-346 Seminar settings and banner","*Story:* Configuration rules.
 
 h3. Acceptance criteria
 * Given a 3 MB banner, when I upload, then I am blocked at 2 MB
@@ -1250,7 +1264,7 @@ h3. Details
 * Priority: P3   * Effort: 1 pts   * Suggested sprint: S4
 * Epic: E13 Seminar Campaigns
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E13","sprint-S4","spr-346"
-"Story","117","14","","E14 Admin Tools & Audit","SPR-361 Activity logs","*Story:* Audit coverage and export.
+"Story","118","14","","E14 Admin Tools & Audit","SPR-361 Activity logs","*Story:* Audit coverage and export.
 
 h3. Acceptance criteria
 * Given a login, user add, candidate add, transaction create, when I open System Logs, then each has an entry with my name and time; search and paging work; Export CSV downloads
@@ -1260,7 +1274,7 @@ h3. Details
 * Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
 * Epic: E14 Admin Tools & Audit
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E14","sprint-S3","spr-361"
-"Story","118","14","","E14 Admin Tools & Audit","SPR-362 Address book","*Story:* Directory correctness.
+"Story","119","14","","E14 Admin Tools & Audit","SPR-362 Address book","*Story:* Directory correctness.
 
 h3. Acceptance criteria
 * Given staff and active candidates, when I open Address Book, then staff show email; candidates show phone(s) and batch; Call / Mail links work; filter and export work
@@ -1269,7 +1283,7 @@ h3. Details
 * Priority: P3   * Effort: 1 pts   * Suggested sprint: S3
 * Epic: E14 Admin Tools & Audit
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E14","sprint-S3","spr-362"
-"Story","119","14","","E14 Admin Tools & Audit","SPR-363 Cloud setup (QA only)","*Story:* Connection management.
+"Story","120","14","","E14 Admin Tools & Audit","SPR-363 Cloud setup (QA only)","*Story:* Connection management.
 
 h3. Acceptance criteria
 * Given an invalid config JSON, when I click Connect & Save, then I am told which field is missing
@@ -1280,7 +1294,7 @@ h3. Details
 * Note: QA only
 * Epic: E14 Admin Tools & Audit
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Low","1","E14","sprint-S5","spr-363"
-"Story","120","14","","E14 Admin Tools & Audit","SPR-364 Test runner safety (QA only)","*Story:* Known destructive test.
+"Story","121","14","","E14 Admin Tools & Audit","SPR-364 Test runner safety (QA only)","*Story:* Known destructive test.
 
 h3. Acceptance criteria
 * Given QA with a backup, when I run the full suite, then results show; verify whether Office Cash (cash-01) still exists (gap G-22) and file a P0 if deleted
@@ -1291,7 +1305,7 @@ h3. Details
 * Note: Never run on production
 * Epic: E14 Admin Tools & Audit
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E14","sprint-S5","spr-364"
-"Story","121","15","","E15 Cross-cutting Quality","SPR-381 Stale build self-recovery","*Story:* Deploy resilience.
+"Story","122","15","","E15 Cross-cutting Quality","SPR-381 Stale build self-recovery","*Story:* Deploy resilience.
 
 h3. Acceptance criteria
 * Given a tab left open across a production deploy, when I navigate to another screen, then the page reloads itself at most once and works; no blank screen
@@ -1301,7 +1315,7 @@ h3. Details
 * Priority: P1   * Effort: 2 pts   * Suggested sprint: S2
 * Epic: E15 Cross-cutting Quality
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E15","sprint-S2","spr-381"
-"Story","122","15","","E15 Cross-cutting Quality","SPR-382 Phone performance","*Story:* Public pages on 4G.
+"Story","123","15","","E15 Cross-cutting Quality","SPR-382 Phone performance","*Story:* Public pages on 4G.
 
 h3. Acceptance criteria
 * Given Chrome DevTools Fast 3G/4G throttling and 4× CPU, when I open the home and an event page, then content appears within 3 s and 4 s respectively
@@ -1310,7 +1324,7 @@ h3. Details
 * Priority: P2   * Effort: 1 pts   * Suggested sprint: S3
 * Epic: E15 Cross-cutting Quality
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Medium","1","E15","sprint-S3","spr-382"
-"Story","123","15","","E15 Cross-cutting Quality","SPR-383 Permissions matrix","*Story:* Every route × role.
+"Story","124","15","","E15 Cross-cutting Quality","SPR-383 Permissions matrix","*Story:* Every route × role.
 
 h3. Acceptance criteria
 * Given the screens table in SRS §8.1, when I try each route as master, admin, staff, candidate, anonymous, then behaviour matches the table; deviations are filed
@@ -1320,7 +1334,7 @@ h3. Details
 * Depends on: SPR-107
 * Epic: E15 Cross-cutting Quality
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","Highest","3","E15","sprint-S2","spr-383"
-"Story","124","15","","E15 Cross-cutting Quality","SPR-384 Cross-browser smoke","*Story:* Tier 1 browsers.
+"Story","125","15","","E15 Cross-cutting Quality","SPR-384 Cross-browser smoke","*Story:* Tier 1 browsers.
 
 h3. Acceptance criteria
 * Given Chrome, Edge, Firefox, Android Chrome, iOS Safari, when I run the smoke set (login, community, event register, website contact), then no functional differences or console errors
@@ -1329,7 +1343,7 @@ h3. Details
 * Priority: P1   * Effort: 2 pts   * Suggested sprint: S3
 * Epic: E15 Cross-cutting Quality
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","2","E15","sprint-S3","spr-384"
-"Story","125","15","","E15 Cross-cutting Quality","SPR-385 Real-time sync","*Story:* Two-browser checks.
+"Story","126","15","","E15 Cross-cutting Quality","SPR-385 Real-time sync","*Story:* Two-browser checks.
 
 h3. Acceptance criteria
 * Given two staff browsers, when one adds a candidate, posts an announcement, registers on an event, then the other sees each change within 5 s without reload
@@ -1338,7 +1352,7 @@ h3. Details
 * Priority: P1   * Effort: 1 pts   * Suggested sprint: S2
 * Epic: E15 Cross-cutting Quality
 * Reference: SPR-TechForge-SRS-BRS-v2.1 (module in the epic)","High","1","E15","sprint-S2","spr-385"
-"Story","126","15","","E15 Cross-cutting Quality","SPR-386 In-app self-tests","*Story:* Built-in suites stay green.
+"Story","127","15","","E15 Cross-cutting Quality","SPR-386 In-app self-tests","*Story:* Built-in suites stay green.
 
 h3. Acceptance criteria
 * Given master, when I run Community module tests and Events tests (Admin → Test Runner is excluded), then all pass

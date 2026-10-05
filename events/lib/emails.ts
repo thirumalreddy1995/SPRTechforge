@@ -8,7 +8,7 @@ import { EventInviteTemplate, EventPrivateDetails, EventRegistration, SprEvent }
 import { formatISTRange } from './datetime';
 import { escapeHtml } from '../../seminar/lib/template';
 import { googleCalendarUrl } from './ics';
-import { inviteMessageToHtml, inviteVars, renderInviteText } from './invites';
+import { followupLinkUrl, inviteMessageToHtml, inviteVars, renderInviteText } from './invites';
 
 const BANNER_CID = 'event-banner';
 
@@ -173,6 +173,31 @@ export const inviteEmailHtml = (ev: SprEvent, person: { name?: string }, tpl: Ev
     <p style="font-size:12px;color:#9ca3af;margin:0;">Button not working? Open this link: <a href="${escapeHtml(link)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(link)}</a></p>
     <p style="font-size:11px;color:#9ca3af;margin:12px 0 0 0;">You are receiving this invitation because you shared your contact details with SPR TechForge. Not interested? Reply with "unsubscribe" and we will not email you about events again.</p>
   `, link);
+};
+
+/**
+ * Post-event follow-up (Invite tab, "Follow-up survey" mode). Two buttons send
+ * the reader to the survey page with their answer and email pre-filled, so the
+ * page can branch (how was it? / what stopped you?) without asking again.
+ */
+export const followupEmailHtml = (ev: SprEvent, person: { name?: string; email?: string }, tpl: EventInviteTemplate): string => {
+  const vars = { ...inviteVars(ev, person, undefined), next_session: tpl.nextSessionLabel || '' };
+  const yes = followupLinkUrl(ev, 'yes', person.email || '', tpl.linkOverride);
+  const no = followupLinkUrl(ev, 'no', person.email || '', tpl.linkOverride);
+  const plain = followupLinkUrl(ev, '', person.email || '', tpl.linkOverride);
+  return wrap(ev, `
+    <h2 style="color:#1e3a8a;font-size:24px;line-height:1.25;margin:0 0 14px 0;">${renderInviteText(tpl.headline, vars, true)}</h2>
+    ${inviteMessageToHtml(tpl.message, vars as any)}
+    <p style="margin:22px 0 10px 0;font-weight:bold;font-size:17px;color:#111827;">Did you join the live session?</p>
+    <table role="presentation" style="border-collapse:collapse;margin:0 0 8px 0;"><tr>
+      <td style="padding:0 12px 12px 0;"><a href="${escapeHtml(yes)}" style="display:inline-block;background:#16a34a;color:#ffffff;padding:15px 30px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;">✅ ${escapeHtml(renderInviteText(tpl.buttonLabel, vars, false) || 'Yes, I joined')}</a></td>
+      <td style="padding:0 0 12px 0;"><a href="${escapeHtml(no)}" style="display:inline-block;background:#dc2626;color:#ffffff;padding:15px 30px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:17px;">❌ No, I could not join</a></td>
+    </tr></table>
+    <p style="margin:0 0 22px 0;color:#6b7280;font-size:13px;">Two minutes, five questions, no login.</p>
+    ${tpl.closing.trim() ? `<p style="color:#374151;margin:0 0 14px 0;">${renderInviteText(tpl.closing, vars, true).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}</p>` : ''}
+    <p style="font-size:12px;color:#9ca3af;margin:0;">Buttons not working? Open this link: <a href="${escapeHtml(plain)}" style="color:#6b7280;word-break:break-all;">${escapeHtml(plain)}</a></p>
+    <p style="font-size:11px;color:#9ca3af;margin:12px 0 0 0;">You are receiving this because you registered for this event with SPR TechForge. Reply "unsubscribe" and we will not email you about events again.</p>
+  `, plain);
 };
 
 export interface EventEmailOptions {

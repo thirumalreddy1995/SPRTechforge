@@ -12,8 +12,8 @@ import { youtubeVideoId, youtubeEmbedUrl } from '../lib/video';
 import { buildShareText } from '../components/shared';
 import { emptyCounters, emptyPrivateDetails } from '../services/eventsDb';
 import { EventInvite, SprEvent } from '../types';
-import { parseContactRows, planInvites, registeredInviteIds, renderInviteText, inviteMessageToHtml, inviteVars, defaultInviteTemplate, inviteWhatsAppText } from '../lib/invites';
-import { inviteEmailHtml } from '../lib/emails';
+import { parseContactRows, planInvites, registeredInviteIds, renderInviteText, inviteMessageToHtml, inviteVars, defaultInviteTemplate, inviteWhatsAppText, defaultFollowupTemplate, followupLinkUrl, followupWhatsAppText } from '../lib/invites';
+import { inviteEmailHtml, followupEmailHtml } from '../lib/emails';
 
 export interface EventsTestResult {
   name: string;
@@ -365,6 +365,28 @@ const TESTS: { name: string; fn: () => void }[] = [
       assert(full.includes('unsubscribe'), 'opt-out line missing');
       const wa = inviteWhatsAppText(ev, defaultInviteTemplate());
       assert(wa.includes('*free live session*') && wa.includes('?ref=email') && !wa.includes('&amp;') && !wa.includes('<p'), 'WhatsApp text wrong (plain text, no escaping, no HTML)');
+    },
+  },
+  {
+    name: 'Follow-up survey: links carry the answer and email, email has Yes/No buttons, next session renders',
+    fn: () => {
+      const ev = baseEvent({ title: 'AI & Testing', slug: 'ai-testing' });
+      const yes = followupLinkUrl(ev, 'yes', 'Priya@Example.com');
+      assert(yes.includes('#/events/ai-testing/feedback?') && yes.includes('joined=yes') && yes.includes('e=priya%40example.com') && yes.includes('ref=email'), `yes link wrong: ${yes}`);
+      const plain = followupLinkUrl(ev, '', '');
+      assert(!plain.includes('joined=') && !plain.includes('e=') && plain.includes('ref=email'), `plain link wrong: ${plain}`);
+      const over = followupLinkUrl(ev, 'no', 'a@b.co', 'https://sprtechforge.com/#/events/ai-testing/feedback');
+      assert(over.startsWith('https://sprtechforge.com/#/events/ai-testing/feedback?') && over.includes('joined=no'), `override link wrong: ${over}`);
+      const tpl = { ...defaultFollowupTemplate(), nextSessionLabel: 'Saturday 10 Oct, 7:00 PM IST' };
+      const html = followupEmailHtml(ev, { name: 'Priya Sharma', email: 'priya@example.com' }, tpl);
+      assert(html.includes('Yes, I joined') && html.includes('No, I could not join'), 'both buttons must be present');
+      assert(html.includes('joined=yes') && html.includes('joined=no') && html.includes('e=priya%40example.com'), 'buttons must deep-link with answer + email');
+      assert(html.includes('Saturday 10 Oct, 7:00 PM IST'), 'next session label must render in the message');
+      assert(html.includes('Hi Priya,'), 'first name greeting missing');
+      assert(renderInviteText('x {{next_session}} y', { ...inviteVars(ev), next_session: 'SAT' } as any, false) === 'x SAT y', 'next_session placeholder not rendered');
+      assert(renderInviteText('x {{next_session}} y', inviteVars(ev), false) === 'x {{next_session}} y', 'undefined placeholder must be left alone');
+      const wa = followupWhatsAppText(ev, tpl);
+      assert(wa.includes('Saturday 10 Oct') && wa.includes('/feedback') && !wa.includes('<'), 'WhatsApp follow-up text wrong');
     },
   },
 ];

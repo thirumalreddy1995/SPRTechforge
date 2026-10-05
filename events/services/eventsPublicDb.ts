@@ -24,8 +24,9 @@ import {
   writeBatch,
   increment,
   updateDoc,
+  setDoc,
 } from 'firebase/firestore/lite';
-import { EventPrivateDetails, EventRegistration, SprEvent } from '../types';
+import { EventFeedback, EventPrivateDetails, EventRegistration, SprEvent } from '../types';
 import { EVENT_COLLECTIONS, emptyCounters, emptyPrivateDetails, RegisterOutcome, withContentionRetry } from './eventsDb';
 import { formatRegistrationCode, randomRegistrationCode } from '../lib/slug';
 import { registrationWindow } from '../lib/validate';
@@ -105,6 +106,22 @@ export const fetchEventBySlug = async (slug: string): Promise<SprEvent | null> =
 export const fetchPrivateDetails = async (eventId: string): Promise<EventPrivateDetails> => {
   const snap = await getDoc(doc(db(), EVENT_COLLECTIONS.private, eventId));
   return snap.exists() ? ({ ...(snap.data() as any), id: eventId }) : emptyPrivateDetails(eventId);
+};
+
+/** Deterministic id: one feedback document per event + email, so a second submit updates the first. */
+export const feedbackDocId = (eventId: string, email: string): string =>
+  `fb-${eventId}-${email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 80)}`;
+
+/** Earlier answer from this email for this event, if any (lets the page pre-fill). */
+export const fetchFeedback = async (eventId: string, email: string): Promise<EventFeedback | null> => {
+  if (!email) return null;
+  const snap = await getDoc(doc(db(), EVENT_COLLECTIONS.feedback, feedbackDocId(eventId, email)));
+  return snap.exists() ? ({ ...(snap.data() as any), id: snap.id }) : null;
+};
+
+/** Public write from the follow-up survey page (no login). Overwrites an earlier answer from the same email. */
+export const submitFeedback = async (fb: EventFeedback): Promise<void> => {
+  await setDoc(doc(db(), EVENT_COLLECTIONS.feedback, fb.id), stripUndefined(fb));
 };
 
 /**

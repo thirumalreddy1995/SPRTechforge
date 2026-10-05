@@ -27,6 +27,7 @@ import {
 } from 'firebase/firestore';
 import {
   EventCounters,
+  EventFeedback,
   EventInvite,
   EventPrivateDetails,
   EventRegistration,
@@ -40,6 +41,7 @@ export const EVENT_COLLECTIONS = {
   registrations: 'events_registrations',
   private: 'events_private',
   invites: 'events_invites',
+  feedback: 'events_feedback',
 } as const;
 
 const db = () => getFirestore(getApp());
@@ -122,7 +124,8 @@ export const deleteEvent = async (id: string): Promise<void> => {
   // pointing at a deleted event.
   const regs = await getDocs(query(collection(db(), EVENT_COLLECTIONS.registrations), where('eventId', '==', id)));
   const invites = await getDocs(query(collection(db(), EVENT_COLLECTIONS.invites), where('eventId', '==', id)));
-  await deleteRefs([...regs.docs.map(d => d.ref), ...invites.docs.map(d => d.ref)]);
+  const feedback = await getDocs(query(collection(db(), EVENT_COLLECTIONS.feedback), where('eventId', '==', id)));
+  await deleteRefs([...regs.docs.map(d => d.ref), ...invites.docs.map(d => d.ref), ...feedback.docs.map(d => d.ref)]);
   await deleteDoc(doc(db(), EVENT_COLLECTIONS.private, id)).catch(() => { /* may not exist */ });
   await deleteDoc(doc(db(), EVENT_COLLECTIONS.events, id));
 };
@@ -164,6 +167,23 @@ export const updateInvite = async (id: string, data: Partial<EventInvite>): Prom
 
 export const deleteInvites = async (ids: string[]): Promise<void> => {
   await deleteRefs(ids.map(id => doc(db(), EVENT_COLLECTIONS.invites, id)));
+};
+
+// --- Post-event feedback (admin "Feedback" tab) ---
+
+export const subscribeFeedback = (eventId: string, cb: (items: EventFeedback[]) => void, onError?: (e: any) => void) =>
+  onSnapshot(
+    query(collection(db(), EVENT_COLLECTIONS.feedback), where('eventId', '==', eventId)),
+    snap => {
+      const items: EventFeedback[] = [];
+      snap.forEach(d => items.push({ ...(d.data() as any), id: d.id }));
+      cb(items);
+    },
+    err => { console.error('Feedback subscribe failed:', err); onError?.(err); },
+  );
+
+export const deleteFeedback = async (ids: string[]): Promise<void> => {
+  await deleteRefs(ids.map(id => doc(db(), EVENT_COLLECTIONS.feedback, id)));
 };
 
 export const savePrivateDetails = async (priv: EventPrivateDetails): Promise<void> => {

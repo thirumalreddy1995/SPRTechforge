@@ -44,6 +44,7 @@ export const INVITE_PLACEHOLDERS = [
   ['{{where}}', 'Online on <platform> / venue name'],
   ['{{speaker}}', 'First speaker\'s name'],
   ['{{link}}', 'Registration link (already on the button)'],
+  ['{{next_session}}', 'Follow-up survey only: the next session label from the field below'],
 ] as const;
 
 export const defaultInviteTemplate = (): EventInviteTemplate => ({
@@ -63,6 +64,59 @@ It is free, but the joining link goes only to registered attendees and seats are
 });
 
 // ---------------------------------------------------------------------------
+// Post-event follow-up survey
+// ---------------------------------------------------------------------------
+
+export const defaultFollowupTemplate = (): EventInviteTemplate => ({
+  subject: 'Did you join {{event_title}}? One quick question',
+  headline: 'Thank you — and one quick question',
+  message: `Hi {{first_name}},
+
+Thank you for registering for **{{event_title}}** on {{date}}.
+
+Over 200 people registered and the live Q&A ran past time, but we also heard that the joining link did not open for some of you on a phone. We want to get this right, so please tell us which of these describes you. It takes about two minutes.
+
+If you joined: how was it, and what should we improve? If you could not: what stopped you, and would you like to join the repeat session on {{next_session}}?`,
+  buttonLabel: 'Yes, I joined',
+  closing: 'Everyone who answers gets the recording and the 60-day plan by email, whether or not you could attend.',
+  includeHighlights: false,
+  includeAgenda: false,
+  linkOverride: '',
+  nextSessionLabel: 'Saturday 10 Oct, 7:00 PM IST',
+});
+
+/** The survey page for this event on the current site (or the pasted base), with the person's answer and email pre-filled. */
+export const followupLinkUrl = (ev: Pick<SprEvent, 'slug'>, joined: 'yes' | 'no' | '', email: string, linkOverride?: string): string => {
+  const base = validLinkOverride(linkOverride) || `${window.location.origin}${window.location.pathname}#/events/${ev.slug}/feedback`;
+  const params = new URLSearchParams();
+  if (joined) params.set('joined', joined);
+  if (email) params.set('e', email.trim().toLowerCase());
+  params.set('ref', INVITE_REF_CODE);
+  const qs = params.toString();
+  // A hash route keeps its query after the hash (#/path?x=1); a plain URL takes it before.
+  if (base.includes('#')) return `${base}${base.includes('?') ? '&' : '?'}${qs}`;
+  return `${base}${base.includes('?') ? '&' : '?'}${qs}`;
+};
+
+export const FEEDBACK_REASON_LABELS: Record<string, string> = {
+  link_mobile: 'The joining link did not work on my phone',
+  link_failed: 'The link did not open at all',
+  busy: 'I was busy at that time',
+  forgot: 'I forgot about it',
+  no_details: 'I did not receive the joining details',
+  other: 'Something else',
+};
+
+export const FEEDBACK_LIKED_OPTIONS = ['Live testing demo', 'AI in testing demos', 'Jobs and salary numbers', 'Career questions answered', '60-day plan', 'Live Q&A'];
+
+/** The same follow-up as a WhatsApp message (one link, no personalisation). */
+export const followupWhatsAppText = (ev: SprEvent, tpl: EventInviteTemplate): string => {
+  const vars = inviteVars(ev, {}, undefined);
+  const body = renderInviteText(tpl.message, { ...vars, next_session: tpl.nextSessionLabel || '' } as any, false).replace(/\*\*(.+?)\*\*/g, '*$1*').trim();
+  return `${body}\n\nAnswer here (2 minutes): ${followupLinkUrl(ev, '', '', tpl.linkOverride)}`;
+};
+
+// ---------------------------------------------------------------------------
 // Template rendering
 // ---------------------------------------------------------------------------
 
@@ -77,6 +131,8 @@ export interface InviteVars {
   where: string;
   speaker: string;
   link: string;
+  /** Follow-up survey only: the next session's date/time label. */
+  next_session?: string;
 }
 
 export const whereText = (ev: Pick<SprEvent, 'mode' | 'platform' | 'venueName'>): string => {
@@ -109,7 +165,7 @@ export const inviteVars = (ev: SprEvent, person: { name?: string } = {}, linkOve
 export const renderInviteText = (tpl: string, vars: InviteVars, escape: boolean): string => {
   const src = escape ? escapeHtml(tpl) : String(tpl || '');
   return src.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (m, key: string) => {
-    if (!(key in vars)) return m;
+    if (!(key in vars) || (vars as any)[key] === undefined) return m;
     const v = (vars as any)[key] ?? '';
     return escape ? escapeHtml(v) : String(v);
   });
