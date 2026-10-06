@@ -51,6 +51,9 @@ interface Draft {
   expiresAt: string; // yyyy-mm-dd or ''
 }
 
+/** Title length limit — shown as a live counter and enforced on Post with a message (SCRUM-231). */
+const TITLE_MAX = 120;
+
 const emptyDraft = (kind: PostKind = 'announcement'): Draft => ({
   kind, title: '', body: '', audience: 'all', pinned: false, candidateId: '', linkUrl: '', imageUrl: '', expiresAt: '',
 });
@@ -199,6 +202,7 @@ export const CommunityHome: React.FC = () => {
 
   const submitPost = async () => {
     if (!draft.title.trim()) { showToast('Give the post a title', 'error'); return; }
+    if (draft.title.trim().length > TITLE_MAX) { showToast(`The title is limited to ${TITLE_MAX} characters (currently ${draft.title.trim().length}). Shorten it or move details into the message.`, 'error'); return; }
     if (!draft.body.trim() && !draft.imageUrl) { showToast('Write something or add an image', 'error'); return; }
     if (draft.linkUrl.trim() && !/^https?:\/\//i.test(draft.linkUrl.trim())) { showToast('The link must start with http:// or https://', 'error'); return; }
     setSaving(true);
@@ -471,7 +475,14 @@ export const CommunityHome: React.FC = () => {
               {candidates.filter(c => c.isActive).sort((a, b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           )}
-          <Input label="Title" value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder={draft.kind === 'announcement' ? 'e.g. Holiday on Friday — classes resume Monday' : 'Say it in one line'} maxLength={120} />
+          <div>
+            <Input label="Title" value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder={draft.kind === 'announcement' ? 'e.g. Holiday on Friday — classes resume Monday' : 'Say it in one line'} />
+            <p className={`text-xs mt-1 ${draft.title.length > TITLE_MAX ? 'text-red-600 font-bold' : draft.title.length >= TITLE_MAX - 10 ? 'text-amber-600' : 'text-gray-400'}`}>
+              {draft.title.length > TITLE_MAX
+                ? `Title is ${draft.title.length - TITLE_MAX} character${draft.title.length - TITLE_MAX === 1 ? '' : 's'} over the ${TITLE_MAX} limit — shorten it or move details into the message.`
+                : `${draft.title.length}/${TITLE_MAX} characters`}
+            </p>
+          </div>
           <TextArea label="Message" rows={5} value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} placeholder="Blank lines make paragraphs." />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Link (optional)" value={draft.linkUrl} onChange={e => setDraft({ ...draft, linkUrl: e.target.value })} placeholder="https://…" />

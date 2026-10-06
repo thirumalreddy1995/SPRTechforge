@@ -93,7 +93,7 @@ export const FinancialStatements: React.FC = () => {
   const totalCurrAssets = currAssets.reduce((s, a) => s + getEntityBalance(a.id, 'Account'), 0);
 
   const candidateReceivables = candidates.reduce((s, c) => {
-    if (!c.isActive && c.status === 'Discontinued') return s;
+    if (!c.isActive) return s; // deactivated candidates are excluded from receivables (SCRUM-227)
     const paid = transactions.filter(t => t.fromEntityId === c.id && t.type === TransactionType.Income).reduce((x, t) => x + t.amount, 0);
     const refunded = transactions.filter(t => t.toEntityId === c.id && t.type === TransactionType.Refund).reduce((x, t) => x + t.amount, 0);
     const due = c.agreedAmount - (paid - refunded);

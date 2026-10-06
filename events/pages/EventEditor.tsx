@@ -233,8 +233,11 @@ export const EventEditor: React.FC = () => {
   };
 
   const goToStep = async (target: number) => {
-    // Autosave when moving between steps — "never lose input".
-    try { await persist(form, priv); } catch { /* keep editing; explicit save will surface the error */ }
+    // Autosave when moving between steps — "never lose input". A failure must be
+    // visible: a banner that looked saved but was not is how a public page ends
+    // up without one (SCRUM-150), so say so and keep the "Save" button armed.
+    try { await persist(form, priv); }
+    catch (e: any) { showToast(`Could not save your changes: ${e?.message || e}. Your edits are still here — fix the problem and click Save.`, 'error'); }
     setStep(target);
   };
 

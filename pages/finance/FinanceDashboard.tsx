@@ -65,7 +65,7 @@ export const FinanceDashboard: React.FC = () => {
   // ── KPI: Receivables (Candidate fees pending) ──────────────────────────────
   const totalReceivables = useMemo(() => {
     return candidates.reduce((sum, c) => {
-      if (!c.isActive && c.status === 'Discontinued') return sum;
+      if (!c.isActive) return sum; // deactivated candidates owe nothing we chase (SCRUM-227)
       const paid = transactions
         .filter(t => t.fromEntityId === c.id && t.type === TransactionType.Income)
         .reduce((s, t) => s + t.amount, 0);

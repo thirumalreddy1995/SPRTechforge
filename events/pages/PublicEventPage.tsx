@@ -136,10 +136,14 @@ export const PublicEventPage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, slug]);
 
+  // reloadKey: "Try again" on the offline card re-runs the fetch without a full page reload.
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setState('loading');
-    fetchEventBySlug(slug || '')
+    // One silent retry after a short pause covers the common phone case: the page
+    // opened from an email a moment before the network was really up.
+    const load = (attempt: number) => fetchEventBySlug(slug || '')
       .then(found => {
         if (cancelled) return;
         if (!found) { setState('notfound'); return; }
@@ -148,9 +152,14 @@ export const PublicEventPage: React.FC = () => {
         formLoadedAt.current = Date.now();
         if (found.title) document.title = `${found.title} · SPR Techforge`;
       })
-      .catch(() => { if (!cancelled) setState('offline'); });
+      .catch(() => {
+        if (cancelled) return;
+        if (attempt === 0) setTimeout(() => { if (!cancelled) load(1); }, 2500);
+        else setState('offline');
+      });
+    load(0);
     return () => { cancelled = true; document.title = 'SPR Techforge Management'; };
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   useEffect(() => {
     if (state !== 'ready' || typeof IntersectionObserver === 'undefined') return;
@@ -193,7 +202,8 @@ export const PublicEventPage: React.FC = () => {
         <div className="text-center max-w-md">
           <div className="text-5xl mb-4">📡</div>
           <h1 className="text-xl font-bold text-gray-800 mb-2">We couldn't reach the server</h1>
-          <p className="text-gray-600 text-sm">Please check your internet connection and reload this page.</p>
+          <p className="text-gray-600 text-sm mb-4">Please check your internet connection and try again.</p>
+          <button onClick={() => setReloadKey(k => k + 1)} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold">Try again</button>
         </div>
       </div>
     );
@@ -676,9 +686,9 @@ export const PublicEventPage: React.FC = () => {
             ? (canRegister
               // Banners often carry a painted "Register" button; make the whole image act as one.
               ? <button type="button" onClick={scrollToForm} aria-label="Go to the registration form" className="block w-full cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300">
-                  <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />
+                  <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" onError={e => { e.currentTarget.style.display = 'none'; }} />
                 </button>
-              : <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" />)
+              : <img src={ev.bannerUrl} alt={ev.title} className="w-full h-auto block max-h-[560px] object-contain bg-slate-900" onError={e => { e.currentTarget.style.display = 'none'; }} />)
             : <div className="w-full h-40 sm:h-56 bg-gradient-to-br from-blue-900 to-slate-900" />}
           <div className="p-5 sm:p-8 lg:flex lg:items-start lg:gap-10">
             <div className="min-w-0 flex-1">
