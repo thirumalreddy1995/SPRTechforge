@@ -56,7 +56,7 @@ export const Reports: React.FC = () => {
       const bal = getEntityBalance(a.id, 'Account');
       return sum + (bal > 0 ? bal : 0);
     }, 0) + candidates.reduce((sum, c) => {
-        if (!c.isActive && c.status === CandidateStatus.Discontinued) return sum;
+        if (!c.isActive) return sum; // deactivated candidates are excluded from receivables (SCRUM-227)
         const paid = transactions
           .filter(t => t.fromEntityId === c.id && t.type === TransactionType.Income)
           .reduce((s, t) => s + t.amount, 0) -

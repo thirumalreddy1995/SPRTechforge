@@ -9,6 +9,20 @@ import { CandidateStatus, Candidate, TransactionType } from '../../types';
 type TabType = 'all' | 'active' | 'placed' | 'discontinued';
 
 // Statuses treated as "active" (in progress, not placed, not dropped)
+/** Rupee icon for the amount toggle — distinct from the "View profile" person icon (SCRUM-226). Hidden state shows a slash. */
+const AmountIcon: React.FC<{ visible: boolean; className?: string }> = ({ visible, className = 'w-4 h-4' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" strokeWidth={2} />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.5 7.5h7M8.5 10.5h7M8.5 7.5h2.5a3 3 0 010 6H8.5l5 4" />
+    {!visible && <path strokeLinecap="round" strokeWidth={2.2} d="M5 19L19 5" />}
+  </svg>
+);
+const ProfileIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
 const ACTIVE_STATUSES = new Set<string>([
   CandidateStatus.Training,
   CandidateStatus.ReadyForInterview,
@@ -67,12 +81,14 @@ export const CandidateList: React.FC = () => {
     });
   };
 
-  const isAmountVisible = (id: string) => showAllAmounts || revealedRows.has(id);
+  // SCRUM-225: a row toggle is an override of the page-wide switch, so "Hide" works
+  // while all amounts are shown and "Reveal" works while they are hidden.
+  const isAmountVisible = (id: string) => (revealedRows.has(id) ? !showAllAmounts : showAllAmounts);
 
   // ── Tab candidate sets ──────────────────────────────────────────────────
   const tabSets = useMemo(() => ({
     all:          candidates,
-    active:       candidates.filter(c => ACTIVE_STATUSES.has(c.status)),
+    active:       candidates.filter(c => ACTIVE_STATUSES.has(c.status) && c.isActive), // SCRUM-227: deactivated are not "active"
     placed:       candidates.filter(c => c.status === CandidateStatus.Placed),
     discontinued: candidates.filter(c => c.status === CandidateStatus.Discontinued),
   }), [candidates]);
@@ -110,7 +126,8 @@ export const CandidateList: React.FC = () => {
 
   // ── Summary KPI stats (always over all candidates) ─────────────────────
   const summaryStats = useMemo(() => {
-    const totalAgreed = candidates.reduce((sum, c) => sum + c.agreedAmount, 0);
+    // SCRUM-227: a deactivated candidate's remaining fee is not pending any more.
+    const totalAgreed = candidates.filter(c => c.isActive).reduce((sum, c) => sum + c.agreedAmount, 0);
     const totalCollected = candidates.reduce((sum, c) => {
       const { paid } = getCandidateFinancials(c.id, c.agreedAmount);
       return sum + paid;
@@ -120,7 +137,7 @@ export const CandidateList: React.FC = () => {
       active:       tabCounts.active,
       placed:       tabCounts.placed,
       discontinued: tabCounts.discontinued,
-      training:     candidates.filter(c => c.status === CandidateStatus.Training).length,
+      training:     candidates.filter(c => c.status === CandidateStatus.Training && c.isActive).length,
       totalDue:     totalAgreed - totalCollected,
       totalCollected,
     };
@@ -193,21 +210,14 @@ export const CandidateList: React.FC = () => {
         className={`p-1.5 rounded-lg transition-colors ${isAmountVisible(c.id) ? 'text-spr-600 bg-spr-50 hover:bg-spr-100' : 'text-gray-400 hover:text-spr-600 hover:bg-gray-100'}`}
         title={isAmountVisible(c.id) ? 'Hide amounts' : 'Reveal amounts'}
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          {isAmountVisible(c.id)
-            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-            : <><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></>}
-        </svg>
+        <AmountIcon visible={isAmountVisible(c.id)} />
       </button>
       <button
         onClick={() => setViewCandidate(c)}
         className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100"
         title="View Profile"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
+        <ProfileIcon />
       </button>
       <Link to={`/candidates/edit/${c.id}`} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50" title="Edit">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -340,10 +350,7 @@ export const CandidateList: React.FC = () => {
                 className={`p-1.5 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`}
                 title={amtVisible ? 'Hide amounts' : 'Reveal amounts'}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
+                <AmountIcon visible={amtVisible} />
               </button>
               <button
                 onClick={() => setViewCandidate(c)}
@@ -581,11 +588,11 @@ export const CandidateList: React.FC = () => {
             <span className="text-xs text-gray-400">{c.isActive ? 'Active' : 'Inactive'}</span>
           </div>
           <div className="flex gap-1">
-            <button onClick={() => toggleRowAmount(c.id)} className={`p-2 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`} title="Toggle amounts">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <button onClick={() => toggleRowAmount(c.id)} className={`p-2 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`} title={amtVisible ? 'Hide amounts' : 'Reveal amounts'}>
+              <AmountIcon visible={amtVisible} />
             </button>
-            <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="View">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="View Profile">
+              <ProfileIcon />
             </button>
             <Link to={`/candidates/edit/${c.id}`} className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Edit">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
