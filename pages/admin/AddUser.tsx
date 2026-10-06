@@ -35,12 +35,22 @@ export const AddUser: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.username) { setError('Name and Login ID required'); return; }
-    
+
+    // SCRUM-147: a Login ID must be unique (login matches case-insensitively, so
+    // a second "Priya" could never sign in).
+    const loginId = form.username.trim();
+    const clash = users.find(u => u.id !== id && (u.username || '').trim().toLowerCase() === loginId.toLowerCase());
+    if (clash) { setError(`Login ID "${loginId}" is already used by ${clash.name}. Choose a different Login ID.`); return; }
+
+    // SCRUM-146: the default password for a new user is the mobile number (digits only).
+    const phoneDigits = (form.phone || '').replace(/\D/g, '');
+    if (!id && !form.password && !phoneDigits) { setError('Enter a mobile number (it becomes the default password) or set a password.'); return; }
+
     const userData: User = {
       id: id || utils.generateId(),
       name: form.name,
-      username: form.username,
-      password: form.password || form.name,
+      username: loginId,
+      password: form.password || phoneDigits,
       email: form.email || '',
       phone: form.phone || '',
       address: form.address || '',
@@ -121,13 +131,24 @@ export const AddUser: React.FC = () => {
                 Password {isEditingMasterAdmin && !isCurrentUserMasterAdmin && <span className="text-red-500 text-xs ml-2">(Protected Account)</span>}
              </label>
              {canChangePassword ? (
-               <input 
-                 type="password"
-                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-1 focus:ring-spr-accent outline-none"
-                 value={form.password || ''}
-                 onChange={e => setForm({...form, password: e.target.value})}
-                 placeholder={id ? "Enter new password" : "Leave blank for name as default"}
-               />
+               <>
+                 <input
+                   type="password"
+                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-1 focus:ring-spr-accent outline-none"
+                   value={form.password || ''}
+                   onChange={e => setForm({...form, password: e.target.value})}
+                   placeholder={id ? "Enter new password" : "Leave blank to use the mobile number as the default password"}
+                 />
+                 {!id && (
+                   <p className="text-xs text-gray-500 mt-1">
+                     {form.password
+                       ? 'The user signs in with this password and is asked to change it on first login.'
+                       : (form.phone || '').replace(/\D/g, '')
+                         ? `Default password will be the mobile number: ${(form.phone || '').replace(/\D/g, '')}`
+                         : 'Enter the mobile number above, or type a password here.'}
+                   </p>
+                 )}
+               </>
              ) : (
                <div className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 italic text-sm">
                  Only the Master Admin can change this password.
