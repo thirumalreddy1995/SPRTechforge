@@ -493,29 +493,29 @@ export const LandingPage: React.FC = () => {
                 <button onClick={() => setFormSuccess(false)} className="text-blue-700 font-bold text-sm hover:underline">Send another enquiry →</button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate data-testid="enquiry-form">
                 <div>
                   <h3 className="text-2xl font-black text-gray-900 mb-1">Enquire now</h3>
                   <p className="text-gray-400 text-sm">Training, a free demo class, or a project for your company.</p>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Name *</span><input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
-                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Mobile *</span><input type="tel" inputMode="numeric" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="10-digit mobile" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
+                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Name *</span><input id="enquiry-name" data-testid="enquiry-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
+                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Mobile *</span><input id="enquiry-mobile" data-testid="enquiry-mobile" type="tel" inputMode="numeric" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="10-digit mobile" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Email *</span><input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="you@example.com" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
+                  <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Email *</span><input id="enquiry-email" data-testid="enquiry-email" type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="you@example.com" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" /></label>
                   <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Preferred mode</span>
-                    <select value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                    <select id="enquiry-mode" data-testid="enquiry-mode" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
                       <option value="">Select…</option><option>Classroom (Kukatpally, Hyderabad)</option><option>Live online</option><option>Weekend batch</option><option>Not sure yet</option>
                     </select></label>
                 </div>
                 <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">I'm interested in</span>
-                  <select value={form.interest} onChange={e => setForm(f => ({ ...f, interest: e.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                  <select id="enquiry-interest" data-testid="enquiry-interest" value={form.interest} onChange={e => setForm(f => ({ ...f, interest: e.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
                     <option value="">Select…</option>{INTERESTS.map(x => <option key={x}>{x}</option>)}
                   </select></label>
-                <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Message</span><textarea rows={3} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Your background, what you want to learn, or your project" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none" /></label>
+                <label className="block"><span className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Message</span><textarea id="enquiry-message" data-testid="enquiry-message" rows={3} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Your background, what you want to learn, or your project" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none" /></label>
                 {formError && <p className="text-red-600 text-xs font-bold">{formError}</p>}
-                <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-4 rounded-2xl text-base shadow-lg shadow-blue-200 hover:scale-[1.01] transition-all">Send enquiry</button>
+                <button type="submit" id="enquiry-submit" data-testid="enquiry-submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-4 rounded-2xl text-base shadow-lg shadow-blue-200 hover:scale-[1.01] transition-all">Send enquiry</button>
                 <p className="text-center text-xs text-gray-400">We use your details only to respond to this enquiry.</p>
               </form>
             )}

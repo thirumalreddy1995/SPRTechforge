@@ -25,6 +25,7 @@ import { COUNTRIES, DEFAULT_DIAL } from '../lib/countries';
 import { icsDataUri, googleCalendarUrl } from '../lib/ics';
 import { LiveBadge, TypeBadge, whatsAppShareUrl, buildShareText, IconCalendar, IconClock, IconVideo, IconPin, IconMic, DetailRow, PublicFooter, CONTACT } from '../components/shared';
 import { confirmationEmailHtml, isEventMailerConfigured, sendEventEmail } from '../lib/emails';
+import { testId } from '../../lib/testid';
 
 const MIN_FILL_TIME_MS = 3000; // bots submit instantly; humans don't
 
@@ -42,23 +43,29 @@ const inputClass = (error?: string) =>
   `w-full px-4 py-3 border rounded-xl text-base outline-none transition-colors focus:ring-2 ${error ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'}`;
 
 /** Large-tap-target labelled input for the public form. */
-const PInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string }> = ({ label, error, hint, ...props }) => (
-  <div>
-    <label className="block text-sm font-bold text-gray-700 mb-1">{label}{props.required && <span className="text-red-500"> *</span>}</label>
-    <input {...props} className={inputClass(error)} />
-    {error ? <p className="text-xs text-red-600 font-semibold mt-1">{error}</p> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
-  </div>
-);
+const PInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string }> = ({ label, error, hint, ...props }) => {
+  const id = testId('reg', label);
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-bold text-gray-700 mb-1">{label}{props.required && <span className="text-red-500"> *</span>}</label>
+      <input id={id} data-testid={id} {...props} className={inputClass(error)} />
+      {error ? <p data-testid={`${id}-error`} className="text-xs text-red-600 font-semibold mt-1">{error}</p> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
+    </div>
+  );
+};
 
-const PSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label: string; error?: string }> = ({ label, error, children, ...props }) => (
+const PSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label: string; error?: string }> = ({ label, error, children, ...props }) => {
+  const id = testId('reg', label);
+  return (
   <div>
-    <label className="block text-sm font-bold text-gray-700 mb-1">{label}{props.required && <span className="text-red-500"> *</span>}</label>
-    <select {...props} className={`${inputClass(error)} bg-white`}>
+    <label htmlFor={id} className="block text-sm font-bold text-gray-700 mb-1">{label}{props.required && <span className="text-red-500"> *</span>}</label>
+    <select id={id} data-testid={id} {...props} className={`${inputClass(error)} bg-white`}>
       {children}
     </select>
-    {error && <p className="text-xs text-red-600 font-semibold mt-1">{error}</p>}
+    {error && <p data-testid={`${id}-error`} className="text-xs text-red-600 font-semibold mt-1">{error}</p>}
   </div>
-);
+  );
+};
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-7">
@@ -488,6 +495,7 @@ export const PublicEventPage: React.FC = () => {
               <span aria-hidden="true" className="truncate">{country.flag} +{country.dial}</span>
               <span aria-hidden="true" className="text-gray-400 text-xs">▼</span>
               <select
+                id="reg-country" data-testid="reg-country"
                 aria-label={`Country code (${country.name})`}
                 title={country.name}
                 value={countryIso}
@@ -502,6 +510,7 @@ export const PublicEventPage: React.FC = () => {
               </select>
             </div>
             <input
+              id="reg-mobile" data-testid="reg-mobile"
               type="tel" required
               value={form.mobile}
               onChange={e => setF({ mobile: e.target.value.replace(/[^\d\s-]/g, '').slice(0, 16) })}
@@ -580,6 +589,7 @@ export const PublicEventPage: React.FC = () => {
         <div className="border-t border-gray-100 pt-4 space-y-3">
           <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
             <input
+              id="reg-consent" data-testid="reg-consent"
               type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
               checked={form.consentTerms}
               onChange={e => setF({ consentTerms: e.target.checked, consentEmail: e.target.checked, consentWhatsApp: e.target.checked })}
@@ -590,7 +600,7 @@ export const PublicEventPage: React.FC = () => {
               {' '}and to SPR Techforge contacting me about this event and its training programs by email, SMS or WhatsApp. <span className="text-red-500">*</span>
             </span>
           </label>
-          {errors.consentTerms && <p className="text-xs text-red-600 font-semibold ml-8">{errors.consentTerms}</p>}
+          {errors.consentTerms && <p data-testid="reg-consent-error" className="text-xs text-red-600 font-semibold ml-8">{errors.consentTerms}</p>}
           {showTerms && (
             <div className="ml-8 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-600 space-y-1.5">
               <p className="font-bold text-gray-700">Terms &amp; conditions</p>
@@ -603,9 +613,10 @@ export const PublicEventPage: React.FC = () => {
           )}
         </div>
 
-        {submitError && <p className="text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{submitError}</p>}
+        {submitError && <p data-testid="reg-submit-error" className="text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{submitError}</p>}
 
         <button
+          id="reg-submit" data-testid="reg-submit"
           onClick={handleSubmit}
           disabled={submitting}
           className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-lg font-black shadow-lg shadow-blue-200 transition-colors disabled:opacity-60"

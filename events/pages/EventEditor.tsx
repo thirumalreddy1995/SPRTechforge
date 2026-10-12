@@ -370,7 +370,7 @@ export const EventEditor: React.FC = () => {
             )}
           </div>
           <div className="w-full md:w-72 space-y-3">
-            <input ref={bannerRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBanner(f); }} />
+            <input ref={bannerRef} data-testid="editor-banner-file" type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBanner(f); }} />
             <Button onClick={() => bannerRef.current?.click()} disabled={uploadingBanner} className="w-full">
               {uploadingBanner ? 'Uploading…' : form.bannerUrl ? 'Replace Banner' : 'Upload Banner'}
             </Button>
@@ -580,6 +580,8 @@ export const EventEditor: React.FC = () => {
           <button
             key={label}
             onClick={() => goToStep(i)}
+            data-testid={`editor-step-${i + 1}`}
+            aria-current={i === step ? 'step' : undefined}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-colors ${
               i === step ? 'bg-blue-600 text-white shadow' : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-300'
             }`}

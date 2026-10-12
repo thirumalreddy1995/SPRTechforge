@@ -142,3 +142,13 @@ Test accounts on QA: ask the lead for the QA tester logins (e.g. the E2E tester 
 - CI dashboards (TestRail / Zephyr / qTest) — Excel is the right size for 4 testers
 
 Add any of these only when the team outgrows the current setup.
+
+## Automation selectors and unit tests
+
+- Every interactive element carries a stable `data-testid` (form fields on the
+  public pages also carry it as `id`). The full list and the derivation rules
+  are in [SELECTORS.md](SELECTORS.md). Locate elements with
+  `By.cssSelector("[data-testid='…']")`; never by class names or button text.
+- `npm test` runs the Vitest unit suite (test-id rules, shared components,
+  utilities, and the Events / Seminar / Community module suites). CI runs it
+  before every QA and production build, so a failing unit test blocks the deploy.

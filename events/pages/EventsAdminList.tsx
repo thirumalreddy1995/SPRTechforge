@@ -207,6 +207,9 @@ export const EventsAdminList: React.FC = () => {
                   key={ev.id}
                   role="button"
                   tabIndex={0}
+                  data-testid="event-row"
+                  data-event-id={ev.id}
+                  data-event-status={ev.status}
                   onClick={() => navigate(ev.status === 'draft' ? `/events/manage/edit/${ev.id}` : `/events/manage/view/${ev.id}`)}
                   onKeyDown={e => { if (e.key === 'Enter') navigate(ev.status === 'draft' ? `/events/manage/edit/${ev.id}` : `/events/manage/view/${ev.id}`); }}
                   className="w-full text-left p-4 hover:bg-blue-50/40 transition-colors flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 cursor-pointer"

@@ -49,7 +49,8 @@ const validRegForm = () => ({
 
 const okPriv = { id: 'evt-test', joinUrl: 'https://meet.google.com/x', meetingId: '', passcode: '' };
 
-const TESTS: { name: string; fn: () => void }[] = [
+/** Exported so the Vitest suite (npm test) runs the same cases as the in-app runner. */
+export const TESTS: { name: string; fn: () => void }[] = [
   {
     name: 'Slug: title → clean kebab-case',
     fn: () => {

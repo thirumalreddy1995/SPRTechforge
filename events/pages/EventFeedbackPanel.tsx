@@ -86,7 +86,7 @@ export const EventFeedbackPanel: React.FC<{ ev: SprEvent }> = ({ ev }) => {
           { label: 'Course: yes / maybe', value: `${stats.interested} / ${stats.maybe}`, tint: 'text-blue-700 bg-blue-50 border-blue-100' },
           { label: 'Next session: yes / maybe', value: `${stats.nextYes} / ${stats.nextMaybe}`, tint: 'text-purple-700 bg-purple-50 border-purple-100' },
         ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-3 text-center ${s.tint}`}>
+          <div key={s.label} data-testid={`stat-${s.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} className={`rounded-2xl border p-3 text-center ${s.tint}`}>
             <p className="text-2xl font-black">{s.value}</p>
             <p className="text-[10px] font-bold uppercase tracking-wide opacity-80 mt-0.5">{s.label}</p>
           </div>

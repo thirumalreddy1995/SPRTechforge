@@ -38,6 +38,7 @@ const NavItem: React.FC<{
     <Link
       to={to}
       onClick={handleClick}
+      data-testid={`nav-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
       title={isSidebarCollapsed ? label : ""}
       className={`relative flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 mb-0.5 font-medium text-sm overflow-hidden whitespace-nowrap ${isActive ? 'bg-blue-600/20 text-blue-300 shadow-none' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
     >
@@ -103,6 +104,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({ id, title, icon, ch
     <div className="mb-0.5">
       <button
         onClick={handleToggle}
+        data-testid={`nav-group-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
+        aria-expanded={isOpen}
         title={isSidebarCollapsed ? title : ""}
         className={`w-full flex items-center justify-between px-4 py-2.5 text-slate-300 hover:bg-slate-800 rounded-lg transition-all duration-200 group ${isOpen && !isSidebarCollapsed ? 'bg-slate-800/60' : ''} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
       >
@@ -151,7 +154,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
          <Logo size="sm" inverse={true} />
          <div className="flex items-center gap-2">
          <NotificationBell />
-         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-300 hover:text-white transition-colors">
+         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} data-testid="nav-mobile-menu" aria-label="Menu" className="text-slate-300 hover:text-white transition-colors">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
             </svg>
@@ -175,6 +178,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <NotificationBell />
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              data-testid="nav-collapse"
+              aria-label="Collapse sidebar"
               className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,6 +190,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {isSidebarCollapsed && (
             <button
               onClick={() => setIsSidebarCollapsed(false)}
+              data-testid="nav-expand"
+              aria-label="Expand sidebar"
               className="absolute top-5 right-1 p-1 bg-slate-800 border border-slate-700 rounded-full shadow-md text-slate-400 hover:text-slate-100 z-10"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -362,9 +369,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="mt-6 px-2 pb-4">
              {!isSidebarCollapsed ? (
-               <div className="bg-slate-800/70 p-3 rounded-xl border border-slate-700/50 mb-3 overflow-hidden">
-                 <p className="text-sm font-bold text-slate-100 truncate">{user.name}</p>
-                 <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">{user.role}</p>
+               <div className="bg-slate-800/70 p-3 rounded-xl border border-slate-700/50 mb-3 overflow-hidden" data-testid="nav-current-user">
+                 <p className="text-sm font-bold text-slate-100 truncate" data-testid="nav-current-user-name">{user.name}</p>
+                 <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5" data-testid="nav-current-user-role">{user.role}</p>
                </div>
              ) : (
                <div className="h-px bg-slate-700 mb-4 mx-2"></div>
@@ -372,6 +379,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
              <button
                 onClick={handleLogout}
                 title="Sign Out"
+                data-testid="nav-sign-out"
                 className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg transition-colors font-bold text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 overflow-hidden whitespace-nowrap ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
              >
                 <div className={`shrink-0 flex items-center justify-center ${isSidebarCollapsed ? 'w-10 h-10 bg-red-900/20 rounded-lg border border-red-800/30' : 'w-5'}`}>
