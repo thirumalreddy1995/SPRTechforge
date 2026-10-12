@@ -14,13 +14,14 @@ import { isValidEmail, normalizeEmail, normalizePhone } from '../lib/validate';
 import { FEEDBACK_LIKED_OPTIONS, FEEDBACK_REASON_LABELS } from '../lib/invites';
 import { PublicFooter } from '../components/shared';
 import { fetchSiteSettingsLite } from '../../site/services/siteDb';
+import { childrenText, testId } from '../../lib/testid';
 
 type LoadState = 'loading' | 'ready' | 'notfound' | 'offline';
 
 const Choice: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode; tone?: 'green' | 'red' | 'blue' }> = ({ active, onClick, children, tone = 'blue' }) => {
   const on = tone === 'green' ? 'bg-emerald-600 border-emerald-600 text-white' : tone === 'red' ? 'bg-red-600 border-red-600 text-white' : 'bg-blue-600 border-blue-600 text-white';
   return (
-    <button type="button" onClick={onClick} className={`px-4 py-3 rounded-xl border text-sm font-bold text-left transition-colors ${active ? on : 'bg-white border-gray-300 text-gray-800 hover:border-blue-400'}`}>
+    <button type="button" onClick={onClick} data-testid={testId('choice', childrenText(children))} aria-pressed={active} className={`px-4 py-3 rounded-xl border text-sm font-bold text-left transition-colors ${active ? on : 'bg-white border-gray-300 text-gray-800 hover:border-blue-400'}`}>
       {children}
     </button>
   );
@@ -193,7 +194,7 @@ export const EventFeedbackPage: React.FC = () => {
             <Field label="2 · How was the session?">
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(n => (
-                  <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} star${n > 1 ? 's' : ''}`} className={`flex-1 py-3 rounded-xl border text-2xl ${rating >= n ? 'bg-amber-400 border-amber-400' : 'bg-white border-gray-300'}`}>★</button>
+                  <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} star${n > 1 ? 's' : ''}`} data-testid={`feedback-rating-${n}`} className={`flex-1 py-3 rounded-xl border text-2xl ${rating >= n ? 'bg-amber-400 border-amber-400' : 'bg-white border-gray-300'}`}>★</button>
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-1">1 = poor · 5 = excellent</p>
@@ -204,7 +205,7 @@ export const EventFeedbackPage: React.FC = () => {
               </div>
             </Field>
             <Field label="4 · What should we improve? (optional)">
-              <textarea value={improve} onChange={e => setImprove(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Audio, pace, topics you wanted more of, anything…" />
+              <textarea data-testid="feedback-improve" value={improve} onChange={e => setImprove(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Audio, pace, topics you wanted more of, anything…" />
             </Field>
           </>
         )}
@@ -259,7 +260,7 @@ export const EventFeedbackPage: React.FC = () => {
               </div>
             )}
             <Field label="Anything else you want to tell us? (optional)">
-              <textarea value={comments} onChange={e => setComments(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" />
+              <textarea data-testid="feedback-comments" value={comments} onChange={e => setComments(e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm" />
             </Field>
           </>
         )}
@@ -269,13 +270,13 @@ export const EventFeedbackPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-4">
           <p className="text-sm font-bold text-gray-800">Your details</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input value={name} onChange={e => setName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Full name" />
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Email you registered with" required />
-            <input type="tel" value={mobile} onChange={e => setMobile(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Mobile (optional)" />
+            <input id="feedback-name" data-testid="feedback-name" value={name} onChange={e => setName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Full name" />
+            <input id="feedback-email" data-testid="feedback-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Email you registered with" required />
+            <input id="feedback-mobile" data-testid="feedback-mobile" type="tel" value={mobile} onChange={e => setMobile(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm" placeholder="Mobile (optional)" />
           </div>
           {registrationCode && <p className="text-xs text-emerald-700 font-semibold">Matched your registration {registrationCode}.</p>}
-          {error && <p className="text-sm font-bold text-red-600">{error}</p>}
-          <button type="submit" disabled={busy} className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-lg font-black shadow-lg shadow-blue-200">{busy ? 'Saving…' : 'Submit my answers'}</button>
+          {error && <p data-testid="feedback-error" className="text-sm font-bold text-red-600">{error}</p>}
+          <button type="submit" id="feedback-submit" data-testid="feedback-submit" disabled={busy} className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-lg font-black shadow-lg shadow-blue-200">{busy ? 'Saving…' : 'Submit my answers'}</button>
           <p className="text-xs text-gray-500">We use your answers only to improve our sessions and, if you asked, to contact you about the programme.</p>
         </div>
       )}

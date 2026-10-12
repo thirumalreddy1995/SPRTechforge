@@ -6,14 +6,18 @@ import { useNavigate, Link } from 'react-router-dom';
 
 const PasswordInput: React.FC<{
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string; required?: boolean; autoComplete?: string;
-}> = ({ label, value, onChange, placeholder, required, autoComplete }) => {
+  placeholder?: string; required?: boolean; autoComplete?: string; id?: string;
+}> = ({ label, value, onChange, placeholder, required, autoComplete, id }) => {
   const [show, setShow] = useState(false);
+  // Automation hook: an explicit id wins; otherwise derive from the label ("New Password" → login-new-password).
+  const tid = id || `login-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'password'}`;
   return (
     <div className="mb-4">
       <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
       <div className="relative">
         <input
+          id={tid}
+          data-testid={tid}
           type={show ? 'text' : 'password'}
           className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pr-12 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder-gray-400 text-sm"
           value={value}
@@ -27,6 +31,8 @@ const PasswordInput: React.FC<{
           onClick={() => setShow(s => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
           tabIndex={-1}
+          data-testid={`${tid}-toggle`}
+          aria-label={show ? 'Hide password' : 'Show password'}
         >
           {show ? (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,6 +199,8 @@ export const Login: React.FC = () => {
                   <div className="mb-4">
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Username / Email</label>
                     <input
+                      id="login-username"
+                      data-testid="login-username"
                       type="email"
                       className={`w-full bg-white border rounded-xl px-4 py-3 text-gray-900 focus:ring-2 outline-none transition-all placeholder-gray-400 text-sm ${errors.username ? 'border-red-400 focus:border-red-400 focus:ring-red-500/20' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20'}`}
                       value={username}
@@ -200,26 +208,28 @@ export const Login: React.FC = () => {
                       placeholder="name@sprtechforge.com"
                       autoComplete="username"
                     />
-                    {errors.username && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.username}</p>}
+                    {errors.username && <p data-testid="login-username-error" className="text-red-500 text-xs mt-1.5 font-medium">{errors.username}</p>}
                   </div>
 
                   {/* Password */}
                   <div className="mb-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
                     <div className="relative">
-                      <PasswordInput label="" value={password} onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })); }} placeholder="Enter your password" autoComplete="current-password" />
+                      <PasswordInput id="login-password" label="" value={password} onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })); }} placeholder="Enter your password" autoComplete="current-password" />
                     </div>
-                    {errors.password && <p className="text-red-500 text-xs mt-1 font-medium">{errors.password}</p>}
+                    {errors.password && <p data-testid="login-password-error" className="text-red-500 text-xs mt-1 font-medium">{errors.password}</p>}
                   </div>
 
                   <div className="flex justify-end mb-5">
-                    <button type="button" onClick={() => setShowForgotModal(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+                    <button type="button" data-testid="login-forgot" onClick={() => setShowForgotModal(true)} className="text-sm text-blue-600 hover:text-blue-800 font-semibold hover:underline">
                       Forgot Password?
                     </button>
                   </div>
 
                   <button
                     type="submit"
+                    id="login-submit"
+                    data-testid="login-submit"
                     disabled={isLoading || !isInitialized}
                     className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide"
                   >
@@ -280,6 +290,8 @@ export const Login: React.FC = () => {
 
                   <button
                     type="submit"
+                    id="login-update-password"
+                    data-testid="login-update-password"
                     className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition-all duration-200 text-sm tracking-wide"
                   >
                     Update Password & Continue
@@ -313,6 +325,8 @@ export const Login: React.FC = () => {
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your Username / Email</label>
               <input
+                id="forgot-username"
+                data-testid="forgot-username"
                 type="email"
                 className={`w-full bg-white border rounded-xl px-4 py-3 text-gray-900 focus:ring-2 outline-none transition-all text-sm ${forgotError ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20'}`}
                 value={forgotUsername}

@@ -262,7 +262,7 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
           { label: 'Mobile only', value: counts.mobileOnly, tint: 'text-gray-600 bg-gray-50 border-gray-200' },
           { label: 'Registered', value: counts.registered, tint: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
         ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-3 text-center ${s.tint}`}>
+          <div key={s.label} data-testid={`stat-${s.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} className={`rounded-2xl border p-3 text-center ${s.tint}`}>
             <p className="text-2xl font-black">{s.value}</p>
             <p className="text-[10px] font-bold uppercase tracking-wide opacity-80 mt-0.5">{s.label}</p>
           </div>
@@ -275,7 +275,7 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
           Any sheet with a <strong>Name</strong>, <strong>Email</strong> and <strong>Mobile</strong> column works — column names are detected automatically, and rows without a header row are read too. People already on the list are skipped, so you can upload the same file again safely. Mobile-only rows are kept for WhatsApp but cannot be emailed.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.txt" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+          <input ref={fileRef} data-testid="invite-file" type="file" accept=".xlsx,.xls,.csv,.txt" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           <Button onClick={() => fileRef.current?.click()} disabled={parsing || run.running}>{parsing ? 'Reading file…' : '⬆ Upload Excel / CSV'}</Button>
           <Button variant="secondary" onClick={downloadSample}>Download sample CSV</Button>
           {invites.length > 0 && <Button variant="secondary" onClick={exportList}>Export list (CSV)</Button>}
@@ -294,8 +294,8 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <p className="text-sm font-bold text-gray-800">What to send:</p>
           <div className="inline-flex rounded-xl border border-gray-300 overflow-hidden">
-            <button type="button" onClick={() => switchMode('invite')} className={`px-4 py-2 text-sm font-bold ${mode === 'invite' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Invitation to register</button>
-            <button type="button" onClick={() => switchMode('followup')} className={`px-4 py-2 text-sm font-bold border-l border-gray-300 ${mode === 'followup' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Follow-up survey (after the event)</button>
+            <button type="button" onClick={() => switchMode('invite')} data-testid="invite-mode-invite" aria-pressed={mode === 'invite'} className={`px-4 py-2 text-sm font-bold ${mode === 'invite' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Invitation to register</button>
+            <button type="button" onClick={() => switchMode('followup')} data-testid="invite-mode-followup" aria-pressed={mode === 'followup'} className={`px-4 py-2 text-sm font-bold border-l border-gray-300 ${mode === 'followup' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Follow-up survey (after the event)</button>
           </div>
           <p className="text-xs text-gray-500">{mode === 'invite' ? 'Asks people to register. Every link carries ?ref=email.' : 'Asks "Did you join?" with Yes / No buttons that open the survey page with the person\'s answer and email pre-filled. Answers appear on the Feedback tab.'}</p>
         </div>
@@ -338,7 +338,7 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
             <div className="border-t border-gray-100 pt-4">
               <p className="text-sm font-bold text-gray-800 mb-1">Send a test to yourself first</p>
               <div className="flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[220px]"><Input type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="you@example.com" /></div>
+                <div className="flex-1 min-w-[220px]"><Input type="email" data-testid="invite-test-email" value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="you@example.com" /></div>
                 <Button variant="secondary" onClick={sendTest} disabled={testBusy || !mailerReady}>{testBusy ? 'Sending…' : 'Send test'}</Button>
               </div>
             </div>
@@ -396,8 +396,8 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
       <Card className="p-0">
         <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
           <p className="font-bold text-gray-800 mr-auto">People on the list <span className="text-gray-400 font-normal">({visible.length}{visible.length !== invites.length ? ` of ${invites.length}` : ''})</span></p>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search name, email, mobile…" className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56" />
-          <select value={filter} onChange={e => setFilter(e.target.value as Filter)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <input value={q} data-testid="invite-search" onChange={e => setQ(e.target.value)} placeholder="Search name, email, mobile…" className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-56" />
+          <select value={filter} data-testid="invite-filter" onChange={e => setFilter(e.target.value as Filter)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
             <option value="all">All</option>
             <option value="pending">Not sent yet</option>
             <option value="sent">Invited</option>
@@ -415,7 +415,7 @@ export const EventInvitePanel: React.FC<{ ev: SprEvent; regs: EventRegistration[
               <thead><tr className="text-left text-xs uppercase tracking-wider text-gray-500 border-b border-gray-200"><th className="py-2 px-4">Name</th><th className="py-2 px-4">Email</th><th className="py-2 px-4">Mobile</th><th className="py-2 px-4">Status</th><th className="py-2 px-4">Last sent</th><th className="py-2 px-4"></th></tr></thead>
               <tbody>
                 {visible.slice(0, ROWS_SHOWN).map(i => (
-                  <tr key={i.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={i.id} data-testid="invite-row" data-email={i.email} data-status={i.status} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-2 px-4 font-medium text-gray-900">{i.name || <span className="text-gray-400">—</span>}</td>
                     <td className="py-2 px-4 text-gray-700">{i.email || <span className="text-gray-400">—</span>}</td>
                     <td className="py-2 px-4 text-gray-700">{i.mobile || <span className="text-gray-400">—</span>}</td>

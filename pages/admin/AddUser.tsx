@@ -133,6 +133,7 @@ export const AddUser: React.FC = () => {
              {canChangePassword ? (
                <>
                  <input
+                   id="input-password" data-testid="input-password"
                    type="password"
                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:ring-1 focus:ring-spr-accent outline-none"
                    value={form.password || ''}

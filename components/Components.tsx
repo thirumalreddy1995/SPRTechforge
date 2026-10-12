@@ -1,9 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { childrenText, testId } from '../lib/testid';
+
+// Every shared control carries a data-testid for the automation suite, derived
+// from its label / placeholder / text unless the caller passes one explicitly.
+const tid = (props: any, prefix: string, text?: unknown): string | undefined =>
+  props['data-testid'] ?? (text ? testId(prefix, text) : undefined);
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; title?: string; action?: React.ReactNode }> = ({ children, className = '', title, action }) => (
-  <div className={`bg-white border border-gray-200/80 rounded-2xl shadow-[0_1px_4px_0_rgba(15,23,42,0.08)] overflow-hidden ${className}`}>
+  <div data-testid={title ? testId('card', title) : undefined} className={`bg-white border border-gray-200/80 rounded-2xl shadow-[0_1px_4px_0_rgba(15,23,42,0.08)] overflow-hidden ${className}`}>
     {(title || action) && (
       <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/60">
         {title && <h3 className="text-base font-bold text-gray-800">{title}</h3>}
@@ -26,7 +32,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
     outline: "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-200",
   };
   return (
-    <button className={`${base} ${variants[variant]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} {...props}>
+    <button data-testid={tid(props, 'btn', childrenText(children))} className={`${base} ${variants[variant]} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} {...props}>
       {children}
     </button>
   );
@@ -35,10 +41,11 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 export const BackButton: React.FC<{ className?: string }> = ({ className = '' }) => {
   const navigate = useNavigate();
   return (
-    <button 
-      onClick={() => navigate(-1)} 
+    <button
+      onClick={() => navigate(-1)}
       className={`flex items-center text-gray-500 hover:text-gray-800 transition-colors ${className}`}
       title="Go Back"
+      data-testid="btn-back"
     >
       <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -75,8 +82,9 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
   return (
     <div className="mb-4">
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <input 
-        className={`w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`} 
+      <input
+        data-testid={tid(props, 'input', label || props.placeholder)}
+        className={`w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`}
         {...props}
         onChange={handleChange}
         value={getDisplayValue()}
@@ -104,7 +112,8 @@ export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> &
 
   return (
     <div className={`relative w-full ${containerClassName}`}>
-      <input 
+      <input
+        data-testid={tid(props, 'search', props.placeholder)}
         {...props}
         ref={inputRef}
         value={value}
@@ -116,6 +125,7 @@ export const SearchInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> &
           onClick={handleClear}
           className="absolute right-2 top-0 bottom-0 flex items-center p-1.5 text-gray-400 hover:text-gray-600 rounded-md transition-all h-full"
           title="Clear search"
+          data-testid="search-clear"
         >
           <div className="hover:bg-gray-100 p-1 rounded-md">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,6 +142,7 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { 
   <div className="mb-4">
     {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
     <select
+      data-testid={tid(props, 'select', label)}
       className={`w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:border-spr-accent focus:ring-1 focus:ring-spr-accent outline-none transition-colors shadow-sm ${className}`}
       {...props}
     >
@@ -368,10 +379,10 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/70 backdrop-blur-sm p-0 sm:p-4 animate-fade-in">
-      <div className={`bg-white border border-gray-100 rounded-t-2xl sm:rounded-2xl shadow-[0_20px_60px_-10px_rgba(15,23,42,0.3)] w-full ${maxWidthClass} max-h-[92vh] sm:max-h-[90vh] overflow-y-auto transform transition-all scale-100 flex flex-col`}>
+      <div role="dialog" aria-label={title} data-testid={testId('modal', title)} className={`bg-white border border-gray-100 rounded-t-2xl sm:rounded-2xl shadow-[0_20px_60px_-10px_rgba(15,23,42,0.3)] w-full ${maxWidthClass} max-h-[92vh] sm:max-h-[90vh] overflow-y-auto transform transition-all scale-100 flex flex-col`}>
         <div className="flex justify-between items-center px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-sm z-10 shrink-0">
           <h3 className="text-base sm:text-lg font-bold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100">
+          <button onClick={onClose} data-testid="modal-close" aria-label="Close" className="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>

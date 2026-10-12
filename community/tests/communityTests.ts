@@ -7,7 +7,8 @@ export interface CommunityTestResult { name: string; status: 'PASS' | 'FAIL'; me
 
 const assert = (cond: boolean, msg: string) => { if (!cond) throw new Error(msg); };
 
-const TESTS: { name: string; fn: () => void }[] = [
+/** Exported so the Vitest suite (npm test) runs the same cases as the in-app runner. */
+export const TESTS: { name: string; fn: () => void }[] = [
   {
     name: 'Daily rotation: same day → same pick, next day → next pick',
     fn: () => {

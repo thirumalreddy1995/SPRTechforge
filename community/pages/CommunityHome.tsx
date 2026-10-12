@@ -252,7 +252,7 @@ export const CommunityHome: React.FC = () => {
     const meta = POST_KIND_META[p.kind];
     const mineOrMod = canModerate || p.authorId === user.id;
     return (
-      <article className={`bg-white rounded-2xl border ${p.pinned ? 'border-blue-300 shadow-md shadow-blue-100' : 'border-gray-200'} p-5 sm:p-6`}>
+      <article data-testid="community-post" data-post-id={p.id} data-post-kind={p.kind} className={`bg-white rounded-2xl border ${p.pinned ? 'border-blue-300 shadow-md shadow-blue-100' : 'border-gray-200'} p-5 sm:p-6`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${meta.tint}`}>{meta.emoji} {meta.label}</span>
@@ -317,8 +317,8 @@ export const CommunityHome: React.FC = () => {
         </div>
         {canPost && (
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => openComposer('announcement')} className="px-4 py-2.5 rounded-xl bg-white text-blue-900 font-bold text-sm shadow hover:bg-blue-50">📢 New announcement</button>
-            <button onClick={() => openComposer('celebration')} className="px-4 py-2.5 rounded-xl bg-blue-700/60 border border-blue-400/40 text-white font-bold text-sm hover:bg-blue-700">🎉 Celebrate</button>
+            <button onClick={() => openComposer('announcement')} data-testid="community-new-announcement" className="px-4 py-2.5 rounded-xl bg-white text-blue-900 font-bold text-sm shadow hover:bg-blue-50">📢 New announcement</button>
+            <button onClick={() => openComposer('celebration')} data-testid="community-new-celebration" className="px-4 py-2.5 rounded-xl bg-blue-700/60 border border-blue-400/40 text-white font-bold text-sm hover:bg-blue-700">🎉 Celebrate</button>
           </div>
         )}
       </div>
@@ -348,7 +348,7 @@ export const CommunityHome: React.FC = () => {
         <div className="lg:col-span-2 min-w-0 space-y-4">
           <div className="flex flex-wrap gap-2">
             {filters.map(f => (
-              <button key={f.key} onClick={() => setFilter(f.key)}
+              <button key={f.key} onClick={() => setFilter(f.key)} data-testid={`community-filter-${f.key}`}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border ${filter === f.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
                 {f.label}
               </button>
