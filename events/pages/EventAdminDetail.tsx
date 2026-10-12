@@ -495,6 +495,8 @@ export const EventAdminDetail: React.FC = () => {
           <button
             key={key}
             onClick={() => setTab(key)}
+            data-testid={`tab-${key}`}
+            aria-selected={tab === key}
             className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-2 -mb-px transition-colors ${tab === key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
           >
             {label}

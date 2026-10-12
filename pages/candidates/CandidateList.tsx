@@ -208,29 +208,29 @@ export const CandidateList: React.FC = () => {
       <button
         onClick={() => toggleRowAmount(c.id)}
         className={`p-1.5 rounded-lg transition-colors ${isAmountVisible(c.id) ? 'text-spr-600 bg-spr-50 hover:bg-spr-100' : 'text-gray-400 hover:text-spr-600 hover:bg-gray-100'}`}
-        title={isAmountVisible(c.id) ? 'Hide amounts' : 'Reveal amounts'}
+        title={isAmountVisible(c.id) ? 'Hide amounts' : 'Reveal amounts'} data-testid="action-amounts"
       >
         <AmountIcon visible={isAmountVisible(c.id)} />
       </button>
       <button
         onClick={() => setViewCandidate(c)}
         className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100"
-        title="View Profile"
+        title="View Profile" data-testid="action-view-profile"
       >
         <ProfileIcon />
       </button>
-      <Link to={`/candidates/edit/${c.id}`} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50" title="Edit">
+      <Link to={`/candidates/edit/${c.id}`} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50" title="Edit" data-testid="action-edit">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
       </Link>
-      <Link to={`/candidates/agreement/${c.id}`} className="text-amber-500 hover:text-amber-700 p-1.5 rounded-lg hover:bg-amber-50" title="Agreement">
+      <Link to={`/candidates/agreement/${c.id}`} className="text-amber-500 hover:text-amber-700 p-1.5 rounded-lg hover:bg-amber-50" title="Agreement" data-testid="action-agreement">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </Link>
       {isMaster && (
-        <Link to={`/finance/statement/Candidate/${c.id}`} className="text-indigo-500 hover:text-indigo-700 p-1.5 rounded-lg hover:bg-indigo-50" title="Financial Statement">
+        <Link to={`/finance/statement/Candidate/${c.id}`} className="text-indigo-500 hover:text-indigo-700 p-1.5 rounded-lg hover:bg-indigo-50" title="Financial Statement" data-testid="action-statement">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -239,7 +239,7 @@ export const CandidateList: React.FC = () => {
       <button
         onClick={() => handleCreateAccount(c)}
         className="text-teal-500 hover:text-teal-700 p-1.5 rounded-lg hover:bg-teal-50"
-        title="Create Login Account"
+        title="Create Login Account" data-testid="action-create-login"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -249,7 +249,7 @@ export const CandidateList: React.FC = () => {
         <button
           onClick={() => handleDeleteClick(c.id)}
           className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50"
-          title="Delete (Director only)"
+          title="Delete (Director only)" data-testid="action-delete"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -315,7 +315,7 @@ export const CandidateList: React.FC = () => {
 
     if (activeTab === 'discontinued') {
       return (
-        <tr key={c.id} className="hover:bg-gray-50/80 transition-colors">
+        <tr key={c.id} data-testid="candidate-row" data-candidate-id={c.id} className="hover:bg-gray-50/80 transition-colors">
           <td className="py-3 px-4 text-gray-400 text-xs">{rowNum}</td>
           <td className="py-3 px-4">
             <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-mono text-xs font-bold border border-blue-100">{c.batchId}</span>
@@ -348,20 +348,20 @@ export const CandidateList: React.FC = () => {
               <button
                 onClick={() => toggleRowAmount(c.id)}
                 className={`p-1.5 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`}
-                title={amtVisible ? 'Hide amounts' : 'Reveal amounts'}
+                title={amtVisible ? 'Hide amounts' : 'Reveal amounts'} data-testid="action-amounts"
               >
                 <AmountIcon visible={amtVisible} />
               </button>
               <button
                 onClick={() => setViewCandidate(c)}
                 className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100"
-                title="View Profile"
+                title="View Profile" data-testid="action-view-profile"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </button>
-              <Link to={`/candidates/edit/${c.id}`} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50" title="Edit">
+              <Link to={`/candidates/edit/${c.id}`} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50" title="Edit" data-testid="action-edit">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -372,7 +372,7 @@ export const CandidateList: React.FC = () => {
                   to={`/finance/transactions/new`}
                   state={{ prefillCandidateId: c.id, prefillType: 'Refund' }}
                   className="flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-800 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-2 py-1 rounded-lg transition-colors"
-                  title="Issue Refund"
+                  title="Issue Refund" data-testid="action-refund"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -381,7 +381,7 @@ export const CandidateList: React.FC = () => {
                 </Link>
               )}
               {isMaster && (
-                <button onClick={() => handleDeleteClick(c.id)} className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50" title="Delete">
+                <button onClick={() => handleDeleteClick(c.id)} className="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50" title="Delete" data-testid="action-delete">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -395,7 +395,7 @@ export const CandidateList: React.FC = () => {
 
     if (activeTab === 'all') {
       return (
-        <tr key={c.id} className={`hover:bg-gray-50/80 transition-colors ${!c.isActive ? 'opacity-55' : ''}`}>
+        <tr key={c.id} data-testid="candidate-row" data-candidate-id={c.id} data-active={c.isActive ? "true" : "false"} className={`hover:bg-gray-50/80 transition-colors ${!c.isActive ? 'opacity-55' : ''}`}>
           <td className="py-3 px-4 text-gray-400 text-xs">{rowNum}</td>
           <td className="py-3 px-4">
             <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-mono text-xs font-bold border border-blue-100">{c.batchId}</span>
@@ -437,7 +437,7 @@ export const CandidateList: React.FC = () => {
 
     // ── Active / Placed tabs — original column layout preserved exactly ────
     return (
-      <tr key={c.id} className={`hover:bg-gray-50/80 transition-colors ${!c.isActive ? 'opacity-55' : ''}`}>
+      <tr key={c.id} data-testid="candidate-row" data-candidate-id={c.id} data-active={c.isActive ? "true" : "false"} className={`hover:bg-gray-50/80 transition-colors ${!c.isActive ? 'opacity-55' : ''}`}>
         <td className="py-3 px-4 text-gray-400 text-xs">{rowNum}</td>
         <td className="py-3 px-4">
           <span className="bg-blue-50 text-blue-800 px-2 py-1 rounded font-mono text-xs font-bold border border-blue-100">{c.batchId}</span>
@@ -473,7 +473,7 @@ export const CandidateList: React.FC = () => {
           ) : <span className="tracking-widest text-gray-400">••••</span>}
         </td>
         <td className="py-3 px-4 text-center">
-          <button onClick={() => handleToggleActive(c)} className={`w-10 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+          <button onClick={() => handleToggleActive(c)} data-testid="action-active-toggle" aria-pressed={c.isActive} aria-label={c.isActive ? "Deactivate candidate" : "Activate candidate"} className={`w-10 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
             <span className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${c.isActive ? 'translate-x-5' : ''}`} />
           </button>
         </td>
@@ -526,7 +526,7 @@ export const CandidateList: React.FC = () => {
               {amtVisible ? 'Hide' : 'Show Amounts'}
             </button>
             <div className="flex gap-1">
-              <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100" title="View Profile">
+              <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100" title="View Profile" data-testid="action-view-profile">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               </button>
               <Link to={`/candidates/edit/${c.id}`} className="p-2 rounded-lg text-blue-500 hover:bg-blue-50">
@@ -549,7 +549,7 @@ export const CandidateList: React.FC = () => {
 
     // All / Active / Placed mobile card — original layout preserved
     return (
-      <div key={c.id} className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${!c.isActive ? 'opacity-60' : ''}`}>
+      <div key={c.id} data-testid="candidate-card" data-candidate-id={c.id} data-active={c.isActive ? "true" : "false"} className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${!c.isActive ? 'opacity-60' : ''}`}>
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900">{c.name}</p>
@@ -582,26 +582,26 @@ export const CandidateList: React.FC = () => {
         )}
         <div className="flex items-center justify-between border-t border-gray-100 pt-3 gap-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => handleToggleActive(c)} className={`w-9 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+            <button onClick={() => handleToggleActive(c)} data-testid="action-active-toggle" aria-pressed={c.isActive} aria-label={c.isActive ? "Deactivate candidate" : "Activate candidate"} className={`w-9 h-5 rounded-full relative transition-colors ${c.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
               <span className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${c.isActive ? 'translate-x-4' : ''}`} />
             </button>
             <span className="text-xs text-gray-400">{c.isActive ? 'Active' : 'Inactive'}</span>
           </div>
           <div className="flex gap-1">
-            <button onClick={() => toggleRowAmount(c.id)} className={`p-2 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`} title={amtVisible ? 'Hide amounts' : 'Reveal amounts'}>
+            <button onClick={() => toggleRowAmount(c.id)} className={`p-2 rounded-lg transition-colors ${amtVisible ? 'text-spr-600 bg-spr-50' : 'text-gray-400 hover:bg-gray-100'}`} title={amtVisible ? 'Hide amounts' : 'Reveal amounts'} data-testid="action-amounts">
               <AmountIcon visible={amtVisible} />
             </button>
-            <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="View Profile">
+            <button onClick={() => setViewCandidate(c)} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="View Profile" data-testid="action-view-profile">
               <ProfileIcon />
             </button>
-            <Link to={`/candidates/edit/${c.id}`} className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Edit">
+            <Link to={`/candidates/edit/${c.id}`} className="p-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50" title="Edit" data-testid="action-edit">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
             </Link>
-            <Link to={`/candidates/agreement/${c.id}`} className="p-2 rounded-lg text-amber-500 hover:bg-amber-50" title="Agreement">
+            <Link to={`/candidates/agreement/${c.id}`} className="p-2 rounded-lg text-amber-500 hover:bg-amber-50" title="Agreement" data-testid="action-agreement">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </Link>
             {isMaster && (
-              <button onClick={() => handleDeleteClick(c.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50" title="Delete">
+              <button onClick={() => handleDeleteClick(c.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50" title="Delete" data-testid="action-delete">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
               </button>
             )}
@@ -687,7 +687,7 @@ export const CandidateList: React.FC = () => {
           {TABS.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => setActiveTab(tab.key)} data-testid={`tab-${tab.key}`} aria-selected={activeTab === tab.key}
               className={`pb-2.5 px-4 text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-b-2 border-spr-600 text-spr-600'
@@ -717,6 +717,7 @@ export const CandidateList: React.FC = () => {
           <select
             className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-spr-accent outline-none bg-white text-gray-800 text-sm"
             value={batchFilter}
+            data-testid="filter-batch"
             onChange={e => { setBatchFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="All">All Batches</option>
@@ -726,6 +727,7 @@ export const CandidateList: React.FC = () => {
             <select
               className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-1 focus:ring-spr-accent outline-none bg-white text-gray-800 text-sm"
               value={statusFilter}
+              data-testid="filter-status"
               onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="All">All Statuses</option>
@@ -746,7 +748,7 @@ export const CandidateList: React.FC = () => {
             </select>
           )}
           <button
-            onClick={() => { setShowAllAmounts(v => !v); setRevealedRows(new Set()); }}
+            onClick={() => { setShowAllAmounts(v => !v); setRevealedRows(new Set()); }} data-testid="btn-toggle-all-amounts" aria-pressed={showAllAmounts}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${showAllAmounts ? 'bg-spr-50 border-spr-200 text-spr-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
           >
             {showAllAmounts
@@ -786,7 +788,7 @@ export const CandidateList: React.FC = () => {
 
         {/* Desktop table view */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
+          <table data-testid="candidates-table" className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50 border-b border-gray-200">
               {renderTableHeader()}
             </thead>

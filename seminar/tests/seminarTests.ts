@@ -22,7 +22,8 @@ const assert = (cond: boolean, msg: string) => {
   if (!cond) throw new Error(msg);
 };
 
-const TESTS: { name: string; fn: () => void }[] = [
+/** Exported so the Vitest suite (npm test) runs the same cases as the in-app runner. */
+export const TESTS: { name: string; fn: () => void }[] = [
   {
     name: 'Phone: 10 digits get +91',
     fn: () => assert(normalizePhone('98491 23456') === '+919849123456', `got ${normalizePhone('98491 23456')}`),
