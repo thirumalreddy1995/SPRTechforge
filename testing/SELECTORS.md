@@ -94,6 +94,10 @@ Choices `choice-<text>` with aria-pressed (`choice-yes-i-joined`, `choice-no-i-c
 rating `feedback-rating-1` … `feedback-rating-5`, `feedback-improve`, `feedback-comments`,
 `feedback-name`, `feedback-email`, `feedback-mobile`, `feedback-submit`, `feedback-error`.
 
+### Prompt Practice (`/#/training/interview-prep`)
+Pace buttons `prep-speed-slow`, `prep-speed-relaxed`, `prep-speed-normal`, `prep-speed-brisk`, `prep-speed-fast` (aria-pressed),
+trainer voice dropdown `prep-voice` (present once the browser lists its voices), `btn-preview-voice`, `prep-start`.
+
 ### Website enquiry form (`/`)
 `enquiry-form`, `enquiry-name`, `enquiry-mobile`, `enquiry-email`, `enquiry-mode`,
 `enquiry-interest`, `enquiry-message`, `enquiry-submit`.

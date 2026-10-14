@@ -4,6 +4,11 @@ import { Card, Button } from '../../components/Components';
 import * as utils from '../../utils';
 import { isMasterUser } from '../../utils';
 import { InterviewPrepSession, InterviewPrepResponse } from '../../types';
+import {
+  SPEED_SETTINGS, SpeedSetting, DEFAULT_SPEED_IDX, approxWpm, speedColor,
+  splitIntoPhrases, echoPauseMs, estimateSpeakMs, toSpokenText,
+  questionIntro, answerLeadIn, VOICE_PREVIEW_TEXT, rankVoices, VOICE_PREF_KEY,
+} from './promptPracticeSpeech';
 
 // ─── Q&A Bank ─────────────────────────────────────────────────────────────────
 interface QAPair { id: string; category: string; question: string; modelAnswer: string; }
@@ -39,41 +44,12 @@ const QA_BANK: QAPair[] = [
 const BUILT_IN_CATEGORIES = [...new Set(QA_BANK.map(q => q.category))];
 const CUSTOM_Q_KEY = 'spr_interview_prep_custom_q';
 
-// ─── Speed settings ───────────────────────────────────────────────────────────
-// rate = TTS speech rate (0.1–1.0); pauseMs = silence after each sentence/clause
-interface SpeedSetting { label: string; rate: number; pauseMs: number; color: string; }
-const SPEED_SETTINGS: SpeedSetting[] = [
-  { label: 'Very Slow', rate: 0.4,  pauseMs: 3000, color: '#7c3aed' },
-  { label: 'Slow',      rate: 0.55, pauseMs: 2200, color: '#2563eb' },
-  { label: 'Normal',    rate: 0.75, pauseMs: 1500, color: '#16a34a' },
-  { label: 'Fast',      rate: 0.9,  pauseMs: 900,  color: '#d97706' },
-  { label: 'Very Fast', rate: 1.1,  pauseMs: 500,  color: '#dc2626' },
-];
+// Speed levels, phrase splitting, echo timing and the trainer's wording live in
+// ./promptPracticeSpeech.ts (pure, unit-tested).
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STOP = new Set(['a','an','the','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','to','of','in','on','at','by','for','with','into','from','and','but','or','not','it','its','we','you','he','she','they','this','that','which','who','what','how','as','such','then','than','also','each','more','most','other','some','any','very','just']);
 const normWords = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w));
-
-// Split answer at sentence/clause boundaries (full stop, comma) keeping punctuation attached
-function splitAtPunctuation(answer: string): string[] {
-  const parts = answer.split(/([.?!,;])/).filter(s => s.length > 0);
-  const segs: string[] = [];
-  for (let i = 0; i < parts.length; i++) {
-    if (/^[.?!,;]$/.test(parts[i])) {
-      if (segs.length > 0) segs[segs.length - 1] += parts[i];
-    } else {
-      const t = parts[i].trim();
-      if (t) segs.push(t);
-    }
-  }
-  return segs.filter(s => s.trim().length > 0);
-}
-
-// Longer pause after sentence-ending punctuation, shorter after commas
-function getPause(seg: string, speed: SpeedSetting): number {
-  const last = seg.trim().slice(-1);
-  return ['.','?','!'].includes(last) ? speed.pauseMs * 1.5 : speed.pauseMs;
-}
 
 function scoreAnswer(spoken: string, modelAnswer: string): { score: number; missedKeywords: string[] } {
   const modelWords = normWords(modelAnswer).filter(w => w.length > 3);
@@ -137,16 +113,6 @@ const ScoreRing: React.FC<{ score: number; size?: number }> = ({ score, size = 8
 };
 
 // ─── Session history card ─────────────────────────────────────────────────────
-// Speed colour lookup (matches SPEED_SETTINGS palette without importing the array)
-function speedColor(label?: string) {
-  if (!label) return '#64748b';
-  if (label === 'Very Slow') return '#7c3aed';
-  if (label === 'Slow')      return '#2563eb';
-  if (label === 'Normal')    return '#16a34a';
-  if (label === 'Fast')      return '#d97706';
-  return '#dc2626'; // Very Fast
-}
-
 const SessionCard: React.FC<{ session: InterviewPrepSession; onDelete?: (id:string)=>void }> = ({ session, onDelete }) => {
   const [open, setOpen] = useState(false);
   const gc: Record<string,string> = { A:'bg-green-100 text-green-700', B:'bg-blue-100 text-blue-700', C:'bg-yellow-100 text-yellow-700', D:'bg-orange-100 text-orange-700', F:'bg-red-100 text-red-700' };
@@ -257,7 +223,12 @@ export const InterviewPrepModule: React.FC = () => {
   // Config
   const [selectedCats, setSelectedCats] = useState<string[]>(BUILT_IN_CATEGORIES.slice(0, 3));
   const [qCount, setQCount] = useState(5);
-  const [speedIdx, setSpeedIdx] = useState(2);
+  const [speedIdx, setSpeedIdx] = useState(DEFAULT_SPEED_IDX);
+
+  // Trainer voice — the most natural English voice installed, candidate can change it
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceName] = useState<string>(() => { try { return localStorage.getItem(VOICE_PREF_KEY) || ''; } catch { return ''; } });
+  const [previewing, setPreviewing] = useState(false);
 
   // Session state
   const [phase, setPhase] = useState<Phase>('setup');
@@ -286,7 +257,10 @@ export const InterviewPrepModule: React.FC = () => {
   // ── Refs ──────────────────────────────────────────────────────────────────
   const recRef        = useRef<any>(null);
   const interimRef    = useRef('');
-  const speedIdxRef   = useRef(2);
+  const speedIdxRef   = useRef(DEFAULT_SPEED_IDX);
+  const voiceRef      = useRef<SpeechSynthesisVoice | null>(null);
+  // Chrome drops an utterance's end event if the object is garbage-collected mid-speech
+  const uttRef        = useRef<SpeechSynthesisUtterance | null>(null);
   const sessionQsRef  = useRef<QAPair[]>([]);
   const qIdxRef       = useRef(0);
   const segsRef       = useRef<string[]>([]);
@@ -303,6 +277,30 @@ export const InterviewPrepModule: React.FC = () => {
   const frameTimerRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
   useEffect(() => { speedIdxRef.current = speedIdx; }, [speedIdx]);
+
+  // Load the installed voices (Chrome fills the list asynchronously)
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const load = () => { const ranked = rankVoices(synth.getVoices()); if (ranked.length) setVoices(ranked); };
+    load();
+    synth.addEventListener?.('voiceschanged', load);
+    const retry = setTimeout(load, 1500);
+    return () => { synth.removeEventListener?.('voiceschanged', load); clearTimeout(retry); };
+  }, []);
+
+  // Resolve the chosen voice (saved preference, else the best-ranked one)
+  useEffect(() => {
+    if (!voices.length) { voiceRef.current = null; return; }
+    const chosen = voices.find(v => v.name === voiceName) || voices[0];
+    voiceRef.current = chosen;
+    if (chosen.name !== voiceName) setVoiceName(chosen.name);
+  }, [voices, voiceName]);
+
+  const chooseVoice = (name: string) => {
+    setVoiceName(name);
+    try { localStorage.setItem(VOICE_PREF_KEY, name); } catch {}
+  };
 
   // Browser capability check
   useEffect(() => {
@@ -382,14 +380,51 @@ export const InterviewPrepModule: React.FC = () => {
   };
 
   // ── TTS — cancellation-safe ────────────────────────────────────────────
-  // onEnd only fires if the session has not been cancelled
-  const speakRaw = (text: string, rate: number, onEnd: () => void) => {
-    window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = rate; utt.lang = 'en-US';
-    utt.onend = () => { if (!cancelledRef.current) onEnd(); };
-    utt.onerror = () => { if (!cancelledRef.current) onEnd(); };
-    window.speechSynthesis.speak(utt);
+  // Builds one utterance in the chosen voice. onEnd receives how long the
+  // trainer actually spoke (ms) so the echo pause can match it; it only fires
+  // if the session has not been cancelled. A watchdog moves on if the browser
+  // never reports the end of the utterance (Chrome does this after a cancel).
+  const buildUtterance = (text: string, speed: SpeedSetting) => {
+    const utt = new SpeechSynthesisUtterance(toSpokenText(text));
+    const voice = voiceRef.current;
+    utt.rate = speed.rate; utt.pitch = 1; utt.volume = 1;
+    utt.lang = voice?.lang || 'en-IN';
+    if (voice) utt.voice = voice;
+    return utt;
+  };
+
+  const speakRaw = (text: string, speed: SpeedSetting, onEnd: (spokenMs: number) => void) => {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const utt = buildUtterance(text, speed);
+    let started = 0, done = false;
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    const finish = () => {
+      if (done) return; done = true;
+      if (watchdog) clearTimeout(watchdog);
+      const ms = started ? performance.now() - started : 0;
+      if (!cancelledRef.current) onEnd(ms);
+    };
+    utt.onstart = () => { started = performance.now(); };
+    utt.onend = finish;
+    utt.onerror = finish;
+    watchdog = setTimeout(finish, estimateSpeakMs(text, speed) * 2 + 4000);
+    uttRef.current = utt;
+    synth.speak(utt);
+  };
+
+  // Setup-screen preview of the chosen voice at the chosen speed
+  const previewVoice = () => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    if (previewing) { synth.cancel(); setPreviewing(false); return; }
+    synth.cancel();
+    const utt = buildUtterance(VOICE_PREVIEW_TEXT, SPEED_SETTINGS[speedIdx]);
+    utt.onend = () => setPreviewing(false);
+    utt.onerror = () => setPreviewing(false);
+    uttRef.current = utt;
+    setPreviewing(true);
+    synth.speak(utt);
   };
 
   // ── STR helpers ──────────────────────────────────────────────────────────
@@ -410,10 +445,10 @@ export const InterviewPrepModule: React.FC = () => {
     setSegIdx(si);
     setSegPlayed(si + 1);
 
-    speakRaw(allSegs[si], speed.rate, () => {
+    speakRaw(allSegs[si], speed, (spokenMs) => {
       if (cancelledRef.current) return;
-      // Brief pause after each segment (longer after sentences, shorter after clauses)
-      const pause = getPause(allSegs[si], speed);
+      // Leave the candidate as long as the trainer took (scaled by the speed level) to repeat it
+      const pause = echoPauseMs(allSegs[si], speed, spokenMs);
       pauseTimerRef.current = setTimeout(() => {
         if (cancelledRef.current) return;
         speakSegments(si + 1);
@@ -546,7 +581,7 @@ export const InterviewPrepModule: React.FC = () => {
     if (cancelledRef.current) return;
     qIdxRef.current = qi;
     const speed = SPEED_SETTINGS[speedIdxRef.current];
-    const allSegs = splitAtPunctuation(qs[qi].modelAnswer);
+    const allSegs = splitIntoPhrases(qs[qi].modelAnswer);
     segsRef.current = allSegs;
     interimRef.current = '';
     setLiveTranscript('');
@@ -556,16 +591,22 @@ export const InterviewPrepModule: React.FC = () => {
     setSegPlayed(0);
     setPhase('reading-question');
 
-    // 1. Read the question
-    speakRaw(`Question ${qi+1}: ${qs[qi].question}`, speed.rate, () => {
+    // 1. Ask the question the way an interviewer would
+    speakRaw(questionIntro(qi, qs.length, qs[qi].question), speed, () => {
       if (cancelledRef.current) return;
-      // 2. Brief gap, then begin reading the model answer segment by segment
       pauseTimerRef.current = setTimeout(() => {
         if (cancelledRef.current) return;
-        setPhase('prompting');
-        startRec();
-        speakSegments(0);
-      }, 800);
+        // 2. Tell the candidate what to do, then feed the answer phrase by phrase
+        speakRaw(answerLeadIn(qi), speed, () => {
+          if (cancelledRef.current) return;
+          pauseTimerRef.current = setTimeout(() => {
+            if (cancelledRef.current) return;
+            setPhase('prompting');
+            startRec();
+            speakSegments(0);
+          }, 500);
+        });
+      }, 700);
     });
   };
 
@@ -1091,7 +1132,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Interview Prep — Prompt Practice</h1>
-          <p className="text-slate-500 text-sm mt-1">System reads the answer aloud · Repeat along as you hear it · Scored on key concept coverage</p>
+          <p className="text-slate-500 text-sm mt-1">The trainer asks a question and says the answer in short phrases · Repeat each phrase · Scored on key concept coverage</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {isAdmin && <Button variant="secondary" onClick={()=>{resetSession();setView('admin');}}>Admin View</Button>}
@@ -1130,10 +1171,10 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
 
           <div className="space-y-4">
             <Card>
-              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">3</span> Playback Speed</h3>
+              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">3</span> Trainer Pace</h3>
               <div className="grid grid-cols-5 gap-1 mb-3">
                 {SPEED_SETTINGS.map((s,i)=>(
-                  <button key={i} onClick={()=>setSpeedIdx(i)}
+                  <button key={i} onClick={()=>setSpeedIdx(i)} data-testid={`prep-speed-${s.label.toLowerCase()}`} aria-pressed={speedIdx===i}
                     className={`py-2 px-1 rounded-lg text-xs font-bold border transition-all text-center ${speedIdx===i?'text-white border-transparent shadow-md':'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
                     style={speedIdx===i?{background:s.color,borderColor:s.color}:{}}>
                     {s.label}
@@ -1142,21 +1183,40 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               </div>
               <div className="p-3 rounded-lg text-xs text-slate-600 border" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="font-bold mb-1" style={{color:speed.color}}>{speed.label} Mode</div>
-                <div>• TTS rate: <b>{speed.rate}×</b></div>
-                <div>• Pause at commas: <b>{speed.pauseMs}ms</b></div>
-                <div>• Pause at full stops: <b>{Math.round(speed.pauseMs * 1.5)}ms</b></div>
-                <div className="mt-1 text-slate-400">{speedIdx===0?'Lots of breathing room to echo along':speedIdx===1?'Comfortable pace for learning':speedIdx===2?'Recommended for regular practice':speedIdx===3?'Moderate pressure — good for polishing':'Fast-paced interview simulation'}</div>
+                <div>• Speaking pace: <b>about {approxWpm(speed)} words a minute</b> ({speed.rate}× the voice's natural speed)</div>
+                <div>• Time to repeat each phrase: <b>{speed.echoFactor}×</b> as long as the trainer took to say it</div>
+                <div className="mt-1 text-slate-400">{speed.hint}</div>
               </div>
+            </Card>
+
+            <Card>
+              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">4</span> Trainer Voice</h3>
+              {voices.length > 0 ? (
+                <select value={voiceName} onChange={e=>chooseVoice(e.target.value)} data-testid="prep-voice"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400 mb-2">
+                  {voices.map(v => <option key={v.name} value={v.name}>{v.name.replace(/^Microsoft |^Google /, '')} · {v.lang}</option>)}
+                </select>
+              ) : (
+                <div className="text-xs text-slate-500 mb-2">Using the browser's default English voice.</div>
+              )}
+              <div className="flex items-center gap-2">
+                <button onClick={previewVoice} disabled={!ttsOk} data-testid="btn-preview-voice"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${previewing?'bg-red-50 border-red-300 text-red-600':'bg-white border-slate-200 text-slate-600 hover:border-slate-300'} disabled:opacity-50`}>
+                  {previewing ? '■ Stop' : '▶ Hear a sample'}
+                </button>
+                <span className="text-xs text-slate-400">Plays at the selected pace</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-400">Tip: Microsoft Edge offers the most natural "Online (Natural)" voices, including Indian English.</div>
             </Card>
 
             <Card>
               <h3 className="font-bold text-slate-700 mb-3">How it works</h3>
               <ol className="space-y-1.5">
                 {[
-                  ['🔊','System reads the question aloud'],
-                  ['📖','System reads the model answer sentence by sentence'],
-                  ['🎙️','Speak along as you hear each sentence — mic captures your voice'],
-                  ['⏸️','A brief pause at each comma and full stop gives you time to echo'],
+                  ['🔊','The trainer asks the question aloud, like an interviewer'],
+                  ['📖','Then says the model answer in short phrases of a few words'],
+                  ['🎙️','Repeat each phrase after you hear it — the mic captures your voice'],
+                  ['⏸️','After every phrase the trainer waits long enough for you to repeat it'],
                   ['📊','Score based on key concept coverage of your spoken response'],
                 ].map(([ico,txt],i)=>(
                   <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
@@ -1173,7 +1233,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
             {!ttsOk && <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">⚠️ Text-to-speech not available in this browser.</div>}
             {useFallback && <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700">⚠️ Microphone unavailable — you will type your responses instead.</div>}
 
-            <Button onClick={startSession} className="w-full py-3 text-base font-bold">🎙️ Start Practice Session</Button>
+            <Button onClick={startSession} data-testid="prep-start" className="w-full py-3 text-base font-bold">🎙️ Start Practice Session</Button>
           </div>
         </div>
       )}
@@ -1184,7 +1244,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
           <div className="mb-4">
             <div className="flex justify-between text-xs text-slate-500 mb-1">
               <span>Question {qIdx+1} of {sessionQs.length} · {currentQA.category}</span>
-              <span className="font-semibold" style={{color:speed.color}}>{speed.label} · {speed.rate}× TTS</span>
+              <span className="font-semibold" style={{color:speed.color}}>{speed.label} · ~{approxWpm(speed)} words/min</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2">
               <div className="h-2 rounded-full transition-all duration-500" style={{width:`${(qIdx/sessionQs.length)*100}%`,background:speed.color}}/>
@@ -1196,7 +1256,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               {/* Question */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">
-                  {phase === 'reading-question' ? '🔊 Reading question…' : '📋 Question'}
+                  {phase === 'reading-question' ? '🔊 Trainer is asking…' : '📋 Question'}
                 </div>
                 <div className="text-base font-semibold text-slate-800 leading-relaxed">{currentQA.question}</div>
               </div>
@@ -1208,8 +1268,8 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                     <div className="w-12 h-12 rounded-full flex items-center justify-center animate-pulse" style={{background:speed.color}}>
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
                     </div>
-                    <div className="text-sm font-semibold text-slate-600">Reading question…</div>
-                    <div className="text-xs text-slate-400">Answer playback begins shortly — listen carefully</div>
+                    <div className="text-sm font-semibold text-slate-600">Trainer is asking the question…</div>
+                    <div className="text-xs text-slate-400">The answer follows in short phrases — listen carefully</div>
                   </div>
                 )}
                 {phase === 'prompting' && (
@@ -1219,7 +1279,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                         <div key={i} className="w-1.5 rounded-full animate-pulse" style={{height:`${h*4}px`, background:speed.color, animationDelay:`${i*80}ms`}}/>
                       ))}
                     </div>
-                    <div className="text-sm font-bold text-slate-700">🔊 System speaking — listen &amp; repeat</div>
+                    <div className="text-sm font-bold text-slate-700">🔊 Trainer speaking — repeat each phrase</div>
                     <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
                       <div className="h-1.5 rounded-full transition-all duration-700" style={{width:`${segments.length ? (segPlayed/segments.length)*100 : 0}%`, background:speed.color}}/>
                     </div>
@@ -1233,7 +1293,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                 <div className="p-4 bg-white border-2 border-blue-200 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"/>
-                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Your voice — speak along as you hear each phrase</div>
+                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Your voice — repeat each phrase after the trainer</div>
                   </div>
                   {useFallback
                     ? <textarea value={fallbackText} onChange={e=>setFallbackText(e.target.value)} placeholder="Type your response here…" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:border-blue-400 resize-none" rows={3} autoFocus/>
@@ -1248,7 +1308,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               {videoPanelJsx}
               <div className="p-3 rounded-xl border text-center" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{color:speed.color}}>{speed.label}</div>
-                <div className="text-xs text-slate-500">{speed.rate}× · {speed.pauseMs}ms pause</div>
+                <div className="text-xs text-slate-500">~{approxWpm(speed)} words/min · {speed.echoFactor}× time to repeat</div>
               </div>
               <div className={`flex items-center gap-2 p-3 rounded-lg border ${phase==='prompting'?'bg-red-50 border-red-200':'bg-slate-50 border-slate-200'}`}>
                 <div className={`w-3 h-3 rounded-full ${phase==='prompting'?'bg-red-500 animate-pulse':'bg-slate-300'}`}/>
