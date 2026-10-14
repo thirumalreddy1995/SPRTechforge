@@ -6,7 +6,7 @@ import { isMasterUser } from '../../utils';
 import { InterviewPrepSession, InterviewPrepResponse } from '../../types';
 import {
   SPEED_SETTINGS, SpeedSetting, DEFAULT_SPEED_IDX, approxWpm, speedColor,
-  promptChunks, promptGapMs, minPromptGapMs, caughtUp, countWords, estimateSpeakMs, toSpokenText,
+  answerSentences, sentencePauseMs, estimateSpeakMs, toSpokenText,
   questionIntro, SESSION_BRIEFING, VOICE_PREVIEW_TEXT, rankVoices, pickInterviewerVoice, VOICE_PREF_KEY,
 } from './promptPracticeSpeech';
 
@@ -44,10 +44,10 @@ const QA_BANK: QAPair[] = [
 const BUILT_IN_CATEGORIES = [...new Set(QA_BANK.map(q => q.category))];
 const CUSTOM_Q_KEY = 'spr_interview_prep_custom_q';
 
-// Pace levels, prompt chunking, gap timing and the spoken wording live in
+// Pace levels, sentence splitting and the spoken wording live in
 // ./promptPracticeSpeech.ts (pure, unit-tested). The module simulates a live
-// phone prompt: the interviewer asks, the prompter feeds the answer a few
-// words at a time, the candidate says it out loud as they hear it.
+// phone prompt: the interviewer asks, the prompter reads the answer straight
+// through with natural pauses only, the candidate speaks along a step behind.
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STOP = new Set(['a','an','the','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','to','of','in','on','at','by','for','with','into','from','and','but','or','not','it','its','we','you','he','she','they','this','that','which','who','what','how','as','such','then','than','also','each','more','most','other','some','any','very','just']);
@@ -442,10 +442,10 @@ export const InterviewPrepModule: React.FC = () => {
     if (pauseTimerRef.current) { clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; }
   };
 
-  // ── CORE: feed the answer a few words at a time, like a prompter on the phone ──
-  // After each prompt: wait until the mic hears the candidate say (most of)
-  // it, or until the level's maximum gap — whichever comes first — then give
-  // the next prompt. No instructions in between.
+  // ── CORE: read the answer straight through, sentence by sentence ────────
+  // The prompter never waits for the candidate. Each sentence is one
+  // utterance (the voice pauses at commas by itself); between sentences only
+  // the breath a person takes at a full stop. The candidate speaks along.
   const speakSegments = (si: number) => {
     if (cancelledRef.current) return;
     const allSegs = segsRef.current;
@@ -455,21 +455,12 @@ export const InterviewPrepModule: React.FC = () => {
     setSegIdx(si);
     setSegPlayed(si + 1);
 
-    const heardBefore = countWords(interimRef.current);
-    speakRaw(allSegs[si], speed, (spokenMs) => {
+    speakRaw(allSegs[si], speed, () => {
       if (cancelledRef.current) return;
-      const maxGap = promptGapMs(allSegs[si], speed, spokenMs);
-      const minGap = minPromptGapMs(allSegs[si], speed, spokenMs);
-      const startedAt = performance.now();
-      const tick = () => {
+      pauseTimerRef.current = setTimeout(() => {
         if (cancelledRef.current) return;
-        const elapsed = performance.now() - startedAt;
-        const heard = countWords(interimRef.current) - heardBefore;
-        const candidateDone = !useFallback && elapsed >= minGap && caughtUp(heard, allSegs[si]);
-        if (elapsed >= maxGap || candidateDone) { clearPauseTimer(); speakSegments(si + 1); return; }
-        pauseTimerRef.current = setTimeout(tick, 100);
-      };
-      pauseTimerRef.current = setTimeout(tick, 100);
+        speakSegments(si + 1);
+      }, sentencePauseMs(speed));
     });
   };
 
@@ -487,9 +478,9 @@ export const InterviewPrepModule: React.FC = () => {
     const feedback =
       score >= 90 ? 'Excellent — you repeated almost every key concept.' :
       score >= 75 ? 'Good. A few key terms were missed — review the model answer.' :
-      score >= 60 ? 'Fair. Say each prompt the moment you hear it and keep going.' :
-      score >= 45 ? 'Needs work. Don\'t wait for the whole sentence — repeat each bit as it comes.' :
-      'Keep practising. Choose a slower pace with shorter prompts.';
+      score >= 60 ? 'Fair. Speak along with the prompter as you hear it — don\'t wait for the sentence to end.' :
+      score >= 45 ? 'Needs work. Stay a step behind the prompter and keep talking.' :
+      'Keep practising. Choose a slower pace so you can keep up.';
 
     const resp: InterviewPrepResponse = {
       questionId: qa.id, question: qa.question, category: qa.category,
@@ -598,7 +589,7 @@ export const InterviewPrepModule: React.FC = () => {
     if (cancelledRef.current) return;
     qIdxRef.current = qi;
     const speed = SPEED_SETTINGS[speedIdxRef.current];
-    const allSegs = promptChunks(qs[qi].modelAnswer, speed);
+    const allSegs = answerSentences(qs[qi].modelAnswer);
     segsRef.current = allSegs;
     interimRef.current = '';
     setLiveTranscript('');
@@ -1154,7 +1145,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Interview Prep — Prompt Practice</h1>
-          <p className="text-slate-500 text-sm mt-1">Live phone-prompt drill: the interviewer asks · your prompter feeds the answer a few words at a time · you say it out loud as you hear it</p>
+          <p className="text-slate-500 text-sm mt-1">Live phone-prompt drill: the interviewer asks · your prompter reads the answer straight through · you speak along, a step behind</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {isAdmin && <Button variant="secondary" onClick={()=>{resetSession();setView('admin');}}>Admin View</Button>}
@@ -1205,9 +1196,9 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               </div>
               <div className="p-3 rounded-lg text-xs text-slate-600 border" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="font-bold mb-1" style={{color:speed.color}}>{speed.label} Mode</div>
-                <div>• Prompt size: <b>{speed.chunkWords} words at a time</b></div>
                 <div>• Prompter speaks at <b>about {approxWpm(speed)} words a minute</b></div>
-                <div>• Next prompt comes <b>as soon as you've said it</b>, or after {speed.gapFactor}× the prompt length at most</div>
+                <div>• Pauses only where a person would: at commas, and a <b>{(speed.sentencePauseMs/1000).toFixed(1)} s</b> breath at full stops</div>
+                <div>• The prompter <b>never waits for you</b> — speak along as you hear it</div>
                 <div className="mt-1 text-slate-400">{speed.hint}</div>
               </div>
             </Card>
@@ -1237,9 +1228,9 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               <ol className="space-y-1.5">
                 {[
                   ['🎧','The interviewer asks a question, like in a real interview'],
-                  ['📞','Your prompter, on the line, gives you the answer a few words at a time'],
-                  ['🗣️','Say each bit out loud the moment you hear it — keep talking, don\'t wait'],
-                  ['⏱️','The next bit comes as soon as the mic hears you finish — just like a real prompt'],
+                  ['📞','Your prompter, on the line, reads the answer straight through, like natural speech'],
+                  ['🗣️','Speak along as you hear it, a step behind — keep talking, don\'t wait'],
+                  ['⏱️','The prompter pauses only at commas and full stops; it never waits for you'],
                   ['📊','Score based on key concept coverage of your spoken response'],
                 ].map(([ico,txt],i)=>(
                   <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
@@ -1302,11 +1293,11 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                         <div key={i} className="w-1.5 rounded-full animate-pulse" style={{height:`${h*4}px`, background:speed.color, animationDelay:`${i*80}ms`}}/>
                       ))}
                     </div>
-                    <div className="text-sm font-bold text-slate-700">📞 Prompter in your ear — say it out loud as you hear it</div>
+                    <div className="text-sm font-bold text-slate-700">📞 Prompter speaking — speak along, a step behind</div>
                     <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
                       <div className="h-1.5 rounded-full transition-all duration-700" style={{width:`${segments.length ? (segPlayed/segments.length)*100 : 0}%`, background:speed.color}}/>
                     </div>
-                    <div className="text-xs text-slate-400">{segPlayed} of {segments.length} prompts given</div>
+                    <div className="text-xs text-slate-400">Sentence {segPlayed} of {segments.length}</div>
                   </div>
                 )}
               </div>
@@ -1331,7 +1322,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               {videoPanelJsx}
               <div className="p-3 rounded-xl border text-center" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{color:speed.color}}>{speed.label}</div>
-                <div className="text-xs text-slate-500">{speed.chunkWords} words at a time · ~{approxWpm(speed)} words/min</div>
+                <div className="text-xs text-slate-500">~{approxWpm(speed)} words/min · never waits for you</div>
               </div>
               <div className={`flex items-center gap-2 p-3 rounded-lg border ${phase==='prompting'?'bg-red-50 border-red-200':'bg-slate-50 border-slate-200'}`}>
                 <div className={`w-3 h-3 rounded-full ${phase==='prompting'?'bg-red-500 animate-pulse':'bg-slate-300'}`}/>
