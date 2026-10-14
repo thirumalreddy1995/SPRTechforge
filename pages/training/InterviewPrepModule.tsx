@@ -6,8 +6,8 @@ import { isMasterUser } from '../../utils';
 import { InterviewPrepSession, InterviewPrepResponse } from '../../types';
 import {
   SPEED_SETTINGS, SpeedSetting, DEFAULT_SPEED_IDX, approxWpm, speedColor,
-  splitIntoPhrases, echoPauseMs, estimateSpeakMs, toSpokenText,
-  questionIntro, answerLeadIn, VOICE_PREVIEW_TEXT, rankVoices, VOICE_PREF_KEY,
+  promptChunks, promptGapMs, minPromptGapMs, caughtUp, countWords, estimateSpeakMs, toSpokenText,
+  questionIntro, SESSION_BRIEFING, VOICE_PREVIEW_TEXT, rankVoices, pickInterviewerVoice, VOICE_PREF_KEY,
 } from './promptPracticeSpeech';
 
 // ─── Q&A Bank ─────────────────────────────────────────────────────────────────
@@ -44,8 +44,10 @@ const QA_BANK: QAPair[] = [
 const BUILT_IN_CATEGORIES = [...new Set(QA_BANK.map(q => q.category))];
 const CUSTOM_Q_KEY = 'spr_interview_prep_custom_q';
 
-// Speed levels, phrase splitting, echo timing and the trainer's wording live in
-// ./promptPracticeSpeech.ts (pure, unit-tested).
+// Pace levels, prompt chunking, gap timing and the spoken wording live in
+// ./promptPracticeSpeech.ts (pure, unit-tested). The module simulates a live
+// phone prompt: the interviewer asks, the prompter feeds the answer a few
+// words at a time, the candidate says it out loud as they hear it.
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STOP = new Set(['a','an','the','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','to','of','in','on','at','by','for','with','into','from','and','but','or','not','it','its','we','you','he','she','they','this','that','which','who','what','how','as','such','then','than','also','each','more','most','other','some','any','very','just']);
@@ -225,7 +227,8 @@ export const InterviewPrepModule: React.FC = () => {
   const [qCount, setQCount] = useState(5);
   const [speedIdx, setSpeedIdx] = useState(DEFAULT_SPEED_IDX);
 
-  // Trainer voice — the most natural English voice installed, candidate can change it
+  // Prompter voice — the most natural English voice installed, candidate can change it.
+  // The interviewer automatically gets a different voice.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceName, setVoiceName] = useState<string>(() => { try { return localStorage.getItem(VOICE_PREF_KEY) || ''; } catch { return ''; } });
   const [previewing, setPreviewing] = useState(false);
@@ -259,6 +262,7 @@ export const InterviewPrepModule: React.FC = () => {
   const interimRef    = useRef('');
   const speedIdxRef   = useRef(DEFAULT_SPEED_IDX);
   const voiceRef      = useRef<SpeechSynthesisVoice | null>(null);
+  const interviewerRef = useRef<SpeechSynthesisVoice | null>(null);
   // Chrome drops an utterance's end event if the object is garbage-collected mid-speech
   const uttRef        = useRef<SpeechSynthesisUtterance | null>(null);
   const sessionQsRef  = useRef<QAPair[]>([]);
@@ -294,6 +298,7 @@ export const InterviewPrepModule: React.FC = () => {
     if (!voices.length) { voiceRef.current = null; return; }
     const chosen = voices.find(v => v.name === voiceName) || voices[0];
     voiceRef.current = chosen;
+    interviewerRef.current = pickInterviewerVoice(voices, chosen.name);
     if (chosen.name !== voiceName) setVoiceName(chosen.name);
   }, [voices, voiceName]);
 
@@ -380,23 +385,22 @@ export const InterviewPrepModule: React.FC = () => {
   };
 
   // ── TTS — cancellation-safe ────────────────────────────────────────────
-  // Builds one utterance in the chosen voice. onEnd receives how long the
-  // trainer actually spoke (ms) so the echo pause can match it; it only fires
-  // if the session has not been cancelled. A watchdog moves on if the browser
+  // One utterance in the given voice (default: the prompter). onEnd receives
+  // how long it actually took (ms) so the gap can match it; it only fires if
+  // the session has not been cancelled. A watchdog moves on if the browser
   // never reports the end of the utterance (Chrome does this after a cancel).
-  const buildUtterance = (text: string, speed: SpeedSetting) => {
+  const buildUtterance = (text: string, speed: SpeedSetting, voice: SpeechSynthesisVoice | null = voiceRef.current) => {
     const utt = new SpeechSynthesisUtterance(toSpokenText(text));
-    const voice = voiceRef.current;
     utt.rate = speed.rate; utt.pitch = 1; utt.volume = 1;
     utt.lang = voice?.lang || 'en-IN';
     if (voice) utt.voice = voice;
     return utt;
   };
 
-  const speakRaw = (text: string, speed: SpeedSetting, onEnd: (spokenMs: number) => void) => {
+  const speakRaw = (text: string, speed: SpeedSetting, onEnd: (spokenMs: number) => void, voice?: SpeechSynthesisVoice | null) => {
     const synth = window.speechSynthesis;
     synth.cancel();
-    const utt = buildUtterance(text, speed);
+    const utt = buildUtterance(text, speed, voice === undefined ? voiceRef.current : voice);
     let started = 0, done = false;
     let watchdog: ReturnType<typeof setTimeout> | null = null;
     const finish = () => {
@@ -412,6 +416,9 @@ export const InterviewPrepModule: React.FC = () => {
     uttRef.current = utt;
     synth.speak(utt);
   };
+
+  // The interviewer always speaks at a natural conversational pace
+  const INTERVIEWER_PACE: SpeedSetting = { ...SPEED_SETTINGS[DEFAULT_SPEED_IDX], rate: 1.0 };
 
   // Setup-screen preview of the chosen voice at the chosen speed
   const previewVoice = () => {
@@ -435,7 +442,10 @@ export const InterviewPrepModule: React.FC = () => {
     if (pauseTimerRef.current) { clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null; }
   };
 
-  // ── CORE: speak each sentence/clause sequentially with pauses ────────────
+  // ── CORE: feed the answer a few words at a time, like a prompter on the phone ──
+  // After each prompt: wait until the mic hears the candidate say (most of)
+  // it, or until the level's maximum gap — whichever comes first — then give
+  // the next prompt. No instructions in between.
   const speakSegments = (si: number) => {
     if (cancelledRef.current) return;
     const allSegs = segsRef.current;
@@ -445,14 +455,21 @@ export const InterviewPrepModule: React.FC = () => {
     setSegIdx(si);
     setSegPlayed(si + 1);
 
+    const heardBefore = countWords(interimRef.current);
     speakRaw(allSegs[si], speed, (spokenMs) => {
       if (cancelledRef.current) return;
-      // Leave the candidate as long as the trainer took (scaled by the speed level) to repeat it
-      const pause = echoPauseMs(allSegs[si], speed, spokenMs);
-      pauseTimerRef.current = setTimeout(() => {
+      const maxGap = promptGapMs(allSegs[si], speed, spokenMs);
+      const minGap = minPromptGapMs(allSegs[si], speed, spokenMs);
+      const startedAt = performance.now();
+      const tick = () => {
         if (cancelledRef.current) return;
-        speakSegments(si + 1);
-      }, pause);
+        const elapsed = performance.now() - startedAt;
+        const heard = countWords(interimRef.current) - heardBefore;
+        const candidateDone = !useFallback && elapsed >= minGap && caughtUp(heard, allSegs[si]);
+        if (elapsed >= maxGap || candidateDone) { clearPauseTimer(); speakSegments(si + 1); return; }
+        pauseTimerRef.current = setTimeout(tick, 100);
+      };
+      pauseTimerRef.current = setTimeout(tick, 100);
     });
   };
 
@@ -468,11 +485,11 @@ export const InterviewPrepModule: React.FC = () => {
     const { score, missedKeywords } = scoreAnswer(spoken, qa.modelAnswer);
 
     const feedback =
-      score >= 90 ? 'Excellent — you echoed almost every key concept.' :
+      score >= 90 ? 'Excellent — you repeated almost every key concept.' :
       score >= 75 ? 'Good. A few key terms were missed — review the model answer.' :
-      score >= 60 ? 'Fair. Try to speak along more closely with each sentence.' :
-      score >= 45 ? 'Needs work. Listen carefully and echo as you hear the phrases.' :
-      'Keep practising. Choose a slower speed to give yourself more time.';
+      score >= 60 ? 'Fair. Say each prompt the moment you hear it and keep going.' :
+      score >= 45 ? 'Needs work. Don\'t wait for the whole sentence — repeat each bit as it comes.' :
+      'Keep practising. Choose a slower pace with shorter prompts.';
 
     const resp: InterviewPrepResponse = {
       questionId: qa.id, question: qa.question, category: qa.category,
@@ -581,7 +598,7 @@ export const InterviewPrepModule: React.FC = () => {
     if (cancelledRef.current) return;
     qIdxRef.current = qi;
     const speed = SPEED_SETTINGS[speedIdxRef.current];
-    const allSegs = splitIntoPhrases(qs[qi].modelAnswer);
+    const allSegs = promptChunks(qs[qi].modelAnswer, speed);
     segsRef.current = allSegs;
     interimRef.current = '';
     setLiveTranscript('');
@@ -591,23 +608,28 @@ export const InterviewPrepModule: React.FC = () => {
     setSegPlayed(0);
     setPhase('reading-question');
 
-    // 1. Ask the question the way an interviewer would
-    speakRaw(questionIntro(qi, qs.length, qs[qi].question), speed, () => {
+    // The interviewer asks; a beat later the prompter starts feeding the answer
+    const askQuestion = () => {
       if (cancelledRef.current) return;
-      pauseTimerRef.current = setTimeout(() => {
+      speakRaw(questionIntro(qi, qs.length, qs[qi].question), INTERVIEWER_PACE, () => {
         if (cancelledRef.current) return;
-        // 2. Tell the candidate what to do, then feed the answer phrase by phrase
-        speakRaw(answerLeadIn(qi), speed, () => {
+        pauseTimerRef.current = setTimeout(() => {
           if (cancelledRef.current) return;
-          pauseTimerRef.current = setTimeout(() => {
-            if (cancelledRef.current) return;
-            setPhase('prompting');
-            startRec();
-            speakSegments(0);
-          }, 500);
-        });
-      }, 700);
-    });
+          setPhase('prompting');
+          startRec();
+          speakSegments(0);
+        }, 900);
+      }, interviewerRef.current);
+    };
+    // Once per session the prompter explains the drill, then the interview starts
+    if (qi === 0) {
+      speakRaw(SESSION_BRIEFING, speed, () => {
+        if (cancelledRef.current) return;
+        pauseTimerRef.current = setTimeout(askQuestion, 700);
+      });
+    } else {
+      askQuestion();
+    }
   };
 
   const nextQuestion = () => {
@@ -1132,7 +1154,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Interview Prep — Prompt Practice</h1>
-          <p className="text-slate-500 text-sm mt-1">The trainer asks a question and says the answer in short phrases · Repeat each phrase · Scored on key concept coverage</p>
+          <p className="text-slate-500 text-sm mt-1">Live phone-prompt drill: the interviewer asks · your prompter feeds the answer a few words at a time · you say it out loud as you hear it</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {isAdmin && <Button variant="secondary" onClick={()=>{resetSession();setView('admin');}}>Admin View</Button>}
@@ -1171,7 +1193,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
 
           <div className="space-y-4">
             <Card>
-              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">3</span> Trainer Pace</h3>
+              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">3</span> Prompting Pace</h3>
               <div className="grid grid-cols-5 gap-1 mb-3">
                 {SPEED_SETTINGS.map((s,i)=>(
                   <button key={i} onClick={()=>setSpeedIdx(i)} data-testid={`prep-speed-${s.label.toLowerCase()}`} aria-pressed={speedIdx===i}
@@ -1183,14 +1205,15 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               </div>
               <div className="p-3 rounded-lg text-xs text-slate-600 border" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="font-bold mb-1" style={{color:speed.color}}>{speed.label} Mode</div>
-                <div>• Speaking pace: <b>about {approxWpm(speed)} words a minute</b> ({speed.rate}× the voice's natural speed)</div>
-                <div>• Time to repeat each phrase: <b>{speed.echoFactor}×</b> as long as the trainer took to say it</div>
+                <div>• Prompt size: <b>{speed.chunkWords} words at a time</b></div>
+                <div>• Prompter speaks at <b>about {approxWpm(speed)} words a minute</b></div>
+                <div>• Next prompt comes <b>as soon as you've said it</b>, or after {speed.gapFactor}× the prompt length at most</div>
                 <div className="mt-1 text-slate-400">{speed.hint}</div>
               </div>
             </Card>
 
             <Card>
-              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">4</span> Trainer Voice</h3>
+              <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black">4</span> Prompter Voice</h3>
               {voices.length > 0 ? (
                 <select value={voiceName} onChange={e=>chooseVoice(e.target.value)} data-testid="prep-voice"
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400 mb-2">
@@ -1206,17 +1229,17 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                 </button>
                 <span className="text-xs text-slate-400">Plays at the selected pace</span>
               </div>
-              <div className="mt-2 text-xs text-slate-400">Tip: Microsoft Edge offers the most natural "Online (Natural)" voices, including Indian English.</div>
+              <div className="mt-2 text-xs text-slate-400">The interviewer automatically uses a different voice. Tip: Microsoft Edge offers the most natural "Online (Natural)" voices, including Indian English.</div>
             </Card>
 
             <Card>
               <h3 className="font-bold text-slate-700 mb-3">How it works</h3>
               <ol className="space-y-1.5">
                 {[
-                  ['🔊','The trainer asks the question aloud, like an interviewer'],
-                  ['📖','Then says the model answer in short phrases of a few words'],
-                  ['🎙️','Repeat each phrase after you hear it — the mic captures your voice'],
-                  ['⏸️','After every phrase the trainer waits long enough for you to repeat it'],
+                  ['🎧','The interviewer asks a question, like in a real interview'],
+                  ['📞','Your prompter, on the line, gives you the answer a few words at a time'],
+                  ['🗣️','Say each bit out loud the moment you hear it — keep talking, don\'t wait'],
+                  ['⏱️','The next bit comes as soon as the mic hears you finish — just like a real prompt'],
                   ['📊','Score based on key concept coverage of your spoken response'],
                 ].map(([ico,txt],i)=>(
                   <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
@@ -1256,7 +1279,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               {/* Question */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">
-                  {phase === 'reading-question' ? '🔊 Trainer is asking…' : '📋 Question'}
+                  {phase === 'reading-question' ? '🎧 Interviewer is asking…' : '📋 Question'}
                 </div>
                 <div className="text-base font-semibold text-slate-800 leading-relaxed">{currentQA.question}</div>
               </div>
@@ -1268,8 +1291,8 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                     <div className="w-12 h-12 rounded-full flex items-center justify-center animate-pulse" style={{background:speed.color}}>
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
                     </div>
-                    <div className="text-sm font-semibold text-slate-600">Trainer is asking the question…</div>
-                    <div className="text-xs text-slate-400">The answer follows in short phrases — listen carefully</div>
+                    <div className="text-sm font-semibold text-slate-600">Interviewer is asking the question…</div>
+                    <div className="text-xs text-slate-400">Your prompter starts right after — be ready to speak</div>
                   </div>
                 )}
                 {phase === 'prompting' && (
@@ -1279,11 +1302,11 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                         <div key={i} className="w-1.5 rounded-full animate-pulse" style={{height:`${h*4}px`, background:speed.color, animationDelay:`${i*80}ms`}}/>
                       ))}
                     </div>
-                    <div className="text-sm font-bold text-slate-700">🔊 Trainer speaking — repeat each phrase</div>
+                    <div className="text-sm font-bold text-slate-700">📞 Prompter in your ear — say it out loud as you hear it</div>
                     <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
                       <div className="h-1.5 rounded-full transition-all duration-700" style={{width:`${segments.length ? (segPlayed/segments.length)*100 : 0}%`, background:speed.color}}/>
                     </div>
-                    <div className="text-xs text-slate-400">{segPlayed} of {segments.length} phrases played</div>
+                    <div className="text-xs text-slate-400">{segPlayed} of {segments.length} prompts given</div>
                   </div>
                 )}
               </div>
@@ -1293,7 +1316,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
                 <div className="p-4 bg-white border-2 border-blue-200 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"/>
-                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Your voice — repeat each phrase after the trainer</div>
+                    <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">Your voice — what the interviewer hears</div>
                   </div>
                   {useFallback
                     ? <textarea value={fallbackText} onChange={e=>setFallbackText(e.target.value)} placeholder="Type your response here…" className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:border-blue-400 resize-none" rows={3} autoFocus/>
@@ -1308,7 +1331,7 @@ ${notAttempted.map((c,i) => `<tr><td>${i+1}</td><td>${c.name}</td></tr>`).join('
               {videoPanelJsx}
               <div className="p-3 rounded-xl border text-center" style={{background:`${speed.color}10`,borderColor:`${speed.color}30`}}>
                 <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{color:speed.color}}>{speed.label}</div>
-                <div className="text-xs text-slate-500">~{approxWpm(speed)} words/min · {speed.echoFactor}× time to repeat</div>
+                <div className="text-xs text-slate-500">{speed.chunkWords} words at a time · ~{approxWpm(speed)} words/min</div>
               </div>
               <div className={`flex items-center gap-2 p-3 rounded-lg border ${phase==='prompting'?'bg-red-50 border-red-200':'bg-slate-50 border-slate-200'}`}>
                 <div className={`w-3 h-3 rounded-full ${phase==='prompting'?'bg-red-500 animate-pulse':'bg-slate-300'}`}/>
