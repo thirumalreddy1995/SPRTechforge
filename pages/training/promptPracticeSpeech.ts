@@ -1,26 +1,22 @@
-// Pure helpers for the Prompt Practice (Interview Prep) trainer voice.
+// Pure helpers for the Prompt Practice (Interview Prep) voices.
 // No DOM access here so the rules are unit-testable (promptPracticeSpeech.test.ts).
 //
 // What the module simulates: a live interview where the trainer is on the
-// phone with the candidate. The interviewer asks a question; the trainer
-// (the "prompter") feeds the answer into the candidate's ear a few words at a
-// time; the candidate says each bit out loud straight away and keeps going.
-// So prompts are short, the gap after each one is only as long as it takes
-// to say it, and the next prompt comes as soon as the candidate catches up.
+// phone with the candidate. The interviewer asks a question; the trainer (the
+// "prompter") reads the answer straight through into the candidate's ear,
+// pausing only where a person would — at commas and full stops — and never
+// waiting. The candidate speaks along, a step behind, without stopping.
 
-// ─── Speed levels ─────────────────────────────────────────────────────────────
-// rate       = Web Speech rate multiplier. 1.0 is the voice's natural pace
-//              (about 150 words a minute); a prompter speaks a touch slower
-//              than conversation so every word lands over the phone.
-// chunkWords = how many words the prompter gives at a time.
-// gapFactor  = how long to wait for the candidate to say the prompt, as a
-//              multiple of the time the prompter took to say it (upper bound:
-//              the next prompt comes earlier once the mic hears them finish).
+// ─── Pace levels ─────────────────────────────────────────────────────────────
+// rate            = Web Speech rate multiplier. 1.0 is the voice's natural
+//                   pace (about 150 words a minute); a prompter speaks a touch
+//                   slower than conversation so every word lands over the phone.
+// sentencePauseMs = the breath the prompter takes at each full stop. Commas
+//                   are paused by the voice itself, as in natural speech.
 export interface SpeedSetting {
   label: string;
   rate: number;
-  chunkWords: number;
-  gapFactor: number;
+  sentencePauseMs: number;
   color: string;
   hint: string;
 }
@@ -28,11 +24,11 @@ export interface SpeedSetting {
 export const BASE_WPM = 150; // typical English TTS pace at rate 1.0
 
 export const SPEED_SETTINGS: SpeedSetting[] = [
-  { label: 'Slow',    rate: 0.8,  chunkWords: 3, gapFactor: 1.4, color: '#7c3aed', hint: 'Three words at a time, said slowly, with room to spare. For your first sessions.' },
-  { label: 'Relaxed', rate: 0.85, chunkWords: 4, gapFactor: 1.2, color: '#2563eb', hint: 'Four words at a time with a little extra time to say them.' },
-  { label: 'Normal',  rate: 0.9,  chunkWords: 5, gapFactor: 1.0, color: '#16a34a', hint: 'How a real phone prompt feels: five words at a time, next one as soon as you finish.' },
-  { label: 'Brisk',   rate: 1.0,  chunkWords: 6, gapFactor: 0.85, color: '#d97706', hint: 'Six words at a time at conversational pace. You must keep up.' },
-  { label: 'Fast',    rate: 1.1,  chunkWords: 7, gapFactor: 0.7, color: '#dc2626', hint: 'Interview pressure: longer prompts, quick pace, no slack.' },
+  { label: 'Slow',    rate: 0.7, sentencePauseMs: 800, color: '#7c3aed', hint: 'Slow and clear, with a longer breath at each full stop. For your first sessions.' },
+  { label: 'Relaxed', rate: 0.8, sentencePauseMs: 600, color: '#2563eb', hint: 'A little slower than conversation; easy to stay a step behind.' },
+  { label: 'Normal',  rate: 0.9, sentencePauseMs: 450, color: '#16a34a', hint: 'How a prompter sounds over the phone: a touch slower than normal talk, with natural pauses.' },
+  { label: 'Brisk',   rate: 1.0, sentencePauseMs: 350, color: '#d97706', hint: 'Normal conversational pace. Stay right on the prompter\'s heels.' },
+  { label: 'Fast',    rate: 1.1, sentencePauseMs: 250, color: '#dc2626', hint: 'Interview pressure: quick, with only the briefest breath between sentences.' },
 ];
 
 export const DEFAULT_SPEED_IDX = 2;
@@ -50,136 +46,32 @@ export function speedColor(label?: string): string {
   return '#64748b';
 }
 
-// ─── Prompt chunks ────────────────────────────────────────────────────────────
-// A prompter feeds an answer a few words at a time. Model answers are long
-// sentences with few commas, so: split at punctuation first, then break
-// anything longer than the level's chunk size at a natural joining word
-// ("and", "while", "such as", "by", …) and only as a last resort by count.
-export const MAX_PHRASE_WORDS = 5; // default chunk size (Normal level)
-const MIN_PHRASE_WORDS = 2;
-
-// Words that start a new clause or phrase. Strong = conjunctions and clause
-// openers (preferred). Weak = prepositions, used only when no strong break is
-// in range. Multi-word entries first so "such as" wins over "as".
-const STRONG_BREAKS = [
-  "such as", "so that", "as well as", "rather than", "followed by", "instead of",
-  "while", "whereas", "which", "because", "although", "whenever", "when", "where",
-  "after", "before", "until", "unless", "including", "without", "using", "through",
-  "and", "but", "or", "so", "then", "with", "by", "to", "for", "as", "that", "into", "from",
-];
-const WEAK_BREAKS = ["of", "in", "on", "at", "during", "across", "between", "over", "under", "within", "via", "about", "against", "per", "like"];
-// Soft = start of a noun phrase or verb group ("the build", "is stable"): a
-// fair place to pause when nothing better is in range.
-const SOFT_BREAKS = ["a", "an", "the", "this", "that", "these", "those", "your", "our", "their", "its", "each", "every", "all", "some", "any", "no",
-  "is", "are", "was", "were", "has", "have", "had", "can", "should", "will", "must", "may"];
-// Never end a prompt on one of these — nobody says "...of" and stops.
-const NO_TRAILING = new Set([...WEAK_BREAKS, "a", "an", "the", "and", "or", "but", "to", "with", "by", "for", "as", "into", "from", "such", "so"]);
-
-// A chunk may run one word past the level's size when that keeps it on a
-// natural boundary.
-export const PHRASE_TOLERANCE = 1;
-
+// ─── Sentences ───────────────────────────────────────────────────────────────
+// The answer is spoken sentence by sentence, each sentence as one utterance:
+// the voice places its own pauses at commas, the module adds the breath at
+// the full stop, and the flow never stops. (One utterance per sentence also
+// sidesteps Chrome cutting off long utterances.) A trailing fragment shorter
+// than three words is merged into the sentence before it.
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-const clean = (w: string) => w.toLowerCase().replace(/[^a-z]/g, "");
 
-function splitAtPunctuation(answer: string): string[] {
-  const parts = answer.split(/([.?!,;:])/).filter(s => s.length > 0);
-  const segs: string[] = [];
-  for (const p of parts) {
-    if (/^[.?!,;:]$/.test(p)) {
-      if (segs.length > 0) segs[segs.length - 1] += p;
-    } else {
-      const t = p.trim();
-      if (t) segs.push(t);
-    }
-  }
-  return segs;
-}
-
-// Index of the break word (from `list`) nearest to `target`, within [lo, hi].
-function nearestBreak(words: string[], list: string[], lo: number, hi: number, target: number): number {
-  let best = -1, bestDist = Infinity;
-  let blocked = -1; // second word of a two-word break ("by" in "followed by") is not a cut point
-  for (let i = lo; i <= hi; i++) {
-    const one = clean(words[i]);
-    const two = i + 1 < words.length ? `${one} ${clean(words[i + 1])}` : "";
-    const pair = list.includes(two);
-    if (pair) blocked = i + 1;
-    if (!pair && (i === blocked || !list.includes(one))) continue;
-    const dist = Math.abs(i - target);
-    if (dist < bestDist) { bestDist = dist; best = i; }
-  }
-  return best;
-}
-
-// Split one long segment into phrases of about maxWords.
-function splitLong(seg: string, maxWords: number): string[] {
-  const words = seg.split(/\s+/).filter(Boolean);
-  const limit = maxWords + PHRASE_TOLERANCE;
-  if (words.length <= limit) return [seg];
-
-  const lo = MIN_PHRASE_WORDS;
-  const hi = Math.min(limit, words.length - MIN_PHRASE_WORDS);
-  const target = Math.min(maxWords, Math.floor(words.length / 2));
-  let cut = nearestBreak(words, STRONG_BREAKS, lo, hi, target);
-  if (cut < 0) cut = nearestBreak(words, WEAK_BREAKS, lo, hi, target);
-  if (cut < 0) cut = nearestBreak(words, SOFT_BREAKS, lo, hi, target);
-  if (cut < 0) {
-    cut = Math.min(maxWords, words.length - MIN_PHRASE_WORDS);
-    while (cut > lo && NO_TRAILING.has(clean(words[cut - 1]))) cut--;
-  }
-
-  const left = words.slice(0, cut).join(" ");
-  const right = words.slice(cut).join(" ");
-  return [left, ...splitLong(right, maxWords)];
-}
-
-export function splitIntoPhrases(answer: string, maxWords = MAX_PHRASE_WORDS): string[] {
+export function answerSentences(answer: string): string[] {
+  const parts = answer.replace(/\s+/g, ' ').trim().split(/(?<=[.?!])\s+/).map(p => p.trim()).filter(Boolean);
   const out: string[] = [];
-  for (const seg of splitAtPunctuation(answer)) {
-    for (const p of splitLong(seg, maxWords)) {
-      const t = p.trim();
-      if (t) out.push(t);
-    }
+  for (const p of parts) {
+    if (out.length && wordCount(p) < 3) out[out.length - 1] += ' ' + p;
+    else out.push(p);
   }
   return out;
 }
 
-// The prompts for one answer at a given level.
-export const promptChunks = (answer: string, speed: SpeedSetting) => splitIntoPhrases(answer, speed.chunkWords);
-
-export const countWords = (s: string) => wordCount(s);
+export const sentencePauseMs = (speed: SpeedSetting) => speed.sentencePauseMs;
 
 // ─── Timing ───────────────────────────────────────────────────────────────────
-// How long a prompt takes to say at a given speed (ms). Used as the fallback
-// when the browser cannot tell us the real utterance duration.
+// How long a text takes to say at a given pace (ms); used for the watchdog
+// that moves on if the browser never reports the end of an utterance.
 export function estimateSpeakMs(text: string, speed: SpeedSetting): number {
   const words = Math.max(1, wordCount(text));
   return Math.round((words / (BASE_WPM * speed.rate)) * 60_000);
-}
-
-// Longest wait after a prompt before the next one, so the candidate can say
-// it. Roughly the time the prompter took (scaled by the level) plus a beat for
-// the candidate to start; a touch more at the end of a sentence. The session
-// moves on earlier than this once the mic hears the candidate catch up.
-// measuredMs = how long the prompter actually took (from the speech events).
-export function promptGapMs(text: string, speed: SpeedSetting, measuredMs?: number): number {
-  const spoken = measuredMs && measuredMs > 250 ? measuredMs : estimateSpeakMs(text, speed);
-  const endsSentence = /[.?!]$/.test(text.trim());
-  const gap = spoken * speed.gapFactor + 250 + (endsSentence ? 150 : 0);
-  return Math.round(Math.min(5000, Math.max(500, gap)));
-}
-
-// Earliest the next prompt may come, even if the mic says the candidate has
-// finished (guards against the mic picking up the prompter's own voice).
-export const minPromptGapMs = (text: string, speed: SpeedSetting, measuredMs?: number) =>
-  Math.round(Math.max(300, (measuredMs && measuredMs > 250 ? measuredMs : estimateSpeakMs(text, speed)) * 0.5));
-
-// True when the words the mic has heard since the prompt started cover most of
-// the prompt — the candidate has said it, move on.
-export function caughtUp(wordsHeardSincePrompt: number, promptText: string): boolean {
-  const need = Math.ceil(wordCount(promptText) * 0.7);
-  return wordsHeardSincePrompt >= need;
 }
 
 // ─── Pronunciation ────────────────────────────────────────────────────────────
@@ -231,8 +123,13 @@ const SAY: [RegExp, string][] = [
   [/\bAfterScenario\b/g, 'After Scenario'],
 ];
 
+// Model answers are written with few commas. A person reading them aloud
+// still breathes before a new clause, so add a comma for the voice there.
+const CLAUSE_OPENERS = /\s+(while|whereas|which|such as|including|so that|followed by|rather than|as well as|because|although)\s+/g;
+export const withNaturalPauses = (text: string) => text.replace(CLAUSE_OPENERS, (m, w) => `, ${w} `).replace(/,\s*,/g, ',');
+
 export function toSpokenText(text: string): string {
-  let t = text;
+  let t = withNaturalPauses(text);
   for (const [re, say] of SAY) t = t.replace(re, say);
   // Remaining CamelCase identifiers (e.g. GetScreenshot, SaveAsFile) read
   // better as separate words.
@@ -242,7 +139,7 @@ export function toSpokenText(text: string): string {
 
 // ─── What is said, and by whom ───────────────────────────────────────────────
 // Two voices: the INTERVIEWER asks the questions; the PROMPTER (the trainer on
-// the phone) feeds the answer. Nothing else is said during an answer — a real
+// the phone) reads the answer. Nothing else is said during an answer — a real
 // prompter does not stop to give instructions.
 const NEXT_LEADS = [
   'Okay, next question.',
@@ -263,9 +160,9 @@ export function questionIntro(index: number, total: number, question: string): s
 }
 
 // The prompter, once at the start of a session, before the first question.
-export const SESSION_BRIEFING = 'I\'m on the line with you. When the interviewer asks a question, I\'ll give you the answer a few words at a time. Say each bit out loud the moment you hear it, and keep going. Here we go.';
+export const SESSION_BRIEFING = 'I\'m on the line with you. When the interviewer asks a question, I\'ll say the answer straight through, just like over the phone. Speak along with me as you hear it, a step behind, and don\'t stop. Here we go.';
 
-export const VOICE_PREVIEW_TEXT = 'Hi, I\'ll be on the line with you. I\'ll give you the answer a few words at a time, and you say it out loud as you hear it.';
+export const VOICE_PREVIEW_TEXT = 'Hi, I\'ll be on the line with you. I\'ll say the answer straight through, and you speak along with me, a step behind.';
 
 // ─── Voice choice ─────────────────────────────────────────────────────────────
 // The browser's default voice is usually the old robotic one (Microsoft David /
